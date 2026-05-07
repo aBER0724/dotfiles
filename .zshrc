@@ -1,0 +1,104 @@
+iterm2_prompt_mark() {
+  # Do nothing
+}
+
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# If you come from bash you might have to change your $PATH.
+# export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
+
+# Path to your Oh My Zsh installation.
+export ZSH="$HOME/.oh-my-zsh"
+
+# Set name of the theme to load --- if set to "random", it will
+# load a random theme each time Oh My Zsh is loaded, in which case,
+# to know which specific one was loaded, run: echo $RANDOM_THEME
+# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
+ZSH_THEME=""  # theme loaded manually below via powerlevel10k
+
+# Which plugins would you like to load?
+# Standard plugins can be found in $ZSH/plugins/
+# Custom plugins may be added to $ZSH_CUSTOM/plugins/
+# Example format: plugins=(rails git textmate ruby lighthouse)
+# Add wisely, as too many plugins slow down shell startup.
+plugins=(
+  git
+  zsh-autosuggestions
+  zsh-syntax-highlighting
+  docker
+  kubectl
+  npm
+)
+
+source $ZSH/oh-my-zsh.sh
+
+source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source ~/powerlevel10k/powerlevel10k.zsh-theme
+
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+export PATH="/usr/local/opt/curl/bin:$PATH"
+
+
+proxy_on() {
+    export https_proxy=socks5://127.0.0.1:9871 
+    export http_proxy=socks5://127.0.0.1:9871
+    export all_proxy=socks5://127.0.0.1:9871
+#    export https_proxy=http://127.0.0.1:54826
+#    export http_proxy=http://127.0.0.1:54826
+#    export all_proxy=socks5://127.0.0.1:54826
+    echo "Proxy Enabled!"
+}
+
+proxy_off() {
+    unset http_proxy
+    unset https_proxy
+    unset ftp_proxy
+    echo "Proxy Disabled!"
+}
+
+alias rime-install='bash ~/plum/rime-install'
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
+[ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"  # This loads nvm bash_completion
+
+export PATH="/opt/homebrew/bin:$PATH"
+
+# Created by `pipx` on 2025-01-03 16:37:08
+export PATH="$PATH:/Users/aber/.local/bin"
+
+[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
+
+eval $(thefuck --alias)
+# You can use whatever you want as an alias, like for Mondays:
+eval $(thefuck --alias FUCK)
+
+export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+
+# Added by Antigravity
+export PATH="/Users/aber/.antigravity/antigravity/bin:$PATH"
+
+# PIO
+export PATH="/Users/aber/.platformio/penv/bin:$PATH"
+
+# pnpm
+export PNPM_HOME="/Users/aber/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+
+surge_activate() {
+  bash ~/Documents/Tool/Qurge-v6/StartQurge.command
+}
+
+[[ -f "$HOME/.config/kaku/zsh/kaku.zsh" ]] && source "$HOME/.config/kaku/zsh/kaku.zsh" # Kaku Shell Integration
+
