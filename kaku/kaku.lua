@@ -89,7 +89,7 @@ local function tab_path_parts(pane)
   return parent, current
 end
 
-wezterm.on('format-tab-title', function(tab, _, _, _, _, max_width)
+wezterm.on('format-tab-title', function(tab, tabs, hover, max_width, _, _)
   local parent, current = tab_path_parts(tab.active_pane)
   local text = current
   if parent ~= '' and current ~= '' then
@@ -99,41 +99,62 @@ wezterm.on('format-tab-title', function(tab, _, _, _, _, max_width)
     text = tab.active_pane.title
   end
   if tab.active_pane.is_zoomed then
-    text = text .. ' [Z]'
+    text = text .. ' 󰁌'
   end
-  text = wezterm.truncate_right(text, math.max(8, max_width - 2))
 
-  local fg = tab.is_active and '#edecee' or '#6b6b6b'
-  local intensity = tab.is_active and 'Bold' or 'Normal'
-  return {
-    { Attribute = { Intensity = intensity } },
-    { Foreground = { Color = fg } },
-    { Text = ' ' .. text .. ' ' },
-  }
+  local tab_idx = tab.tab_index + 1
+
+  if tab.is_active then
+    return wezterm.format({
+      { Background = { Color = '#313244' } },
+      { Foreground = { Color = '#cba6f7' } },
+      { Text = ' ' .. tostring(tab_idx) .. ' ' },
+      { Foreground = { Color = '#cdd6f4' } },
+      { Text = text .. ' ' },
+    })
+  else
+    return wezterm.format({
+      { Foreground = { Color = '#6c7086' } },
+      { Text = ' ' .. tostring(tab_idx) .. ' ' .. text .. ' ' },
+    })
+  end
 end)
 
 wezterm.on('update-right-status', function(window)
   local dims = window:get_dimensions()
   update_window_config(window, dims.is_full_screen)
-  if not dims.is_full_screen then
-    window:set_right_status('')
-    return
+
+  -- Read stats from cache file (written by launchd/cron every 5s)
+  local cpu_pct = '?'
+  local mem_pct = '?'
+  local f = io.open('/tmp/kaku-stats', 'r')
+  if f then
+    local data = f:read('*a')
+    f:close()
+    local c, m = data:match('(%d+)%s+(%d+)')
+    if c then cpu_pct = c end
+    if m then mem_pct = m end
   end
 
+  local cpu_icon = wezterm.nerdfonts.md_cpu_64_bit or ''
+  local mem_icon = wezterm.nerdfonts.md_memory or ''
   local clock_icon = wezterm.nerdfonts.md_clock_time_four_outline
     or wezterm.nerdfonts.md_clock_outline
     or ''
-  local text = wezterm.strftime('%H:%M')
-  if clock_icon ~= '' then
-    window:set_right_status(wezterm.format({
-      { Foreground = { Color = '#6b6b6b' } },
-      { Text = ' ' .. clock_icon .. ' ' .. text .. ' ' },
-    }))
-    return
-  end
+
+  local time_text = wezterm.strftime('%H:%M')
+
   window:set_right_status(wezterm.format({
-    { Foreground = { Color = '#6b6b6b' } },
-    { Text = ' ' .. text .. ' ' },
+    { Foreground = { Color = '#cba6f7' } },
+    { Text = ' ' .. cpu_icon .. ' ' .. cpu_pct .. '% ' },
+    { Foreground = { Color = '#585b70' } },
+    { Text = '│' },
+    { Foreground = { Color = '#94e2d5' } },
+    { Text = ' ' .. mem_icon .. ' ' .. mem_pct .. '% ' },
+    { Foreground = { Color = '#585b70' } },
+    { Text = '│' },
+    { Foreground = { Color = '#6c7086' } },
+    { Text = ' ' .. clock_icon .. ' ' .. time_text .. ' ' },
   }))
 end)
 
@@ -191,12 +212,6 @@ config.window_padding = {
 
 config.initial_cols = 110
 config.initial_rows = 22
-config.window_frame = {
-  font = wezterm.font({ family = 'JetBrains Mono', weight = 'Regular' }),
-  font_size = 13.0,
-  active_titlebar_bg = '#15141b',
-  inactive_titlebar_bg = '#15141b',
-}
 
 config.window_close_confirmation = 'NeverPrompt'
 
@@ -205,59 +220,59 @@ config.enable_tab_bar = true
 config.tab_bar_at_bottom = true
 config.use_fancy_tab_bar = false
 config.tab_max_width = 32
-config.hide_tab_bar_if_only_one_tab = true
+config.hide_tab_bar_if_only_one_tab = false
 config.show_tab_index_in_tab_bar = true
 config.show_new_tab_button_in_tab_bar = false
 
--- Color scheme for tabs
+-- ===== Color scheme for tabs =====
 config.colors = {
   -- Background
-  foreground = '#edecee',
-  background = '#15141b',
+  foreground = '#cdd6f4',
+  background = '#1e1e2e',
 
   -- Cursor
-  cursor_bg = '#a277ff',
-  cursor_fg = '#15141b',
-  cursor_border = '#a277ff',
+  cursor_bg = '#cba6f7',
+  cursor_fg = '#1e1e2e',
+  cursor_border = '#cba6f7',
 
   -- Selection
-  selection_bg = '#29263c',
+  selection_bg = '#45475a',
   selection_fg = 'none',
 
   -- Normal colors (ANSI 0-7)
   ansi = {
-    '#110f18',  -- black
-    '#ff6767',  -- red
-    '#61ffca',  -- green
-    '#ffca85',  -- yellow
-    '#a277ff',  -- blue
-    '#a277ff',  -- magenta
-    '#61ffca',  -- cyan
-    '#edecee',  -- white
+    '#45475a',  -- black (Surface1)
+    '#f38ba8',  -- red (Red)
+    '#a6e3a1',  -- green (Green)
+    '#f9e2af',  -- yellow (Yellow)
+    '#89b4fa',  -- blue (Blue)
+    '#cba6f7',  -- magenta (Mauve)
+    '#94e2d5',  -- cyan (Teal)
+    '#bac2de',  -- white (Subtext1)
   },
 
   -- Bright colors (ANSI 8-15)
   brights = {
-    '#4d4d4d',  -- bright black
-    '#ff6767',  -- bright red
-    '#61ffca',  -- bright green
-    '#ffca85',  -- bright yellow
-    '#a277ff',  -- bright blue
-    '#a277ff',  -- bright magenta
-    '#61ffca',  -- bright cyan
-    '#edecee',  -- bright white
+    '#585b70',  -- bright black (Surface2)
+    '#f38ba8',  -- bright red
+    '#a6e3a1',  -- bright green
+    '#f9e2af',  -- bright yellow
+    '#89b4fa',  -- bright blue
+    '#cba6f7',  -- bright magenta
+    '#94e2d5',  -- bright cyan
+    '#a6adc8',  -- bright white (Subtext0)
   },
 
-  -- Split separator color (increased contrast for better visibility)
-  split = '#3d3a4f',
+  -- Split separator color
+  split = '#585b70',
 
-  -- Tab bar colors
+  -- Tab bar colors (Catppuccin Mocha)
   tab_bar = {
-    background = '#15141b',
+    background = '#181825',
 
     active_tab = {
-      bg_color = '#29263c',
-      fg_color = '#edecee',
+      bg_color = '#313244',
+      fg_color = '#cdd6f4',
       intensity = 'Bold',
       underline = 'None',
       italic = false,
@@ -265,27 +280,34 @@ config.colors = {
     },
 
     inactive_tab = {
-      bg_color = '#15141b',
-      fg_color = '#6b6b6b',
+      bg_color = '#181825',
+      fg_color = '#6c7086',
       intensity = 'Normal',
     },
 
     inactive_tab_hover = {
-      bg_color = '#1f1d28',
-      fg_color = '#9b9b9b',
+      bg_color = '#313244',
+      fg_color = '#a6adc8',
       italic = false,
     },
 
     new_tab = {
-      bg_color = '#15141b',
-      fg_color = '#6b6b6b',
+      bg_color = '#181825',
+      fg_color = '#6c7086',
     },
 
     new_tab_hover = {
-      bg_color = '#1f1d28',
-      fg_color = '#9b9b9b',
+      bg_color = '#313244',
+      fg_color = '#a6adc8',
     },
   },
+}
+
+config.window_frame = {
+  font = wezterm.font({ family = 'JetBrains Mono', weight = 'Regular' }),
+  font_size = 13.0,
+  active_titlebar_bg = '#181825',
+  inactive_titlebar_bg = '#181825',
 }
 
 -- ===== Shell =====
@@ -437,6 +459,13 @@ config.keys = {
     key = 'Backspace',
     mods = 'OPT',
     action = wezterm.action.SendKey({ key = 'w', mods = 'CTRL' }),
+  },
+
+  -- Cmd+S: save (forward to neovim as Ctrl+S)
+  {
+    key = 's',
+    mods = 'CMD',
+    action = wezterm.action.SendKey({ key = 's', mods = 'CTRL' }),
   },
 
   -- Cmd+D: vertical split
@@ -724,8 +753,7 @@ wezterm.on('gui-startup', function(cmd)
 end)
 
 
-config.window_background_opacity = 0.7
+config.window_background_opacity = 1
 config.macos_window_background_blur = 70
-config.tab_title_show_basename_only = true
 config.window_decorations = 'INTEGRATED_BUTTONS|RESIZE|MACOS_FORCE_DISABLE_SHADOW'
 return config
