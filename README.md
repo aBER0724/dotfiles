@@ -11,8 +11,6 @@ Personal configuration files.
 | [nvim](/nvim) | Neovim (LazyVim) |
 | [fastfetch](/fastfetch) | System info |
 | [zsh](/zsh) | Zsh config (zshrc, zprofile, zshenv, p10k) |
-| [bash](/bash) | Bash config (bashrc, profile) |
-| [gem](/gem) | Ruby gem config |
 
 ## Theme
 
@@ -33,12 +31,6 @@ ln -sf ~/dotfiles/zsh/zprofile ~/.zprofile
 ln -sf ~/dotfiles/zsh/shinit ~/.shinit
 ln -sf ~/dotfiles/zsh/p10k.zsh ~/.p10k.zsh
 
-# Bash
-ln -sf ~/dotfiles/bash/bashrc ~/.bashrc
-ln -sf ~/dotfiles/bash/profile ~/.profile
-
-# Gem
-ln -sf ~/dotfiles/gem/gemrc ~/.gemrc
 
 # XDG configs
 ln -sf ~/dotfiles/nvim ~/.config/nvim
