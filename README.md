@@ -12,6 +12,7 @@ Personal configuration files.
 | [fastfetch](/fastfetch) | System info |
 | [zsh](/zsh) | Zsh config (zshrc, zprofile, zshenv, p10k) |
 | [pi-agent](/pi-agent) | pi coding agent (settings, models, extensions) |
+| [herdr](/herdr) | Terminal workspace manager (config, plugins) |
 
 ## Theme
 
@@ -42,4 +43,7 @@ ln -sf ~/dotfiles/fastfetch ~/.config/fastfetch
 ln -sf ~/dotfiles/pi-agent/settings.json ~/.pi/agent/settings.json
 ln -sf ~/dotfiles/pi-agent/models.json  ~/.pi/agent/models.json
 ln -sf ~/dotfiles/pi-agent/extensions ~/.pi/agent/extensions
+
+# Herdr (see herdr/README.md for plugin reinstall)
+ln -sf ~/dotfiles/herdr/config.toml ~/.config/herdr/config.toml
 ```

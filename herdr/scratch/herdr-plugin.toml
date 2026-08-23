@@ -1,0 +1,52 @@
+id                = "user.scratch"
+name              = "Scratch Shell"
+version           = "0.3.3"
+min_herdr_version = "0.8.0"
+description       = "A scratch shell popup that detaches instead of closing"
+platforms         = ["macos", "linux"]
+
+# Compiled at install time. herdr runs build commands during a GitHub
+# `plugin install`, after confirmation and before it registers the plugin, so a
+# failed build means nothing is registered rather than a half-working plugin.
+#
+# `herdr plugin link` does NOT run these — it leaves a local checkout alone — so
+# a linked checkout needs `go build -o bin/herdr-scratch .` run once by hand.
+[[build]]
+command = ["go", "build", "-o", "bin/herdr-scratch", "."]
+
+# A plugin pane rather than a `type = "popup"` keybinding, for two reasons. Only
+# a plugin pane carries a title, so the border reads "scratch" instead of the
+# literal "popup". And a popup keybinding can only ever *open* one, which is why
+# binding one to a chord never toggles.
+#
+# tmux, rather than something lighter, because the popup has to come back with
+# the contents it had. That needs a session manager which emulates a terminal
+# and keeps the screen; abduco and dtach only pipe bytes, so their reattach
+# delivers a bare prompt and the previous screen is gone for good.
+[[panes]]
+id        = "scratch"
+title     = "scratch"
+placement = "popup"
+width     = "70%"
+height    = "70%"
+#
+# Wrapped in sh, and absolute via $HERDR_PLUGIN_ROOT, because a *pane* command's
+# relative path is resolved against the herdr server's working directory rather
+# than the plugin's. An action's is resolved against the plugin — hence the two
+# spellings below.
+#
+# --dismiss is the chord that closes the popup, in tmux's key syntax. It has to
+# be the same chord that opens it — the binding from config.toml with your herdr
+# prefix spelled out — because a popup takes every keypress and tmux is the only
+# layer left that can answer one. The default matches herdr's own default prefix
+# and the binding the README suggests; a prefix of ctrl+a bound to ";" would make
+# this "C-a ;".
+command   = ["/bin/sh", "-c", "exec \"$HERDR_PLUGIN_ROOT/bin/herdr-scratch\" popup --dismiss \"C-b '\""]
+
+# The binding users are told to add. Naming an action rather than a path means
+# their config keeps working wherever herdr installed this plugin.
+[[actions]]
+id          = "toggle"
+title       = "Toggle scratch shell"
+description = "Open the scratch shell popup, or close the open one"
+command     = ["./bin/herdr-scratch", "toggle"]

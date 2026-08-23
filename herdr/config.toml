@@ -1,0 +1,104 @@
+onboarding = false
+
+[theme]
+name = "solarized"
+auto_switch = true
+
+[experimental]
+kitty_graphics = true
+
+[ui]
+status_indicators = "symbols"
+
+show_agent_labels_on_pane_borders = true
+[ui.toast]
+delivery = "terminal"
+
+# lazygit
+[[keys.command]]              # lazygit: open in a split
+key = "prefix+g"
+type = "plugin_action"
+command = "herdr-lazygit.open"
+
+[[keys.command]]              # lazygit: open in its own tab
+key = "prefix+shift+g"
+type = "plugin_action"
+command = "herdr-lazygit.open-tab"
+
+# scratch
+[[keys.command]]
+key         = "prefix+'"
+type        = "plugin_action"
+command     = "user.scratch.toggle"
+description = "scratch shell"
+
+# yazi
+[[keys.command]]              # open in a split pane
+key = "prefix+y"
+type = "plugin_action"
+command = "ray.file-explorer.open"
+description = "open file explorer"
+
+[[keys.command]]              # open in a new tab
+key = "prefix+Y"
+type = "plugin_action"
+command = "ray.file-explorer.open-tab"
+description = "open file explorer in a new tab"
+
+# herdr-mirror
+[[keys.command]]
+key = "prefix+shift+m"
+type = "plugin_action"
+command = "mirror.start"       # start / resume the daemon
+
+[[keys.command]]
+key = "prefix+shift+s"
+type = "plugin_action"
+command = "mirror.pause"       # freeze syncing; start again to resume
+
+[[keys.command]]
+key = "prefix+shift+b"         # "bring back" (shift+r is native reload_config)
+type = "plugin_action"
+command = "mirror.restore"     # un-close mirrors you closed locally
+
+[[keys.command]]
+key = "prefix+alt+d"           # destructive: closes ALL mirrors + clears state
+type = "plugin_action"
+command = "mirror.teardown"    # stop mirroring everything (start to resume)
+
+# Create objects on the REMOTE host, or locally when invoked outside a mirror.
+# Each is herdr's native local key + alt (Option): same muscle memory, remote
+# target.
+[[keys.command]]
+key = "prefix+alt+n"           # native new_workspace = prefix+shift+n
+type = "plugin_action"
+command = "mirror.remote-new-workspace"
+
+[[keys.command]]
+key = "prefix+alt+c"           # native new_tab = prefix+c
+type = "plugin_action"
+command = "mirror.remote-new-tab"
+
+[[keys.command]]
+key = "prefix+alt+v"           # native split_vertical = prefix+v
+type = "plugin_action"
+command = "mirror.remote-split-right"
+
+[[keys.command]]
+key = "prefix+alt+minus"       # native split_horizontal = prefix+minus
+type = "plugin_action"
+command = "mirror.remote-split-down"
+
+# plugin-manager
+[[keys.command]]
+key = "prefix+p"
+type = "plugin_action"
+command = "ray.plugin-manager.open"
+description = "open plugin manager"
+
+# navigator
+[[keys.command]]
+key = "prefix+t"
+type = "plugin_action"
+command = "herdr-navigator.open"
+description = "jump to anything"

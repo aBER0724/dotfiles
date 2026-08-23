@@ -1,0 +1,9 @@
+dave.token-dashboard|github|herdr plugin install Davidcreador/herdr-token-dashboard --ref 845061589bfef53df4312f67a1e7336e5e47cd8c
+herdr-lazygit|github|herdr plugin install crokily/herdr-lazygit --ref a13e12c99e5e469edd73165cabba413c2a2fd698
+herdr-navigator|github|herdr plugin install thanhdat77/herdr-navigator --ref v0.3.3
+herdr-plugin-renamer|github|herdr plugin install wenhanweime/herdr-plugin-renamer --ref 35fadca7713810c0c9488293376bdf157c341385
+jhochenbaum.hunkdiff|github|herdr plugin install jhochenbaum/herdr-hunk-diff --ref 81b85cea5484099acea93f2e9a08c2677eef461b
+mirror|github|herdr plugin install nikok6/herdr-mirror --ref f854367b88e79b2692adf9f15d12f9ba8b8b9a72
+ray.file-explorer|github|herdr plugin install speardragon/herdr-yazi --ref 54aa4e6dff480189630fa3593146cdcc2768ade9
+ray.plugin-manager|github|herdr plugin install speardragon/herdr-plugin-manager --ref 3b1f6e1be4ad811e39e4fecb24cd3a976b692241
+user.scratch|local|herdr plugin link <path>

@@ -26,3 +26,14 @@ kaku/zsh/plugins/fast-syntax-highlighting/.fast-*
 
 # local backups
 .backup-*/
+
+# herdr runtime artifacts (installed plugins live in ~/.config/herdr/plugins, rebuilt)
+.config/herdr/plugins/
+herdr-client.log
+herdr-server.log
+herdr.sock
+herdr-client.sock
+.plugins.lock
+session.json
+release-notes.json
+config.toml.hunkdiff-backup
