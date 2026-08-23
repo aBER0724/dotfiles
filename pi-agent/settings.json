@@ -1,5 +1,5 @@
 {
-  "defaultProvider": "aber-new-api",
+  "defaultProvider": "new-api",
   "defaultModel": "deepseek-v4-flash",
   "packages": [
     "npm:@juanibiapina/pi-extension-settings",

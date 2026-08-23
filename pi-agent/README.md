@@ -7,7 +7,7 @@
 | File | Purpose |
 |------|---------|
 | `settings.json` | Plugin list (`packages`), theme, default provider/model |
-| `models.json` | Custom provider definitions (e.g. `aber-new-api`) — no secrets |
+| `models.json` | Custom provider definitions (e.g. `new-api`) — no secrets |
 | `extensions/` | Custom extension configs (pi-autoresearch, pi-rtk-optimizer, herdr) |
 
 ## Why this works

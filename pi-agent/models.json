@@ -1,6 +1,6 @@
 {
   "providers": {
-    "aber-new-api": {
+    "new-api": {
       "baseUrl": "https://new-api.aberrrrrrr.space/v1",
       "api": "openai-completions",
       "authHeader": true,
