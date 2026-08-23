@@ -1,1 +1,28 @@
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Editors
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Shell/misc
+*.log
+core
+
+# kaku runtime artifacts (config dir uses its own .gitignore too)
+kaku/.alma-snapshots/
+sk-kaku
+kaku/assistant.toml
+kaku/state.json
+
+# fast-syntax-highlighting build caches
+kaku/zsh/plugins/fast-syntax-highlighting/.fast-*
+
+# local backups
+.backup-*/

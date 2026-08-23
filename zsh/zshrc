@@ -2,6 +2,22 @@ iterm2_prompt_mark() {
   # Do nothing
 }
 
+MAILCHECK=0
+
+# Terminal greeting — must be before p10k instant prompt to appear immediately
+() {
+  local hour=$(date +%H)
+  local greeting
+  if   (( hour >= 5  && hour < 12 )); then greeting="Good morning"
+  elif (( hour >= 12 && hour < 18 )); then greeting="Good afternoon"
+  elif (( hour >= 18 && hour < 22 )); then greeting="Good evening"
+  else                                     greeting="Burning midnight oil"
+  fi
+  print ""
+  print "  $greeting, $USER. $(date '+%A, %B %-d')"
+  print ""
+}
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
@@ -45,11 +61,13 @@ source ~/powerlevel10k/powerlevel10k.zsh-theme
 
 export PATH="/usr/local/opt/curl/bin:$PATH"
 
+alias v=nvim
+
 
 proxy_on() {
-    export https_proxy=socks5://127.0.0.1:9871 
-    export http_proxy=socks5://127.0.0.1:9871
-    export all_proxy=socks5://127.0.0.1:9871
+    export https_proxy=socks5://127.0.0.1:9870
+    export http_proxy=socks5://127.0.0.1:9870
+    export all_proxy=socks5://127.0.0.1:9870
 #    export https_proxy=http://127.0.0.1:54826
 #    export http_proxy=http://127.0.0.1:54826
 #    export all_proxy=socks5://127.0.0.1:54826
@@ -102,3 +120,21 @@ surge_activate() {
 
 [[ -f "$HOME/.config/kaku/zsh/kaku.zsh" ]] && source "$HOME/.config/kaku/zsh/kaku.zsh" # Kaku Shell Integration
 
+[[ ":$PATH:" != *":$HOME/.config/kaku/zsh/bin:"* ]] && export PATH="$HOME/.config/kaku/zsh/bin:$PATH" # Kaku PATH Integration
+
+
+pdf() {
+    open -a Skim "$@"
+}
+
+alias browser="terminal-browser"
+
+export MYX_CLIENT_ID=283ceaa1df6b4ca28553bca235e1ed6e
+
+# >>> otty shell integration >>>
+# Added by Otty — toggle in Settings > Shell > Shell Integration.
+# Inert unless launched by Otty (it sets $OTTY_SHELL_INTEGRATION).
+if [ -n "$OTTY_SHELL_INTEGRATION" ] && [ -r "$OTTY_SHELL_INTEGRATION/otty-integration.zsh" ]; then
+  . "$OTTY_SHELL_INTEGRATION/otty-integration.zsh"
+fi
+# <<< otty shell integration <<<

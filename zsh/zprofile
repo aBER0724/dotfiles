@@ -6,3 +6,7 @@ source ~/.orbstack/shell/init.zsh 2>/dev/null || :
 
 # Created by `pipx` on 2025-01-03 16:37:08
 export PATH="$PATH:/Users/aber/.local/bin"
+
+# >>> Codex installer >>>
+export PATH="/Users/aber/.local/bin:$PATH"
+# <<< Codex installer <<<
