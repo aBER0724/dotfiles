@@ -11,6 +11,7 @@ Personal configuration files.
 | [nvim](/nvim) | Neovim (LazyVim) |
 | [fastfetch](/fastfetch) | System info |
 | [zsh](/zsh) | Zsh config (zshrc, zprofile, zshenv, p10k) |
+| [pi-agent](/pi-agent) | pi coding agent (settings, models, extensions) |
 
 ## Theme
 
@@ -36,4 +37,9 @@ ln -sf ~/dotfiles/zsh/p10k.zsh ~/.p10k.zsh
 ln -sf ~/dotfiles/nvim ~/.config/nvim
 ln -sf ~/dotfiles/kaku ~/.config/kaku
 ln -sf ~/dotfiles/fastfetch ~/.config/fastfetch
+
+# Pi (see pi-agent/ for what NOT to sync)
+ln -sf ~/dotfiles/pi-agent/settings.json ~/.pi/agent/settings.json
+ln -sf ~/dotfiles/pi-agent/models.json  ~/.pi/agent/models.json
+ln -sf ~/dotfiles/pi-agent/extensions ~/.pi/agent/extensions
 ```
