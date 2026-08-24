@@ -1,90 +1,137 @@
 #!/bin/bash
 # dotfiles — manage symlinks between ~ and ~/dotfiles
 # Usage:
-#   dotfiles status   show link state for every synced entry
-#   dotfiles link     create missing links; backup+replace conflicting files
-#   dotfiles install  link + reinstall herdr plugins + pi bootstrap hint
+#   dotfiles list                     list every managed entry (name → target)
+#   dotfiles status [name...]         show link state (all, or only named)
+#   dotfiles link [name...]           create links; backup+replace conflicts
+#   dotfiles install [name...]        link (+ herdr plugins, pi hint for all)
 set -euo pipefail
 
 DOTFILES="${DOTFILES_DIR:-$HOME/dotfiles}"
 
-# Each entry: "<repo-relative-path>|<target>"
+# Each entry: "<name>|<repo-relative-path>|<target>"
+# `name` is what you pass to status/link/install to act on that one dotfile.
 LINK_TABLE=(
-  "aerospace/aerospace.toml|$HOME/.aerospace.toml"
-  "zsh/zshrc|$HOME/.zshrc"
-  "zsh/zshenv|$HOME/.zshenv"
-  "zsh/zprofile|$HOME/.zprofile"
-  "zsh/shinit|$HOME/.shinit"
-  "zsh/p10k.zsh|$HOME/.p10k.zsh"
-  "nvim|$HOME/.config/nvim"
-  "kaku|$HOME/.config/kaku"
-  "fastfetch|$HOME/.config/fastfetch"
-  "pi-agent/settings.json|$HOME/.pi/agent/settings.json"
-  "pi-agent/models.json|$HOME/.pi/agent/models.json"
-  "pi-agent/extensions|$HOME/.pi/agent/extensions"
-  "herdr/config.toml|$HOME/.config/herdr/config.toml"
+  "aerospace|aerospace/aerospace.toml|$HOME/.aerospace.toml"
+  "zshrc|zsh/zshrc|$HOME/.zshrc"
+  "zshenv|zsh/zshenv|$HOME/.zshenv"
+  "zprofile|zsh/zprofile|$HOME/.zprofile"
+  "shinit|zsh/shinit|$HOME/.shinit"
+  "p10k|zsh/p10k.zsh|$HOME/.p10k.zsh"
+  "nvim|nvim|$HOME/.config/nvim"
+  "kaku|kaku|$HOME/.config/kaku"
+  "fastfetch|fastfetch|$HOME/.config/fastfetch"
+  "pi-settings|pi-agent/settings.json|$HOME/.pi/agent/settings.json"
+  "pi-models|pi-agent/models.json|$HOME/.pi/agent/models.json"
+  "pi-extensions|pi-agent/extensions|$HOME/.pi/agent/extensions"
+  "herdr|herdr/config.toml|$HOME/.config/herdr/config.toml"
 )
 
 # Defaults used by the /login-free key setup (see README)
 PI_DEFAULT_PROVIDER="new-api"
 
-cmd_status() {
-  local src target state
-  printf "%-55s %-45s %s\n" "SOURCE" "TARGET" "STATE"
+select_entries() {
+  # "$*" joins args with spaces; empty when no names given (all entries).
+  # Plain-string iteration keeps this bash 3.2-safe (empty arrays + set -u
+  # are broken in old bash).
+  local wanted="$*" entry name w ok nl
+  nl=$'\n'
+  SELECTED=""
   for entry in "${LINK_TABLE[@]}"; do
-    src="${entry%%|*}"
-    target="${entry##*|}"
+    name="${entry%%|*}"
+    if [ -z "$wanted" ]; then
+      SELECTED="${SELECTED}${entry}$nl"
+    else
+      for w in $wanted; do
+        if [ "$w" = "$name" ]; then SELECTED="${SELECTED}${entry}$nl"; break; fi
+      done
+    fi
+  done
+  for w in $wanted; do
+    ok=0
+    for entry in "${LINK_TABLE[@]}"; do
+      [ "$w" = "${entry%%|*}" ] && { ok=1; break; }
+    done
+    if [ "$ok" = 0 ]; then echo "dotfiles: unknown entry '$w' (see 'dotfiles list')" >&2; fi
+  done
+}
+
+cmd_list() {
+  local name src target
+  printf "%-14s %-55s %s\n" "NAME" "SOURCE" "TARGET"
+  for entry in "${LINK_TABLE[@]}"; do
+    name="${entry%%|*}"
+    src="${entry#*|}"
+    target="${src#*|}"
+    src="${src%%|*}"
+    printf "%-14s %-55s %s\n" "$name" "$src" "$target"
+  done
+}
+
+cmd_status() {
+  local name src target state points oldifs
+  printf "%-14s %-50s %s\n" "NAME" "TARGET" "STATE"
+  oldifs="$IFS"; IFS=$'\n'
+  for entry in $SELECTED; do
+    IFS="$oldifs"
+    name="${entry%%|*}"
+    src="${entry#*|}"
+    target="${src#*|}"
+    src="${src%%|*}"
     if [ -L "$target" ]; then
-      local points
       points="$(readlink "$target" 2>/dev/null || true)"
       if [ "$points" = "$DOTFILES/$src" ]; then
         state="ok"
       else
         state="STALE → $points"
       fi
-      printf "%-55s %-45s %s\n" "$src" "$target" "$state"
+      printf "%-14s %-50s %s\n" "$name" "$target" "$state"
     elif [ -e "$target" ]; then
-      printf "%-55s %-45s %s\n" "$src" "$target" "CONFLICT (real file)"
+      printf "%-14s %-50s %s\n" "$name" "$target" "CONFLICT (real file)"
     else
-      printf "%-55s %-45s %s\n" "$src" "$target" "missing"
+      printf "%-14s %-50s %s\n" "$name" "$target" "missing"
     fi
   done
 }
 
 cmd_link() {
-  local src target backup_dir ts
+  local name src target backup_dir ts oldifs
   backup_dir="${DOTFILES_BACKUP_DIR:-$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)}"
   ts=0
-  for entry in "${LINK_TABLE[@]}"; do
-    src="${entry%%|*}"
-    target="${entry##*|}"
+  oldifs="$IFS"; IFS=$'\n'
+  for entry in $SELECTED; do
+    IFS="$oldifs"
+    name="${entry%%|*}"
+    src="${entry#*|}"
+    target="${src#*|}"
+    src="${src%%|*}"
     mkdir -p "$(dirname "$target")"
     if [ -L "$target" ]; then
-      # Already a link: make sure it points at the right place
       if [ "$(readlink "$target" 2>/dev/null || true)" = "$DOTFILES/$src" ]; then
-        echo "ok      $target"
+        echo "ok      $name ($target)"
       else
-        echo "repair  $target → $DOTFILES/$src"
+        echo "repair  $name → $DOTFILES/$src"
         ln -sfn "$DOTFILES/$src" "$target"
       fi
       continue
     fi
     if [ -e "$target" ]; then
-      # Real file/dir: back it up once per run, then link
       if [ "$ts" = 0 ]; then
         mkdir -p "$backup_dir"
         echo "backups → $backup_dir"
         ts=1
       fi
       mv "$target" "$backup_dir/"
-      echo "backup  $target"
+      echo "backup  $name ($target)"
     fi
     ln -sfn "$DOTFILES/$src" "$target"
-    echo "link    $target"
+    echo "link    $name ($target)"
   done
 }
 
 cmd_install() {
+  # If specific entries were named, only link those; herdr plugins + pi hint
+  # always run (they are whole-package installs, not single dotfiles).
   cmd_link
   echo
   echo "== herdr plugins =="
@@ -104,14 +151,18 @@ cmd_install() {
 }
 
 case "${1:-}" in
-  status) cmd_status ;;
-  link)   cmd_link ;;
-  install) cmd_install ;;
+  list)   cmd_list ;;
+  status) shift; select_entries "$@"; cmd_status ;;
+  link)   shift; select_entries "$@"; cmd_link ;;
+  install) shift; select_entries "$@"; cmd_install ;;
   *)
-    echo "Usage: dotfiles {status|link|install}"
-    echo "  status   show link state for every synced entry"
-    echo "  link     create missing links; backup+replace conflicting files"
-    echo "  install  link + herdr plugin reinstall + pi bootstrap hint"
+    echo "Usage: dotfiles {list|status|link|install} [name...]"
+    echo "  list                show every managed entry and its target"
+    echo "  status [name...]    show link state (all entries by default)"
+    echo "  link [name...]      create links; backup+replace conflicts"
+    echo "  install [name...]   link named entries (+ herdr plugins, pi hint)"
+    echo
+    echo "names: $(for e in "${LINK_TABLE[@]}"; do printf '%s ' "${e%%|*}"; done)"
     exit 1
     ;;
 esac
