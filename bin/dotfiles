@@ -1,0 +1,117 @@
+#!/bin/bash
+# dotfiles — manage symlinks between ~ and ~/dotfiles
+# Usage:
+#   dotfiles status   show link state for every synced entry
+#   dotfiles link     create missing links; backup+replace conflicting files
+#   dotfiles install  link + reinstall herdr plugins + pi bootstrap hint
+set -euo pipefail
+
+DOTFILES="${DOTFILES_DIR:-$HOME/dotfiles}"
+
+# Each entry: "<repo-relative-path>|<target>"
+LINK_TABLE=(
+  "aerospace/aerospace.toml|$HOME/.aerospace.toml"
+  "zsh/zshrc|$HOME/.zshrc"
+  "zsh/zshenv|$HOME/.zshenv"
+  "zsh/zprofile|$HOME/.zprofile"
+  "zsh/shinit|$HOME/.shinit"
+  "zsh/p10k.zsh|$HOME/.p10k.zsh"
+  "nvim|$HOME/.config/nvim"
+  "kaku|$HOME/.config/kaku"
+  "fastfetch|$HOME/.config/fastfetch"
+  "pi-agent/settings.json|$HOME/.pi/agent/settings.json"
+  "pi-agent/models.json|$HOME/.pi/agent/models.json"
+  "pi-agent/extensions|$HOME/.pi/agent/extensions"
+  "herdr/config.toml|$HOME/.config/herdr/config.toml"
+)
+
+# Defaults used by the /login-free key setup (see README)
+PI_DEFAULT_PROVIDER="new-api"
+
+cmd_status() {
+  local src target state
+  printf "%-55s %-45s %s\n" "SOURCE" "TARGET" "STATE"
+  for entry in "${LINK_TABLE[@]}"; do
+    src="${entry%%|*}"
+    target="${entry##*|}"
+    if [ -L "$target" ]; then
+      local points
+      points="$(readlink "$target" 2>/dev/null || true)"
+      if [ "$points" = "$DOTFILES/$src" ]; then
+        state="ok"
+      else
+        state="STALE → $points"
+      fi
+      printf "%-55s %-45s %s\n" "$src" "$target" "$state"
+    elif [ -e "$target" ]; then
+      printf "%-55s %-45s %s\n" "$src" "$target" "CONFLICT (real file)"
+    else
+      printf "%-55s %-45s %s\n" "$src" "$target" "missing"
+    fi
+  done
+}
+
+cmd_link() {
+  local src target backup_dir ts
+  backup_dir="${DOTFILES_BACKUP_DIR:-$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)}"
+  ts=0
+  for entry in "${LINK_TABLE[@]}"; do
+    src="${entry%%|*}"
+    target="${entry##*|}"
+    mkdir -p "$(dirname "$target")"
+    if [ -L "$target" ]; then
+      # Already a link: make sure it points at the right place
+      if [ "$(readlink "$target" 2>/dev/null || true)" = "$DOTFILES/$src" ]; then
+        echo "ok      $target"
+      else
+        echo "repair  $target → $DOTFILES/$src"
+        ln -sfn "$DOTFILES/$src" "$target"
+      fi
+      continue
+    fi
+    if [ -e "$target" ]; then
+      # Real file/dir: back it up once per run, then link
+      if [ "$ts" = 0 ]; then
+        mkdir -p "$backup_dir"
+        echo "backups → $backup_dir"
+        ts=1
+      fi
+      mv "$target" "$backup_dir/"
+      echo "backup  $target"
+    fi
+    ln -sfn "$DOTFILES/$src" "$target"
+    echo "link    $target"
+  done
+}
+
+cmd_install() {
+  cmd_link
+  echo
+  echo "== herdr plugins =="
+  if command -v herdr >/dev/null 2>&1; then
+    bash "$DOTFILES/herdr/install-plugins.sh"
+  else
+    echo "herdr not installed — skipped (brew install herdr)"
+  fi
+  echo
+  echo "== pi =="
+  if [ ! -f "$HOME/.pi/agent/auth.json" ]; then
+    echo "No pi API key yet. Create it (no login, providers are key-based):"
+    echo "  printf '{\"$PI_DEFAULT_PROVIDER\": \"sk-...\"}' > $HOME/.pi/agent/auth.json"
+    echo "or export the env var referenced in pi-agent/models.json"
+  fi
+  echo "Done. Start pi with: pi"
+}
+
+case "${1:-}" in
+  status) cmd_status ;;
+  link)   cmd_link ;;
+  install) cmd_install ;;
+  *)
+    echo "Usage: dotfiles {status|link|install}"
+    echo "  status   show link state for every synced entry"
+    echo "  link     create missing links; backup+replace conflicting files"
+    echo "  install  link + herdr plugin reinstall + pi bootstrap hint"
+    exit 1
+    ;;
+esac
