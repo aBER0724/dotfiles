@@ -27,7 +27,8 @@ ln -sf ~/dotfiles/bin/dotfiles ~/.local/bin/dotfiles
 
 dotfiles status    # show link state for every synced entry
 dotfiles link      # create missing links; backup+replace conflicting files
-dotfiles install   # link + reinstall herdr plugins + pi bootstrap hint
+dotfiles deps      # install zsh/herdr runtime deps (plugins, p10k, ...)
+dotfiles install   # link + install group deps + pi bootstrap hint
 ```
 
 ## pi

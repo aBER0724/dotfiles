@@ -152,37 +152,52 @@ cmd_link() {
   done
 }
 
+run_zsh_deps() {
+  echo "== zsh deps =="
+  if command -v git >/dev/null 2>&1; then
+    bash "$DOTFILES/zsh/install-deps.sh"
+  else
+    echo "git not installed — skipped (required to clone zsh plugins)"
+  fi
+}
+
+run_herdr_plugins() {
+  echo "== herdr plugins =="
+  if command -v herdr >/dev/null 2>&1; then
+    bash "$DOTFILES/herdr/install-plugins.sh"
+  else
+    echo "herdr not installed — skipped (brew install herdr)"
+  fi
+}
+
+cmd_deps() {
+  # Install runtime deps without touching links (already-linked machines).
+  run_zsh_deps
+  run_herdr_plugins
+  echo "Done."
+}
+
 cmd_install() {
   # herdr plugins are a whole-package install: only re-run them when the
   # user asked for the herdr entry/group (or nothing, i.e. everything).
   # `dotfiles install pi` or `install nvim` just links, no plugin churn.
-  local want_herdr=0 want_pi=0 w
+  local want_herdr=0 want_pi=0 want_zsh=0 w
   for w in $1; do
     case "$w" in
       herdr|herdr/*) want_herdr=1 ;;
       pi-settings|pi-models|pi-extensions) want_pi=1 ;;
+      zshrc|zshenv|zprofile|shinit|p10k) want_zsh=1 ;;
     esac
   done
-  if [ -z "$1" ]; then want_herdr=1; want_pi=1; fi
+  if [ -z "$1" ]; then want_herdr=1; want_pi=1; want_zsh=1; fi
 
   cmd_link
   echo
   if [ "$want_herdr" = 1 ]; then
-    echo "== herdr plugins =="
-    if command -v herdr >/dev/null 2>&1; then
-      bash "$DOTFILES/herdr/install-plugins.sh"
-    else
-      echo "herdr not installed — skipped (brew install herdr)"
-    fi
+    run_herdr_plugins
   fi
-  # Full installs: make sure interactive-shell deps are present on new machines.
-  if [ -z "$1" ]; then
-    echo "== zsh deps =="
-    if command -v git >/dev/null 2>&1; then
-      bash "$DOTFILES/zsh/install-deps.sh"
-    else
-      echo "git not installed — skipped (required to clone zsh plugins)"
-    fi
+  if [ "$want_zsh" = 1 ]; then
+    run_zsh_deps
   fi
   echo
   if [ "$want_pi" = 1 ]; then
@@ -205,12 +220,14 @@ case "${1:-}" in
   status) shift; select_entries "$@"; cmd_status ;;
   link)   shift; select_entries "$@"; cmd_link ;;
   install) shift; select_entries "$@"; cmd_install "$(expand_groups "$*")" ;;
+  deps)   cmd_deps ;;
   *)
-    echo "Usage: dotfiles {list|status|link|install} [name...]"
+    echo "Usage: dotfiles {list|status|link|install|deps} [name...]"
     echo "  list                show every managed entry and its target"
     echo "  status [name...]    show link state (all entries by default)"
     echo "  link [name...]      create links; backup+replace conflicts"
-    echo "  install [name...]   link named entries (+ herdr plugins when herdr/all)"
+    echo "  install [name...]   link named entries (+ its group's deps)"
+    echo "  deps                install zsh/herdr runtime deps (no linking)"
     echo
     echo "names: $(for e in "${LINK_TABLE[@]}"; do printf '%s ' "${e%%|*}"; done)"
     echo "groups: $(for g in "${GROUP_TABLE[@]}"; do printf '%s ' "${g%%|*}"; done)"
