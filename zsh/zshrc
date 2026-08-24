@@ -160,6 +160,10 @@ alias browser="terminal-browser"
 
 export MYX_CLIENT_ID=283ceaa1df6b4ca28553bca235e1ed6e
 
+# >>> deepseek-harness dsh >>>
+export PATH="$HOME/.local/bin:$PATH"
+# <<< deepseek-harness dsh <<<
+
 # >>> otty shell integration >>>
 # Added by Otty — toggle in Settings > Shell > Shell Integration.
 # Inert unless launched by Otty (it sets $OTTY_SHELL_INTEGRATION).
@@ -167,6 +171,3 @@ if [ -n "$OTTY_SHELL_INTEGRATION" ] && [ -r "$OTTY_SHELL_INTEGRATION/otty-integr
   . "$OTTY_SHELL_INTEGRATION/otty-integration.zsh"
 fi
 # <<< otty shell integration <<<
-# >>> deepseek-harness dsh >>>
-export PATH="$HOME/.local/bin:$PATH"
-# <<< deepseek-harness dsh <<<
