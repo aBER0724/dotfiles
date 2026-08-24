@@ -16,12 +16,29 @@ if [ ! -f "$PLUGINS" ]; then
   exit 1
 fi
 
+# Some GitHub plugins have a build step (Go/Rust/...). Warn up front so a
+# missing toolchain fails clearly instead of as a confusing per-plugin error.
+if ! command -v go >/dev/null 2>&1; then
+  echo "warning: 'go' not found — plugins with a Go build step will fail."
+  echo "         install it first, e.g. 'brew install go' / 'apt install golang-go'"
+fi
+if ! command -v tmux >/dev/null 2>&1; then
+  echo "warning: 'tmux' not found — herdr requires tmux to keep sessions alive."
+  echo "         install it first, e.g. 'brew install tmux' / 'apt install tmux'"
+fi
+
+FAILED=""
 echo "== Installing GitHub plugins =="
 while IFS='|' read -r id kind cmd; do
   if [ "$kind" = "github" ]; then
-    echo "  $id ..."
+    printf '  %s ... ' "$id"
     # eval is intentional: cmd carries `--ref` args from the inventory.
-    eval "$cmd -y"
+    if eval "$cmd -y" >/dev/null 2>&1; then
+      echo "ok"
+    else
+      echo "FAILED"
+      FAILED="$FAILED $id"
+    fi
   else
     echo "  $id (local, linked via scratch)"
   fi
@@ -32,6 +49,14 @@ if [ -d "$SCRATCH" ]; then
   mkdir -p ~/.local/share
   ln -sfn "$SCRATCH" ~/.local/share/herdr-scratch
   herdr plugin link ~/.local/share/herdr-scratch
+fi
+
+if [ -n "$FAILED" ]; then
+  echo
+  echo "WARNING: failed to install:$FAILED"
+  echo "  Most likely missing build deps (go, rust, ...). Fix and re-run:"
+  echo "  bash ~/dotfiles/herdr/install-plugins.sh"
+  exit 1
 fi
 
 echo "done"

@@ -27,6 +27,28 @@ LINK_TABLE=(
   "herdr|herdr/config.toml|$HOME/.config/herdr/config.toml"
 )
 
+# Group aliases: "<alias>|<space-separated names>". Passing the alias to
+# status/link/install expands to all members, e.g. `dotfiles link pi`.
+GROUP_TABLE=(
+  "pi|pi-settings pi-models pi-extensions"
+  "zsh|zshrc zshenv zprofile shinit p10k"
+  "herdr|herdr"
+)
+
+# Expand aliases in "$*" to concrete names (set -u + empty string is fine here).
+expand_groups() {
+  local w a members out
+  out=""
+  for w in $1; do
+    members=""
+    for a in "${GROUP_TABLE[@]}"; do
+      if [ "${a%%|*}" = "$w" ]; then members="${a#*|}"; break; fi
+    done
+    if [ -n "$members" ]; then out="$out $members"; else out="$out $w"; fi
+  done
+  echo "$out"
+}
+
 # Defaults used by the /login-free key setup (see README)
 PI_DEFAULT_PROVIDER="new-api"
 
@@ -35,6 +57,7 @@ select_entries() {
   # Plain-string iteration keeps this bash 3.2-safe (empty arrays + set -u
   # are broken in old bash).
   local wanted="$*" entry name w ok nl
+  wanted="$(expand_groups "$wanted")"
   nl=$'\n'
   SELECTED=""
   for entry in "${LINK_TABLE[@]}"; do
@@ -130,15 +153,24 @@ cmd_link() {
 }
 
 cmd_install() {
-  # If specific entries were named, only link those; herdr plugins + pi hint
-  # always run (they are whole-package installs, not single dotfiles).
+  # herdr plugins are a whole-package install: only re-run them when the
+  # user asked for the herdr entry/group (or nothing, i.e. everything).
+  # `dotfiles install pi` or `install nvim` just links, no plugin churn.
+  local want_herdr=0 w
+  for w in $1; do
+    if [ "$w" = "herdr" ]; then want_herdr=1; fi
+  done
+  if [ -z "$1" ]; then want_herdr=1; fi
+
   cmd_link
   echo
-  echo "== herdr plugins =="
-  if command -v herdr >/dev/null 2>&1; then
-    bash "$DOTFILES/herdr/install-plugins.sh"
-  else
-    echo "herdr not installed — skipped (brew install herdr)"
+  if [ "$want_herdr" = 1 ]; then
+    echo "== herdr plugins =="
+    if command -v herdr >/dev/null 2>&1; then
+      bash "$DOTFILES/herdr/install-plugins.sh"
+    else
+      echo "herdr not installed — skipped (brew install herdr)"
+    fi
   fi
   echo
   echo "== pi =="
@@ -154,15 +186,16 @@ case "${1:-}" in
   list)   cmd_list ;;
   status) shift; select_entries "$@"; cmd_status ;;
   link)   shift; select_entries "$@"; cmd_link ;;
-  install) shift; select_entries "$@"; cmd_install ;;
+  install) shift; select_entries "$@"; cmd_install "$(expand_groups "$*")" ;;
   *)
     echo "Usage: dotfiles {list|status|link|install} [name...]"
     echo "  list                show every managed entry and its target"
     echo "  status [name...]    show link state (all entries by default)"
     echo "  link [name...]      create links; backup+replace conflicts"
-    echo "  install [name...]   link named entries (+ herdr plugins, pi hint)"
+    echo "  install [name...]   link named entries (+ herdr plugins when herdr/all)"
     echo
     echo "names: $(for e in "${LINK_TABLE[@]}"; do printf '%s ' "${e%%|*}"; done)"
+    echo "groups: $(for g in "${GROUP_TABLE[@]}"; do printf '%s ' "${g%%|*}"; done)"
     exit 1
     ;;
 esac

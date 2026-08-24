@@ -47,4 +47,4 @@ Config in `~/.config/herdr/`, synced from [herdr/](herdr/README.md).
 - **Not synced**: installed plugins, logs, session state
 - **Plugins**: installed by source in `plugins.txt`; on a new device one command installs them all:
 
-  `brew install herdr` + `brew install macintacos/tap/herdr-scratch`(scratch 插件的二进制;Linux 同样支持 brew,或 `curl -fsSL https://herdr.dev/install.sh | sh`),然后 `dotfiles install` 会链接配置并重装所有插件
+  `brew install herdr` + `brew install macintacos/tap/herdr-scratch`(scratch 插件的二进制;Linux 同样支持 brew,或 `curl -fsSL https://herdr.dev/install.sh | sh`),然后 `dotfiles install` 会链接配置并重装所有插件。插件带构建步骤的需要工具链(如 go),装好再跑 `bash ~/dotfiles/herdr/install-plugins.sh`
