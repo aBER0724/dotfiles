@@ -175,6 +175,15 @@ cmd_install() {
       echo "herdr not installed — skipped (brew install herdr)"
     fi
   fi
+  # Full installs: make sure interactive-shell deps are present on new machines.
+  if [ -z "$1" ]; then
+    echo "== zsh deps =="
+    if command -v git >/dev/null 2>&1; then
+      bash "$DOTFILES/zsh/install-deps.sh"
+    else
+      echo "git not installed — skipped (required to clone zsh plugins)"
+    fi
+  fi
   echo
   if [ "$want_pi" = 1 ]; then
     echo "== pi =="
