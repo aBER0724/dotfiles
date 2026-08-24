@@ -184,7 +184,11 @@ cmd_install() {
       echo "or export the env var referenced in pi-agent/models.json"
     fi
   fi
-  echo "Done. Start pi with: pi"
+  if [ "$want_pi" = 1 ]; then
+    echo "Done. Start pi with: pi"
+  else
+    echo "Done."
+  fi
 }
 
 case "${1:-}" in
