@@ -94,7 +94,7 @@ ensure_theme() {
 
 	if [[ ! -f "$YAZI_THEME_FILE" ]]; then
 		cat <<BLOCK >"$YAZI_THEME_FILE"
-"\$schema" = "https://yazi-rs.github.io/schemas/theme.json"
+#:schema https://yazi-rs.github.io/schemas/theme.json
 
 # Kaku manages the [flavor] section below so Yazi matches the current Kaku theme.
 $(managed_block "$flavor")
@@ -114,6 +114,10 @@ BLOCK
 		!skip { print }
 	' "$YAZI_THEME_FILE" >"$tmp_theme"
 
+	# Drop trailing blank lines so the managed block doesn't drift down each run.
+	awk 'NF { for (i = 0; i < blank; i++) print ""; blank = 0; print; next } { blank++ }' \
+		"$tmp_theme" >"${tmp_theme}.trim" && mv "${tmp_theme}.trim" "$tmp_theme"
+
 	{
 		cat "$tmp_theme"
 		printf '\n'
@@ -125,15 +129,29 @@ BLOCK
 	rm -f "$tmp_theme"
 }
 
-resolve_real_yazi() {
-	local candidate
-	for candidate in /opt/homebrew/bin/yazi /usr/local/bin/yazi; do
-		if [[ -x "$candidate" && "$candidate" != "$WRAPPER_PATH" ]]; then
-			printf '%s\n' "$candidate"
-			return 0
+# yazi >= 26.5.6 rejects a `$schema` key in its config files; older Kaku
+# versions wrote one, so rewrite it to the supported `#:schema` comment.
+migrate_schema_headers() {
+	local file tmp_file
+	for file in "$YAZI_THEME_FILE" "${HOME}/.config/yazi/keymap.toml"; do
+		[[ -f "$file" && -w "$file" ]] || continue
+		grep -Eq '^[[:space:]]*"?\$schema"?[[:space:]]*=' "$file" || continue
+		tmp_file="$(mktemp "${TMPDIR:-/tmp}/kaku-yazi-schema.XXXXXX")" || continue
+		if sed -E \
+			-e 's|^[[:space:]]*"?\$schema"?[[:space:]]*=[[:space:]]*"([^"]+)".*$|#:schema \1|' \
+			-e '/^[[:space:]]*"?\$schema"?[[:space:]]*=/d' \
+			"$file" >"$tmp_file"; then
+			mv "$tmp_file" "$file"
+		else
+			rm -f "$tmp_file"
 		fi
 	done
+}
 
+resolve_real_yazi() {
+	local candidate
+
+	# Check PATH first so any package manager (MacPorts, Nix, etc.) is found
 	local path_entry
 	IFS=':' read -r -a path_entries <<< "${PATH:-}"
 	for path_entry in "${path_entries[@]}"; do
@@ -145,11 +163,21 @@ resolve_real_yazi() {
 		fi
 	done
 
+	# Fallback to well-known install locations for GUI-launched shells
+	# where PATH may be minimal
+	for candidate in /opt/homebrew/bin/yazi /usr/local/bin/yazi /opt/local/bin/yazi; do
+		if [[ -x "$candidate" && "$candidate" != "$WRAPPER_PATH" ]]; then
+			printf '%s\n' "$candidate"
+			return 0
+		fi
+	done
+
 	return 1
 }
 
 main() {
 	local flavor real_bin
+	migrate_schema_headers
 	flavor="$(current_flavor)"
 	ensure_theme "$flavor"
 

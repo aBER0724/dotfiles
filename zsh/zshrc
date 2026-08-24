@@ -138,3 +138,6 @@ if [ -n "$OTTY_SHELL_INTEGRATION" ] && [ -r "$OTTY_SHELL_INTEGRATION/otty-integr
   . "$OTTY_SHELL_INTEGRATION/otty-integration.zsh"
 fi
 # <<< otty shell integration <<<
+# >>> deepseek-harness dsh >>>
+export PATH="$HOME/.local/bin:$PATH"
+# <<< deepseek-harness dsh <<<

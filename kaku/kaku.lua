@@ -2,10 +2,24 @@
 
 local wezterm = require 'wezterm'
 
-local config = {}
+local function resolve_bundled_config()
+  local resource_dir = wezterm.executable_dir:gsub('MacOS/?$', 'Resources')
+  local bundled = resource_dir .. '/kaku.lua'
+  local f = io.open(bundled, 'r')
+  if f then
+    f:close()
+    return bundled
+  end
+  return '/Applications/Kaku.app/Contents/Resources/kaku.lua'
+end
 
-if wezterm.config_builder then
-  config = wezterm.config_builder()
+local config = {}
+local bundled = resolve_bundled_config()
+if bundled then
+  local ok, loaded = pcall(dofile, bundled)
+  if ok and type(loaded) == 'table' then
+    config = loaded
+  end
 end
 
 
@@ -104,20 +118,7 @@ wezterm.on('format-tab-title', function(tab, tabs, hover, max_width, _, _)
 
   local tab_idx = tab.tab_index + 1
 
-  if tab.is_active then
-    return wezterm.format({
-      { Background = { Color = '#313244' } },
-      { Foreground = { Color = '#cba6f7' } },
-      { Text = ' ' .. tostring(tab_idx) .. ' ' },
-      { Foreground = { Color = '#cdd6f4' } },
-      { Text = text .. ' ' },
-    })
-  else
-    return wezterm.format({
-      { Foreground = { Color = '#6c7086' } },
-      { Text = ' ' .. tostring(tab_idx) .. ' ' .. text .. ' ' },
-    })
-  end
+  return ' ' .. tostring(tab_idx) .. ' ' .. text .. ' '
 end)
 
 wezterm.on('update-right-status', function(window)
@@ -144,42 +145,33 @@ wezterm.on('update-right-status', function(window)
 
   local time_text = wezterm.strftime('%H:%M')
 
-  window:set_right_status(wezterm.format({
-    { Foreground = { Color = '#cba6f7' } },
-    { Text = ' ' .. cpu_icon .. ' ' .. cpu_pct .. '% ' },
-    { Foreground = { Color = '#585b70' } },
-    { Text = '│' },
-    { Foreground = { Color = '#94e2d5' } },
-    { Text = ' ' .. mem_icon .. ' ' .. mem_pct .. '% ' },
-    { Foreground = { Color = '#585b70' } },
-    { Text = '│' },
-    { Foreground = { Color = '#6c7086' } },
-    { Text = ' ' .. clock_icon .. ' ' .. time_text .. ' ' },
-  }))
+  window:set_right_status(
+    ' ' .. cpu_icon .. ' ' .. cpu_pct .. '% '
+      .. '│'
+      .. ' ' .. mem_icon .. ' ' .. mem_pct .. '% '
+      .. '│'
+      .. ' ' .. clock_icon .. ' ' .. time_text .. ' '
+  )
 end)
 
 -- ===== Font =====
-config.font = wezterm.font_with_fallback({
-  { family = 'JetBrains Mono', weight = 'Regular' },
-  { family = 'PingFang SC', weight = 'Regular' },
-  { family = 'Apple Color Emoji', assume_emoji_presentation = true },
-})
+config.font = wezterm.font('IoskeleyMonoTerm Nerd Font')
 
 config.font_rules = {
   {
     intensity = 'Normal',
     italic = true,
     font = wezterm.font_with_fallback({
-      { family = 'JetBrains Mono', weight = 'Regular', italic = false },
+      { family = 'JetBrainsMono Nerd Font', weight = 'Regular', italic = true },
       { family = 'PingFang SC', weight = 'Regular' },
     }),
   },
 }
 
 config.bold_brightens_ansi_colors = false
-config.font_size = 16.0
+config.font_size = 15
 config.cell_width = 1.02
-config.harfbuzz_features = { 'calt=0', 'clig=0', 'liga=0' }
+config.harfbuzz_features = { 'calt=1', 'clig=1', 'liga=1' }
 config.use_cap_height_to_scale_fallback_fonts = false
 
 config.freetype_load_target = 'Normal'
@@ -223,92 +215,6 @@ config.tab_max_width = 32
 config.hide_tab_bar_if_only_one_tab = false
 config.show_tab_index_in_tab_bar = true
 config.show_new_tab_button_in_tab_bar = false
-
--- ===== Color scheme for tabs =====
-config.colors = {
-  -- Background
-  foreground = '#cdd6f4',
-  background = '#1e1e2e',
-
-  -- Cursor
-  cursor_bg = '#cba6f7',
-  cursor_fg = '#1e1e2e',
-  cursor_border = '#cba6f7',
-
-  -- Selection
-  selection_bg = '#45475a',
-  selection_fg = 'none',
-
-  -- Normal colors (ANSI 0-7)
-  ansi = {
-    '#45475a',  -- black (Surface1)
-    '#f38ba8',  -- red (Red)
-    '#a6e3a1',  -- green (Green)
-    '#f9e2af',  -- yellow (Yellow)
-    '#89b4fa',  -- blue (Blue)
-    '#cba6f7',  -- magenta (Mauve)
-    '#94e2d5',  -- cyan (Teal)
-    '#bac2de',  -- white (Subtext1)
-  },
-
-  -- Bright colors (ANSI 8-15)
-  brights = {
-    '#585b70',  -- bright black (Surface2)
-    '#f38ba8',  -- bright red
-    '#a6e3a1',  -- bright green
-    '#f9e2af',  -- bright yellow
-    '#89b4fa',  -- bright blue
-    '#cba6f7',  -- bright magenta
-    '#94e2d5',  -- bright cyan
-    '#a6adc8',  -- bright white (Subtext0)
-  },
-
-  -- Split separator color
-  split = '#585b70',
-
-  -- Tab bar colors (Catppuccin Mocha)
-  tab_bar = {
-    background = '#181825',
-
-    active_tab = {
-      bg_color = '#313244',
-      fg_color = '#cdd6f4',
-      intensity = 'Bold',
-      underline = 'None',
-      italic = false,
-      strikethrough = false,
-    },
-
-    inactive_tab = {
-      bg_color = '#181825',
-      fg_color = '#6c7086',
-      intensity = 'Normal',
-    },
-
-    inactive_tab_hover = {
-      bg_color = '#313244',
-      fg_color = '#a6adc8',
-      italic = false,
-    },
-
-    new_tab = {
-      bg_color = '#181825',
-      fg_color = '#6c7086',
-    },
-
-    new_tab_hover = {
-      bg_color = '#313244',
-      fg_color = '#a6adc8',
-    },
-  },
-}
-
-config.window_frame = {
-  font = wezterm.font({ family = 'JetBrains Mono', weight = 'Regular' }),
-  font_size = 13.0,
-  active_titlebar_bg = '#181825',
-  inactive_titlebar_bg = '#181825',
-}
 
 -- ===== Shell =====
 config.default_prog = { '/bin/zsh', '-l' }
@@ -753,7 +659,10 @@ wezterm.on('gui-startup', function(cmd)
 end)
 
 
-config.window_background_opacity = 1
-config.macos_window_background_blur = 70
+config.window_background_opacity = 0.8
+config.macos_window_background_blur = 80
 config.window_decorations = 'INTEGRATED_BUTTONS|RESIZE|MACOS_FORCE_DISABLE_SHADOW'
+config.tab_title_show_basename_only = true
+config.enable_scroll_bar = false
+config.color_scheme = (wezterm.gui and wezterm.gui.get_appearance() or 'Dark'):find('Dark') and 'Kaku Dark' or 'Kaku Light'
 return config

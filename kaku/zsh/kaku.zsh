@@ -6,10 +6,58 @@ export KAKU_ZSH_DIR="$HOME/.config/kaku/zsh"
 # Add Kaku managed bin to PATH (kaku wrapper and user tools)
 export PATH="$KAKU_ZSH_DIR/bin:$PATH"
 
-# Initialize Starship (Cross-shell prompt)
-# Use system installation managed by Homebrew (or user PATH).
-if command -v starship &> /dev/null; then
-    eval "$(starship init zsh)"
+# Initialize Starship only inside Kaku. The managed file is sourced by every
+# zsh so PATH and shared helpers remain available in IDE and system terminals.
+if [[ "${TERM_PROGRAM:-}" == "Kaku" ]] && command -v starship &> /dev/null; then
+    # Cache the full starship init script. Plain `starship init zsh` forks
+    # starship on every new shell (twice: the stub it prints re-runs
+    # `starship init zsh --print-full-init`), and that fork+exec is the
+    # largest fixed cost of shell startup. The cache key (binary path +
+    # mtime) is recorded on the first line, so upgrading or relocating
+    # starship refreshes the cache automatically.
+    _kaku_starship_init_ok=0
+    _kaku_starship_cache="$KAKU_ZSH_DIR/cache/starship-init.zsh"
+    _kaku_starship_key=""
+    if zmodload -F zsh/stat b:zstat 2>/dev/null; then
+        typeset -a _kaku_starship_stat
+        if zstat -A _kaku_starship_stat +mtime -- "${commands[starship]}" 2>/dev/null; then
+            _kaku_starship_key="# ${commands[starship]} ${_kaku_starship_stat[1]}"
+        fi
+        unset _kaku_starship_stat
+    fi
+    if [[ -n "$_kaku_starship_key" && -r "$_kaku_starship_cache" ]]; then
+        _kaku_starship_cache_key=""
+        IFS= read -r _kaku_starship_cache_key < "$_kaku_starship_cache" 2>/dev/null
+        if [[ "$_kaku_starship_cache_key" == "$_kaku_starship_key" ]]; then
+            builtin source "$_kaku_starship_cache"
+            _kaku_starship_init_ok=1
+        fi
+        unset _kaku_starship_cache_key
+    fi
+    if (( ! _kaku_starship_init_ok )); then
+        _kaku_starship_init="$(starship init zsh --print-full-init)"
+        if [[ -n "$_kaku_starship_init" ]]; then
+            eval "$_kaku_starship_init"
+            if [[ -n "$_kaku_starship_key" ]]; then
+                # Write via a per-pid temp file and rename so two shells
+                # starting concurrently can't interleave into a truncated
+                # cache that later shells would keep sourcing.
+                command mkdir -p "${_kaku_starship_cache:h}" 2>/dev/null
+                if {
+                    builtin print -r -- "$_kaku_starship_key"
+                    builtin print -r -- "$_kaku_starship_init"
+                } >| "${_kaku_starship_cache}.$$" 2>/dev/null; then
+                    command mv -f "${_kaku_starship_cache}.$$" "$_kaku_starship_cache" 2>/dev/null                         || command rm -f "${_kaku_starship_cache}.$$" 2>/dev/null
+                fi
+            fi
+        else
+            # Fall back to the stock two-stage init if --print-full-init
+            # unexpectedly produced nothing.
+            eval "$(starship init zsh)"
+        fi
+        unset _kaku_starship_init
+    fi
+    unset _kaku_starship_init_ok _kaku_starship_cache _kaku_starship_key
 
     # Kaku workaround: Fix Zsh + Starship bug where Ctrl-C prints the literal RPROMPT string.
     # When Zsh receives SIGINT during prompt evaluation, it aborts the command
@@ -79,19 +127,24 @@ bindkey -e
 
 # Prefix history search on Up/Down (e.g. type "curl" then press Up)
 # This is shell behavior, not terminal behavior, so Kaku configures it here.
-autoload -U up-line-or-beginning-search down-line-or-beginning-search
-zle -N up-line-or-beginning-search
-zle -N down-line-or-beginning-search
-zmodload zsh/terminfo 2>/dev/null || true
-for _kaku_keymap in emacs viins; do
-    [[ -n "${terminfo[kcuu1]:-}" ]] && bindkey -M "$_kaku_keymap" "${terminfo[kcuu1]}" up-line-or-beginning-search
-    [[ -n "${terminfo[kcud1]:-}" ]] && bindkey -M "$_kaku_keymap" "${terminfo[kcud1]}" down-line-or-beginning-search
-    bindkey -M "$_kaku_keymap" '^[[A' up-line-or-beginning-search
-    bindkey -M "$_kaku_keymap" '^[[B' down-line-or-beginning-search
-    bindkey -M "$_kaku_keymap" '^[OA' up-line-or-beginning-search
-    bindkey -M "$_kaku_keymap" '^[OB' down-line-or-beginning-search
-done
-unset _kaku_keymap
+# Skip if an external history navigator (atuin, mcfly, etc.) already owns the
+# Up key. After "bindkey -e" the emacs default for ^[[A is "up-line-or-history";
+# any other value means a third-party tool has already claimed it.
+if [[ "$(bindkey -M emacs '^[[A' 2>/dev/null)" == *"up-line-or-history"* ]]; then
+    autoload -U up-line-or-beginning-search down-line-or-beginning-search
+    zle -N up-line-or-beginning-search
+    zle -N down-line-or-beginning-search
+    zmodload zsh/terminfo 2>/dev/null || true
+    for _kaku_keymap in emacs viins; do
+        [[ -n "${terminfo[kcuu1]:-}" ]] && bindkey -M "$_kaku_keymap" "${terminfo[kcuu1]}" up-line-or-beginning-search
+        [[ -n "${terminfo[kcud1]:-}" ]] && bindkey -M "$_kaku_keymap" "${terminfo[kcud1]}" down-line-or-beginning-search
+        bindkey -M "$_kaku_keymap" '^[[A' up-line-or-beginning-search
+        bindkey -M "$_kaku_keymap" '^[[B' down-line-or-beginning-search
+        bindkey -M "$_kaku_keymap" '^[OA' up-line-or-beginning-search
+        bindkey -M "$_kaku_keymap" '^[OB' down-line-or-beginning-search
+    done
+    unset _kaku_keymap
+fi
 
 # Kaku line-selection widgets for modified arrows in prompt editing.
 _kaku_select_left_char() {
@@ -248,6 +301,10 @@ bindkey '^E' _kaku_mv_end_of_line
 bindkey '^?' backward-delete-char
 bindkey '^H' backward-delete-char
 bindkey '^[[3~' delete-char
+# Cmd+Backspace sends ^U via the default Kaku key binding. zsh emacs mode
+# defaults ^U to kill-whole-line, which also deletes text after the cursor;
+# backward-kill-line matches macOS/readline delete-to-line-start behavior.
+bindkey '^U' backward-kill-line
 bindkey '^G' send-break
 
 # Directory Navigation Options
@@ -296,7 +353,7 @@ alias glo='git log --oneline --decorate'
 alias glg='git log --stat'
 alias glgp='git log --stat -p'
 
-# yazi launcher — cd into the directory yazi is in when you exit.
+# yazi launcher - cd into the directory yazi is in when you exit.
 'y'() {
     emulate -L zsh
     setopt local_options no_sh_word_split
@@ -318,6 +375,23 @@ alias glgp='git log --stat -p'
         builtin cd -- "$cwd"
     fi
     rm -f -- "$tmp"
+}
+
+# k - AI chat CLI bundled with Kaku.
+'k'() {
+    emulate -L zsh
+    local k_cmd
+    for _candidate in         "${KAKU_ZSH_DIR:+$KAKU_ZSH_DIR/../../MacOS/k}"         "$HOME/Applications/Kaku.app/Contents/MacOS/k"         "/Applications/Kaku.app/Contents/MacOS/k"; do
+        if [[ -x "$_candidate" ]]; then
+            k_cmd="$_candidate"
+            break
+        fi
+    done
+    if [[ -z "$k_cmd" ]]; then
+        echo "k: Kaku app not found. Install Kaku from https://github.com/tw93/Kaku"
+        return 127
+    fi
+    "$k_cmd" "$@"
 }
 
 # Load Plugins (Performance Optimized)
@@ -342,14 +416,19 @@ if ! (( ${+functions[_main_complete]} )) || ! (( ${+_comps} )); then
     fi
 fi
 
+_kaku_has_jump_provider() {
+    (( ${+functions[z]} ))         || (( ${+functions[zshz]} ))         || (( ${+functions[__zoxide_z]} ))         || (( ${+functions[_zoxide_z]} ))
+}
+
 # Load zsh-z (smart directory jumping) if not already provided by user config.
-if [[ -f "$KAKU_ZSH_DIR/plugins/zsh-z/zsh-z.plugin.zsh" ]] && ! (( ${+functions[zshz]} )); then
+if [[ -f "$KAKU_ZSH_DIR/plugins/zsh-z/zsh-z.plugin.zsh" ]] && ! _kaku_has_jump_provider; then
     # Default to smart case matching so `z kaku` prefers `Kaku` over lowercase
     # path entries. Users can still override this in their own shell config.
     : "${ZSHZ_CASE:=smart}"
     export ZSHZ_CASE
     source "$KAKU_ZSH_DIR/plugins/zsh-z/zsh-z.plugin.zsh"
 fi
+unset -f _kaku_has_jump_provider 2>/dev/null
 
 # cd + Tab falls back to zsh-z frecency history when filesystem completion
 # has no match. Delegate ranking to zshz --complete so behavior stays aligned
@@ -404,24 +483,42 @@ _kaku_has_autosuggest_system() {
     return 1
 }
 
+typeset -g _kaku_autosuggest_cli_provider=""
+typeset -g _kaku_external_autosuggest_provider=0
+
+if _kaku_has_autosuggest_system; then
+    _kaku_external_autosuggest_provider=1
+fi
+
 # Load zsh-autosuggestions only if:
 # 1. User config has not loaded it yet (_zsh_autosuggest_start not defined)
 # 2. No other autosuggest system is active (to avoid widget wrapping conflicts)
-if ! (( ${+functions[_zsh_autosuggest_start]} )) && ! _kaku_has_autosuggest_system && [[ -f "$KAKU_ZSH_DIR/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
+if ! (( ${+functions[_zsh_autosuggest_start]} )) && [[ "${_kaku_external_autosuggest_provider:-0}" != "1" ]] && [[ -f "$KAKU_ZSH_DIR/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
     source "$KAKU_ZSH_DIR/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
 fi
 unset -f _kaku_has_autosuggest_system 2>/dev/null
 
 # Smart Tab behavior:
 # - Use completion while typing arguments/path-like tokens
-# - Accept inline suggestion first only for the first command token
+# - When Kaku sets KAKU_TAB_ACCEPT_SUGGEST_FIRST=1, accept a visible
+#   autosuggestion before falling back to completion
+# - Without KAKU_TAB_ACCEPT_SUGGEST_FIRST, prefer completion so Tab reveals
+#   candidates instead of accepting recent-history suggestions
 # - Only claim Tab inside Kaku sessions unless explicitly disabled
 if [[ -z "${KAKU_SMART_TAB_DISABLE:-}" ]] && [[ "${TERM_PROGRAM:-}" == "Kaku" ]]; then
     _kaku_tab_widget() {
         emulate -L zsh
 
         local has_suggestion=0
-        if (( ${+widgets[autosuggest-accept]} )) && [[ -n "${POSTDISPLAY:-}" ]]; then
+        local prefer_suggestion_first=0
+
+        if [[ "${KAKU_TAB_ACCEPT_SUGGEST_FIRST:-0}" == "1" ]]; then
+            prefer_suggestion_first=1
+        fi
+
+        # When Kaku defers autosuggestions to an external provider, keep Tab
+        # as completion-only to avoid widget recursion.
+        if [[ "${_kaku_external_autosuggest_provider:-0}" != "1" ]] && (( ${+widgets[autosuggest-accept]} )) && [[ -n "${POSTDISPLAY:-}" ]]; then
             has_suggestion=1
         fi
 
@@ -436,7 +533,7 @@ if [[ -z "${KAKU_SMART_TAB_DISABLE:-}" ]] && [[ "${TERM_PROGRAM:-}" == "Kaku" ]]
             return
         fi
 
-        if (( has_suggestion )); then
+        if (( has_suggestion )) && (( prefer_suggestion_first )); then
             zle autosuggest-accept
         else
             zle expand-or-complete
@@ -456,7 +553,13 @@ if ! (( ${+functions[_zsh_highlight]} )) && [[ -f "$KAKU_ZSH_DIR/plugins/fast-sy
 
         # Override comment color: fsh default (fg=8) is invisible on dark backgrounds.
         typeset -gA FAST_HIGHLIGHT_STYLES
-        FAST_HIGHLIGHT_STYLES[comment]='fg=244'
+        FAST_HIGHLIGHT_STYLES[comment]='fg=249'
+
+        # Drop the underline on existing-directory paths: fsh default for
+        # path-to-dir is fg=magenta,underline, and that underline stacks with
+        # Kaku's hyperlink hover underline into a confusing double line. Keep
+        # the magenta color so a valid directory still reads as a path.
+        FAST_HIGHLIGHT_STYLES[path-to-dir]='fg=magenta'
 
         # Remove this hook after first run
         precmd_functions=("${precmd_functions[@]:#fast_syntax_highlighting_defer}")
@@ -476,19 +579,22 @@ _kaku_set_user_var() {
 
     # Kaku defaults TERM to xterm-256color for SSH compatibility.
     # Use WEZTERM_PANE presence to detect Kaku/WezTerm panes reliably.
+    # These guards return 1: a bare return inherits the guard's own success
+    # status, which made callers believe the var was emitted and left the
+    # zle # widget blocking Enter in non-Kaku terminals (#511).
     if [[ "$TERM" != "kaku" && -z "${WEZTERM_PANE:-}" ]]; then
-        return
+        return 1
     fi
 
     if [[ "${WEZTERM_SHELL_SKIP_USER_VARS:-}" == "1" ]]; then
-        return
+        return 1
     fi
 
     local encoded=""
     if command -v base64 >/dev/null 2>&1; then
-        encoded="$(printf '%s' "$value" | base64 | tr -d '\r\n')"
+        encoded="$(printf '%s' "$value" | base64)"
     else
-        return
+        return 1
     fi
 
     if [[ -n "${TMUX:-}" ]]; then
@@ -496,6 +602,22 @@ _kaku_set_user_var() {
     else
         printf "\033]1337;SetUserVar=%s=%s\007" "$name" "$encoded"
     fi
+}
+
+# Authenticate Kaku's privileged control messages so arbitrary PTY output
+# cannot trigger local AI requests or reuse the user's assistant credentials.
+_kaku_set_ai_user_var() {
+    local name="$1"
+    local value="$2"
+    local capability_file="$HOME/.config/kaku/ai_inline_capability"
+    local capability=""
+
+    [[ -r "$capability_file" ]] || return 1
+    # read reports EOF as failure when the file lacks a trailing newline,
+    # but still fills the variable; accept that case (#511).
+    IFS= read -r capability < "$capability_file" || [[ -n "$capability" ]] || return 1
+    [[ -n "$capability" ]] || return 1
+    _kaku_set_user_var "$name" "${capability}:${value}"
 }
 
 # Only emit exit code when a real command was executed.
@@ -507,7 +629,7 @@ _kaku_ai_preexec() {
         return
     fi
     _kaku_ai_cmd_pending=1
-    _kaku_set_user_var "kaku_last_cmd" "$1"
+    _kaku_set_ai_user_var "kaku_last_cmd" "$1" || true
 }
 
 _kaku_ai_precmd() {
@@ -519,7 +641,7 @@ _kaku_ai_precmd() {
     if [[ "${_kaku_ai_cmd_pending:-0}" != "1" ]]; then
         return 0
     fi
-    _kaku_set_user_var "kaku_last_exit_code" "$last_exit_code"
+    _kaku_set_ai_user_var "kaku_last_exit_code" "$last_exit_code" || true
     _kaku_ai_cmd_pending=0
 }
 
@@ -537,7 +659,7 @@ typeset -g _kaku_ai_cancel_sent=0
 
 _kaku_cancel_ai_on_typing() {
     if [[ "$_kaku_ai_cancel_sent" == "0" && -n "$BUFFER" ]]; then
-        _kaku_set_user_var "kaku_user_typing" "1"
+        _kaku_set_ai_user_var "kaku_user_typing" "1" || true
         _kaku_ai_cancel_sent=1
     fi
 }
@@ -578,18 +700,34 @@ _kaku_ai_query_accept_line() {
     fi
     # Only intercept a single-line comment (no newlines in buffer)
     if [[ -z "${KAKU_AUTO_DISABLE:-}" && -n "$BUFFER" && "${BUFFER[1]}" == '#' && "$BUFFER" != *$'\n'* ]]; then
-        local query="${BUFFER:1}"
-        query="${query# }"
-        if [[ -n "$query" ]]; then
+        # Prefix variants:
+        #   '#? ...'  -> force explain (skip command synthesis)
+        #   '## ...'  -> request multiple command candidates as a list
+        #   '# ...'   -> default (model classifies the intent)
+        local mode="auto"
+        local body="${BUFFER:1}"
+        if [[ "${body[1]}" == '?' ]]; then
+            mode="explain"
+            body="${body:1}"
+        elif [[ "${body[1]}" == '#' ]]; then
+            mode="candidates"
+            body="${body:1}"
+        fi
+        body="${body# }"
+        if [[ -n "$body" ]]; then
             print -s -- "${BUFFER}"
-            _kaku_set_user_var "kaku_ai_query" "$query"
-            _kaku_ai_waiting=1
-            _kaku_ai_waiting_ts=$EPOCHSECONDS
-            # Keep # query visible; Lua sends \x15 to clear it when result arrives
-            zle reset-prompt
-            return
+            if _kaku_set_ai_user_var "kaku_ai_query" "[mode:${mode}] ${body}"; then
+                _kaku_ai_waiting=1
+                _kaku_ai_waiting_ts=$EPOCHSECONDS
+                # Keep # query visible; Lua sends \x15 to clear it when result arrives.
+                # Do NOT call 'zle reset-prompt' here: it redraws the prompt with
+                # BUFFER still set, causing the query line to appear twice.
+                POSTDISPLAY=
+                return
+            fi
         fi
     fi
+    POSTDISPLAY=
     zle .accept-line
 }
 
@@ -606,42 +744,43 @@ precmd_functions+=(_kaku_ai_query_register_widget)
 # Set KAKU_SSH_SKIP_1PASSWORD_FIX=1 to disable the 1Password behavior.
 # Guard: only define if no existing ssh function is present, so user-defined
 # wrappers (e.g. from fzf-ssh, autossh plugins) are not silently replaced.
-_kaku_wrapped_ssh() {
-    local -a extra_opts=()
-
-    # 1Password SSH agent fix: auto-add IdentitiesOnly=yes to prevent
-    # "Too many authentication failures" when 1Password offers all stored keys.
-    # Set KAKU_SSH_SKIP_1PASSWORD_FIX=1 to disable.
-    if [[ -z "${KAKU_SSH_SKIP_1PASSWORD_FIX-}" ]]; then
-        local sock="${SSH_AUTH_SOCK:-}"
-        if [[ "$sock" == *1password* || "$sock" == *2BUA8C4S2C* ]]; then
-            local has_identitiesonly=false prev=""
-            for arg in "$@"; do
-                [[ "$prev" == "-o" && "$arg" == IdentitiesOnly=* ]] && has_identitiesonly=true
-                [[ "$arg" == -oIdentitiesOnly=* ]] && has_identitiesonly=true
-                prev="$arg"
-            done
-            $has_identitiesonly || extra_opts+=(-o "IdentitiesOnly=yes")
-        fi
-    fi
-
-    if [[ "$TERM" == "kaku" ]]; then
-        TERM=xterm-256color command ssh "${extra_opts[@]}" "$@"
-    else
-        command ssh "${extra_opts[@]}" "$@"
-    fi
-}
+# The wrapper body must stay self-contained: agent snapshot tools (Claude
+# Code and similar) capture the ssh function into shell snapshots but drop
+# _-prefixed helpers, so calling one from here leaves a dangling reference
+# in snapshot-restored shells (#493).
 if (( $+aliases[ssh] )); then
     typeset _kaku_existing_ssh_alias="${aliases[ssh]}"
     function ssh {
-        local -a extra_opts=()
-        local -a _kaku_alias_words
+        local -a _kaku_alias_words _kaku_ssh_cmd _kaku_ssh_args
+        _kaku_alias_words=(${(z)_kaku_existing_ssh_alias})
+        # Snapshot-restored shells keep this function but not the alias
+        # variable; fall back to plain ssh instead of exec'ing "$1".
+        if [[ ${#_kaku_alias_words[@]} -eq 0 ]]; then
+            _kaku_ssh_cmd=(command ssh)
+            _kaku_ssh_args=("$@")
+        elif [[ "${_kaku_alias_words[1]-}" == "ssh" ]]; then
+            _kaku_ssh_cmd=(command ssh)
+            _kaku_ssh_args=("${(@)_kaku_alias_words[2,-1]}" "$@")
+        elif [[ "${_kaku_alias_words[1]-}" == "command" && "${_kaku_alias_words[2]-}" == "ssh" ]]; then
+            _kaku_ssh_cmd=(command ssh)
+            _kaku_ssh_args=("${(@)_kaku_alias_words[3,-1]}" "$@")
+        elif [[ "${_kaku_alias_words[1]-}" == *=* ]]; then
+            # Alias starts with VAR=value prefixes (e.g. alias ssh='TERM=xterm ssh');
+            # expanded array words are not re-parsed as assignments, so route
+            # through env to keep them out of command position.
+            _kaku_ssh_cmd=(env "${_kaku_alias_words[@]}")
+            _kaku_ssh_args=("$@")
+        else
+            _kaku_ssh_cmd=("${_kaku_alias_words[@]}")
+            _kaku_ssh_args=("$@")
+        fi
 
+        local -a extra_opts=()
         if [[ -z "${KAKU_SSH_SKIP_1PASSWORD_FIX-}" ]]; then
             local sock="${SSH_AUTH_SOCK:-}"
             if [[ "$sock" == *1password* || "$sock" == *2BUA8C4S2C* ]]; then
-                local has_identitiesonly=false prev=""
-                for arg in "$@"; do
+                local has_identitiesonly=false prev="" arg
+                for arg in "${_kaku_ssh_args[@]}"; do
                     [[ "$prev" == "-o" && "$arg" == IdentitiesOnly=* ]] && has_identitiesonly=true
                     [[ "$arg" == -oIdentitiesOnly=* ]] && has_identitiesonly=true
                     prev="$arg"
@@ -650,21 +789,46 @@ if (( $+aliases[ssh] )); then
             fi
         fi
 
-        _kaku_alias_words=(${(z)_kaku_existing_ssh_alias})
-        if [[ "${_kaku_alias_words[1]-}" == "ssh" ]]; then
-            _kaku_wrapped_ssh "${(@)_kaku_alias_words[2,-1]}" "$@"
-        elif [[ "${_kaku_alias_words[1]-}" == "command" && "${_kaku_alias_words[2]-}" == "ssh" ]]; then
-            _kaku_wrapped_ssh "${(@)_kaku_alias_words[3,-1]}" "$@"
-        elif [[ "$TERM" == "kaku" ]]; then
-            TERM=xterm-256color "${_kaku_alias_words[@]}" "${extra_opts[@]}" "$@"
+        if [[ -z "${KAKU_SSH_SKIP_TERM_FIX-}" && "$TERM" == "kaku" ]]; then
+            TERM=xterm-256color "${_kaku_ssh_cmd[@]}" "${extra_opts[@]}" "${_kaku_ssh_args[@]}"
         else
-            "${_kaku_alias_words[@]}" "${extra_opts[@]}" "$@"
+            "${_kaku_ssh_cmd[@]}" "${extra_opts[@]}" "${_kaku_ssh_args[@]}"
         fi
     }
     unalias ssh
 elif ! typeset -f ssh > /dev/null 2>&1; then
 function ssh {
-    _kaku_wrapped_ssh "$@"
+    local -a extra_opts=()
+    if [[ -z "${KAKU_SSH_SKIP_1PASSWORD_FIX-}" ]]; then
+        local sock="${SSH_AUTH_SOCK:-}"
+        if [[ "$sock" == *1password* || "$sock" == *2BUA8C4S2C* ]]; then
+            local has_identitiesonly=false prev="" arg
+            for arg in "$@"; do
+                [[ "$prev" == "-o" && "$arg" == IdentitiesOnly=* ]] && has_identitiesonly=true
+                [[ "$arg" == -oIdentitiesOnly=* ]] && has_identitiesonly=true
+                prev="$arg"
+            done
+            $has_identitiesonly || extra_opts+=(-o "IdentitiesOnly=yes")
+        fi
+    fi
+    if [[ -z "${KAKU_SSH_SKIP_TERM_FIX-}" && "$TERM" == "kaku" ]]; then
+        TERM=xterm-256color command ssh "${extra_opts[@]}" "$@"
+    else
+        command ssh "${extra_opts[@]}" "$@"
+    fi
+}
+fi
+
+# Same TERM fix for mosh: mosh-server inherits TERM on the remote side, so a
+# kaku TERM breaks remote rendering exactly like plain ssh would. Guard: keep
+# user-defined mosh functions and aliases untouched. Self-contained (#493).
+if command -v mosh > /dev/null 2>&1 && ! typeset -f mosh > /dev/null 2>&1 && ! (( $+aliases[mosh] )); then
+function mosh {
+    if [[ -z "${KAKU_SSH_SKIP_TERM_FIX-}" && "$TERM" == "kaku" ]]; then
+        TERM=xterm-256color command mosh "$@"
+    else
+        command mosh "$@"
+    fi
 }
 fi
 
@@ -685,3 +849,34 @@ function sudo {
     fi
 }
 fi
+
+# Kaku Dark maps ANSI 8 / bright_black to #3A3942, which makes any text rendered
+# at fg=8 (the default comment color in fast-syntax-highlighting and
+# zsh-syntax-highlighting) invisible. The deferred loader blocks above already
+# override the comment color when Kaku itself loaded the plugin, but they are
+# skipped when the user pre-loaded their own copy in .zshrc (oh-my-zsh, brew,
+# etc.). This one-shot precmd guard reapplies the override after .zshrc has
+# fully run, only when the comment style is still at an invisible default, so
+# users who picked their own color are preserved.
+_kaku_apply_highlight_styles() {
+    # Both fast-syntax-highlighting and zsh-syntax-highlighting ship the same
+    # invisible default for `[comment]`: fg=black,bold (older versions: fg=8).
+    # Kaku Dark's color_overrides collapse those to #3A3942 against #1F1D2C,
+    # so the # character and any zsh-style # comment becomes unreadable.
+    # Replace ONLY the known defaults; leave any other value alone so a user
+    # who picked their own comment color in .zshrc keeps it.
+    if (( ${+FAST_HIGHLIGHT_STYLES} )); then
+        case "${FAST_HIGHLIGHT_STYLES[comment]:-}" in
+            ''|fg=8|fg=black|fg=black,bold|fg=8,bold|8|black)
+                FAST_HIGHLIGHT_STYLES[comment]='fg=249' ;;
+        esac
+    fi
+    if (( ${+ZSH_HIGHLIGHT_STYLES} )); then
+        case "${ZSH_HIGHLIGHT_STYLES[comment]:-}" in
+            ''|fg=8|fg=black|fg=black,bold|fg=8,bold|8|black)
+                ZSH_HIGHLIGHT_STYLES[comment]='fg=249' ;;
+        esac
+    fi
+    precmd_functions=("${precmd_functions[@]:#_kaku_apply_highlight_styles}")
+}
+precmd_functions+=(_kaku_apply_highlight_styles)
