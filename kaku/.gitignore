@@ -16,3 +16,7 @@ last_window_session.json
 zsh/cache/
 zsh/kaku.zsh.zwc
 zsh/kaku.zsh.bak
+
+# Vendored zsh plugins — copied from Kaku.app by 'kaku init --shell zsh'.
+# Sources live in /Applications/Kaku.app/Contents/Resources/vendor/.
+zsh/plugins/
