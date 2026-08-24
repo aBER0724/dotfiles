@@ -57,4 +57,6 @@ Config in `~/.config/herdr/`, synced from [herdr/](herdr/README.md).
 
 - **Synced**: `config.toml` (theme, keybindings), `plugins.txt` (plugin sources)
 - **Not synced**: installed plugins, logs, session state
-- **Plugins**: reinstalled from `plugins.txt` on a new device (see herdr/README.md)
+- **Plugins**: installed by source in `plugins.txt`; on a new device one command installs them all:
+
+  `brew install herdr herdr-scratch` → `ln -sf ~/dotfiles/herdr/config.toml ~/.config/herdr/config.toml` → `bash ~/dotfiles/herdr/install-plugins.sh`
