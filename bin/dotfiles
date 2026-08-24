@@ -156,11 +156,14 @@ cmd_install() {
   # herdr plugins are a whole-package install: only re-run them when the
   # user asked for the herdr entry/group (or nothing, i.e. everything).
   # `dotfiles install pi` or `install nvim` just links, no plugin churn.
-  local want_herdr=0 w
+  local want_herdr=0 want_pi=0 w
   for w in $1; do
-    if [ "$w" = "herdr" ]; then want_herdr=1; fi
+    case "$w" in
+      herdr|herdr/*) want_herdr=1 ;;
+      pi-settings|pi-models|pi-extensions) want_pi=1 ;;
+    esac
   done
-  if [ -z "$1" ]; then want_herdr=1; fi
+  if [ -z "$1" ]; then want_herdr=1; want_pi=1; fi
 
   cmd_link
   echo
@@ -173,11 +176,13 @@ cmd_install() {
     fi
   fi
   echo
-  echo "== pi =="
-  if [ ! -f "$HOME/.pi/agent/auth.json" ]; then
-    echo "No pi API key yet. Create it (no login, providers are key-based):"
-    echo "  printf '{\"$PI_DEFAULT_PROVIDER\": \"sk-...\"}' > $HOME/.pi/agent/auth.json"
-    echo "or export the env var referenced in pi-agent/models.json"
+  if [ "$want_pi" = 1 ]; then
+    echo "== pi =="
+    if [ ! -f "$HOME/.pi/agent/auth.json" ]; then
+      echo "No pi API key yet. Create it (no login, providers are key-based):"
+      echo "  printf '{\"$PI_DEFAULT_PROVIDER\": \"sk-...\"}' > $HOME/.pi/agent/auth.json"
+      echo "or export the env var referenced in pi-agent/models.json"
+    fi
   fi
   echo "Done. Start pi with: pi"
 }
