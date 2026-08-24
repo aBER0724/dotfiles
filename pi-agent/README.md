@@ -35,7 +35,10 @@ ln -sf ~/dotfiles/pi-agent/extensions ~/.pi/agent/extensions
 mkdir -p ~/.pi/agent
 
 # set API key once per device (no login — providers are key-based):
-printf '{"new-api": "sk-..."}' > ~/.pi/agent/auth.json
+# set API key once per device — correct nested format (no login)
+# (providers are key-based; auth.json is never synced)
+printf '{"new-api": {"type": "api_key", "key": "sk-..."}}' > ~/.pi/agent/auth.json
+chmod 600 ~/.pi/agent/auth.json
 # or export $NEW_API_KEY and reference it as apiKey in models.json
 
 # then pick default model once per device

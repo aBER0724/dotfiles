@@ -204,8 +204,8 @@ cmd_install() {
     echo "== pi =="
     if [ ! -f "$HOME/.pi/agent/auth.json" ]; then
       echo "No pi API key yet. Create it (no login, providers are key-based):"
-      echo "  printf '{\"$PI_DEFAULT_PROVIDER\": \"sk-...\"}' > $HOME/.pi/agent/auth.json"
-      echo "or export the env var referenced in pi-agent/models.json"
+      echo "  printf '{\"$PI_DEFAULT_PROVIDER\": {\"type\": \"api_key\", \"key\": \"sk-...\"}}' > $HOME/.pi/agent/auth.json"
+      echo "  chmod 600 $HOME/.pi/agent/auth.json"
     fi
   fi
   if [ "$want_pi" = 1 ]; then

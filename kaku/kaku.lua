@@ -665,4 +665,5 @@ config.window_decorations = 'INTEGRATED_BUTTONS|RESIZE|MACOS_FORCE_DISABLE_SHADO
 config.tab_title_show_basename_only = true
 config.enable_scroll_bar = false
 config.color_scheme = (wezterm.gui and wezterm.gui.get_appearance() or 'Dark'):find('Dark') and 'Kaku Dark' or 'Kaku Light'
+config.line_height = 0.8
 return config
