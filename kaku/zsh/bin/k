@@ -2,7 +2,7 @@
 set -euo pipefail
 
 for candidate in \
-	"/Applications/Kaku.app/Contents/MacOS/k" \
+	"/Applications/Kaku.app/Contents/Resources/../MacOS/k" \
 	"/Applications/Kaku.app/Contents/MacOS/k" \
 	"$HOME/Applications/Kaku.app/Contents/MacOS/k"; do
 	if [[ -n "$candidate" && -x "$candidate" ]]; then

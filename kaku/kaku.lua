@@ -659,8 +659,8 @@ wezterm.on('gui-startup', function(cmd)
 end)
 
 
-config.window_background_opacity = 0.8
-config.macos_window_background_blur = 80
+config.window_background_opacity = 0.6
+config.macos_window_background_blur = 70
 config.window_decorations = 'INTEGRATED_BUTTONS|RESIZE|MACOS_FORCE_DISABLE_SHADOW'
 config.tab_title_show_basename_only = true
 config.enable_scroll_bar = false
