@@ -44,17 +44,37 @@ ZSH_THEME=""  # theme loaded manually below via powerlevel10k
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(
   git
-  zsh-autosuggestions
-  zsh-syntax-highlighting
   docker
   kubectl
   npm
 )
 
+# zsh-completions — add to fpath BEFORE oh-my-zsh runs compinit
+# (same plugin Kaku bundles; loaded here so any terminal gets it).
+for _zsh_cmp in \
+  "$ZSH_CUSTOM/plugins/zsh-completions/src" \
+  /opt/homebrew/share/zsh-completions \
+  /usr/local/share/zsh-completions \
+  /usr/share/zsh-completions
+do
+  [[ -d "$_zsh_cmp" ]] && { fpath=("$_zsh_cmp" $fpath); break; }
+done
+unset _zsh_cmp
+
 source $ZSH/oh-my-zsh.sh
 
-# zsh-syntax-highlighting — load from whichever platform location exists
-# (Homebrew on macOS, apt/system on Linux, or an oh-my-zsh custom clone).
+# zsh-autosuggestions — load from whichever platform location exists.
+for _zsh_auto in \
+  "$ZSH_CUSTOM/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh" \
+  /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh \
+  /usr/local/share/zsh-autosuggestions/zsh-autosuggestions.zsh \
+  /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+do
+  [[ -r "$_zsh_auto" ]] && { source "$_zsh_auto"; break; }
+done
+unset _zsh_auto
+
+# zsh-syntax-highlighting — load from whichever platform location exists.
 for _zsh_hl in \
   "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" \
   /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh \
@@ -64,6 +84,18 @@ do
   [[ -r "$_zsh_hl" ]] && { source "$_zsh_hl"; break; }
 done
 unset _zsh_hl
+
+# zsh-z (smart directory jumping) — same plugin Kaku bundles.
+for _zsh_z in \
+  "$ZSH_CUSTOM/plugins/zsh-z/zsh-z.plugin.zsh" \
+  /opt/homebrew/share/zsh-z/zsh-z.plugin.zsh \
+  /usr/local/share/zsh-z/zsh-z.plugin.zsh \
+  /usr/share/zsh-z/zsh-z.plugin.zsh
+do
+  [[ -r "$_zsh_z" ]] && { source "$_zsh_z"; break; }
+done
+unset _zsh_z
+
 
 # Powerlevel10k — $ZSH_CUSTOM themes, ~/powerlevel10k clone, or Homebrew.
 for _p10k in \

@@ -2,10 +2,11 @@
 # Install zsh runtime dependencies that .zshrc expects but are NOT part of
 # dotfiles sync (they are git clones / package installs, not config files).
 #
-#   autosuggestions, syntax-highlighting  -> $ZSH_CUSTOM/plugins/ (oh-my-zsh)
-#   powerlevel10k                         -> $ZSH_CUSTOM/themes/
-#   thefuck                               -> package manager (optional)
-#   nvm                                   -> standalone install (optional)
+#   autosuggestions, syntax-highlighting, completions, zsh-z -> $ZSH_CUSTOM/plugins/
+#     (same 4 plugins Kaku bundles; zshrc loads them on any platform)
+#   powerlevel10k                          -> $ZSH_CUSTOM/themes/
+#   thefuck                                -> package manager (optional)
+#   nvm                                    -> standalone install (optional)
 #
 # Idempotent: already-installed items are skipped. Run on a new machine
 # BEFORE sourcing .zshrc, or after; either works since .zshrc is defensive.
@@ -29,9 +30,10 @@ install_plugin() { # $1=owner/repo, $2=dest dir name
 }
 
 echo "== oh-my-zsh plugins =="
-install_plugin zsh-users/zsh-autosuggestions plugins/zsh-autosuggestions
+install_plugin zsh-users/zsh-autosuggestions     plugins/zsh-autosuggestions
 install_plugin zsh-users/zsh-syntax-highlighting plugins/zsh-syntax-highlighting
-
+install_plugin zsh-users/zsh-completions        plugins/zsh-completions
+install_plugin agkozak/zsh-z                    plugins/zsh-z
 echo "== powerlevel10k =="
 if [ -d "$ZSH_CUSTOM/themes/powerlevel10k/.git" ]; then
   echo "ok      powerlevel10k (already installed)"

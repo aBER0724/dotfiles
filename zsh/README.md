@@ -24,13 +24,15 @@ zsh/
 | oh-my-zsh | [ohmyzsh/ohmyzsh](https://github.com/ohmyzsh/ohmyzsh) | `~/.oh-my-zsh` |
 | zsh-autosuggestions | [zsh-users/zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions) | `$ZSH_CUSTOM/plugins/` |
 | zsh-syntax-highlighting | [zsh-users/zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting) | `$ZSH_CUSTOM/plugins/` |
+| zsh-completions | [zsh-users/zsh-completions](https://github.com/zsh-users/zsh-completions) | `$ZSH_CUSTOM/plugins/`(fpath) |
+| zsh-z | [agkozak/zsh-z](https://github.com/agkozak/zsh-z) | `$ZSH_CUSTOM/plugins/`(source) |
 | powerlevel10k | [romkatv/powerlevel10k](https://github.com/romkatv/powerlevel10k) | `$ZSH_CUSTOM/themes/` |
 | thefuck | 包管理器(brew/apt/dnf) | —(可选) |
 | nvm | [nvm-sh/nvm](https://github.com/nvm-sh/nvm) | `~/.nvm`(可选) |
 
 ## 平台自适应要点
 
-- **syntax-highlighting / p10k**:多处路径依次探测(`$ZSH_CUSTOM` → Homebrew → `/usr/share`),找到才 source
+- **4 个插件(autosuggestions / syntax-highlighting / completions / zsh-z)**:多处路径依次探测(`$ZSH_CUSTOM` → Homebrew → `/usr/share`),找到才加载;completions 加进 `fpath`(在 compinit 前),其余 source
 - **thefuck**:`command -v thefuck` 存在才 eval,没装静默跳过
 - **PATH**:`/opt/homebrew/bin`、libpq、antigravity、platformio、pnpm 全部 `[ -d ]` 守卫,Linux 上自动忽略 macOS 专属
 - **nvm**:先找 `$HOME/.nvm` 再找 Homebrew
