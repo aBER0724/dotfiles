@@ -13,6 +13,7 @@ Personal configuration files.
 | [zsh](/zsh) | Zsh config (zshrc, zprofile, zshenv, p10k) |
 | [pi-agent](/pi-agent) | pi coding agent — syncs settings, models, extensions; API keys stay per-device |
 | [herdr](/herdr) | Terminal workspace manager — syncs config.toml + plugin inventory |
+| [bin](/bin) | `dotfiles` CLI — one command to link/status/install all configs |
 
 ## Theme
 
@@ -22,24 +23,11 @@ Personal configuration files.
 
 ```bash
 git clone https://github.com/aBER0724/dotfiles.git ~/dotfiles
+ln -sf ~/dotfiles/bin/dotfiles ~/.local/bin/dotfiles
 
-ln -sf ~/dotfiles/aerospace/aerospace.toml ~/.aerospace.toml
-
-ln -sf ~/dotfiles/zsh/zshrc ~/.zshrc
-ln -sf ~/dotfiles/zsh/zshenv ~/.zshenv
-ln -sf ~/dotfiles/zsh/zprofile ~/.zprofile
-ln -sf ~/dotfiles/zsh/shinit ~/.shinit
-ln -sf ~/dotfiles/zsh/p10k.zsh ~/.p10k.zsh
-
-ln -sf ~/dotfiles/nvim ~/.config/nvim
-ln -sf ~/dotfiles/kaku ~/.config/kaku
-ln -sf ~/dotfiles/fastfetch ~/.config/fastfetch
-
-ln -sf ~/dotfiles/pi-agent/settings.json ~/.pi/agent/settings.json
-ln -sf ~/dotfiles/pi-agent/models.json  ~/.pi/agent/models.json
-ln -sf ~/dotfiles/pi-agent/extensions ~/.pi/agent/extensions
-
-ln -sf ~/dotfiles/herdr/config.toml ~/.config/herdr/config.toml
+dotfiles status    # show link state for every synced entry
+dotfiles link      # create missing links; backup+replace conflicting files
+dotfiles install   # link + reinstall herdr plugins + pi bootstrap hint
 ```
 
 ## pi
@@ -59,4 +47,4 @@ Config in `~/.config/herdr/`, synced from [herdr/](herdr/README.md).
 - **Not synced**: installed plugins, logs, session state
 - **Plugins**: installed by source in `plugins.txt`; on a new device one command installs them all:
 
-  `brew install herdr` + `brew install macintacos/tap/herdr-scratch`(scratch 插件的二进制;Linux 同样支持 brew,或 `curl -fsSL https://herdr.dev/install.sh | sh`) → `ln -sf ~/dotfiles/herdr/config.toml ~/.config/herdr/config.toml` → `bash ~/dotfiles/herdr/install-plugins.sh`
+  `brew install herdr` + `brew install macintacos/tap/herdr-scratch`(scratch 插件的二进制;Linux 同样支持 brew,或 `curl -fsSL https://herdr.dev/install.sh | sh`),然后 `dotfiles install` 会链接配置并重装所有插件
