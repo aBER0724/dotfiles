@@ -7,6 +7,10 @@ set -euo pipefail
 PLUGINS="$HOME/dotfiles/herdr/plugins.txt"
 SCRATCH="$HOME/dotfiles/herdr/scratch"
 
+if ! command -v herdr >/dev/null 2>&1; then
+  echo "error: herdr not installed. Run: brew install herdr" >&2
+  exit 1
+fi
 if [ ! -f "$PLUGINS" ]; then
   echo "error: $PLUGINS not found" >&2
   exit 1
