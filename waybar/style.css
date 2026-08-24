@@ -1,0 +1,188 @@
+/* waybar style — niri 版,沿用 Catppuccin Mocha 配色 */
+
+/* ── 配色 ─────────────────────────────────────────── */
+@define-color background  rgba(21, 21, 32, 0.75);
+@define-color warning     #f38ba8;
+@define-color caution     #45475a;
+@define-color performance #f5c2e7;
+@define-color audio       #cba6f7;
+@define-color misc        #94e2d5;
+@define-color date        #a6e3a1;
+@define-color work        #b4befe;
+@define-color window      #b4befe;
+@define-color process     #89b4fa;
+
+/* ── 重置 ─────────────────────────────────────────── */
+* {
+  border: none;
+  border-radius: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+/* ── 关键帧 ───────────────────────────────────────── */
+@keyframes blink-critical-text {
+  to { color: @warning; }
+}
+
+/* ── 主栏基础 ─────────────────────────────────────── */
+#waybar.main {
+  background: transparent;
+  font-family: "JetBrainsMono Nerd Font";
+  font-size: 10pt;
+  font-weight: 500;
+}
+
+#waybar.main button {
+  font-family: "JetBrainsMono Nerd Font";
+  font-size: 10pt;
+  font-weight: 500;
+  transition: all 0.15s ease-in-out;
+}
+
+#waybar.main #custom-weather,
+#waybar.main #custom-battery,
+#waybar.main #network,
+#waybar.main #battery,
+#waybar.main #backlight,
+#waybar.main #clock,
+#waybar.main #cpu,
+#waybar.main #memory.swap,
+#waybar.main #memory.ram,
+#waybar.main #pulseaudio,
+#waybar.main #temperature,
+#waybar.main #tray,
+#waybar.main #window,
+#waybar.main #disk {
+  padding-left: 8pt;
+  padding-right: 8pt;
+  padding-bottom: 4px;
+  padding-top: 4px;
+  background: transparent;
+}
+
+#waybar.main #tray {
+  padding-right: 6pt;
+}
+
+#waybar.main #custom-weather {
+  padding-right: 3pt;
+}
+
+/* ── 模块颜色 ─────────────────────────────────────── */
+#waybar.main #cpu,
+#waybar.main #temperature,
+#waybar.main #memory.ram,
+#waybar.main #memory.swap,
+#waybar.main #disk,
+#waybar.main #network {
+  color: @performance;
+}
+
+#waybar.main #pulseaudio {
+  color: @audio;
+}
+
+#waybar.main #battery,
+#waybar.main #backlight {
+  color: @misc;
+}
+
+#waybar.main #custom-weather,
+#waybar.main #clock {
+  color: @date;
+}
+
+#waybar.main #window {
+  color: @window;
+}
+
+#waybar.main #network.info {
+  padding-right: 10px;
+  padding-left: 10px;
+  color: @caution;
+  background: transparent;
+}
+
+#waybar.main #network.info.wifi.normal,
+#waybar.main #network.info.ethernet {
+  color: @performance;
+  padding-right: 15px;
+}
+
+#waybar.main #network.info.wifi {
+  color: @warning;
+  padding-right: 15px;
+}
+
+/* ── 临界/警告状态 ────────────────────────────────── */
+#waybar.main #workspaces button.urgent,
+#waybar.main #memory.swap.critical,
+#waybar.main #memory.ram.critical,
+#waybar.main #cpu.critical,
+#waybar.main #temperature.critical,
+#waybar.main #battery.critical.discharging {
+  color: @caution;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  animation-name: blink-critical-text;
+  animation-duration: 1s;
+  animation-timing-function: steps(15);
+}
+
+#waybar.main #pulseaudio.muted {
+  color: @caution;
+}
+
+#waybar.main #battery.warning.discharging {
+  color: @warning;
+}
+
+/* ── 工作区按钮(niri)────────────────────────────── */
+#waybar.main #workspaces button {
+  color: @caution;
+  background: transparent;
+  border: 1.5px solid transparent;
+  padding-left: 2pt;
+  padding-right: 2pt;
+  border-radius: 16px;
+  margin-bottom: 8px;
+  margin-top: 8px;
+  margin-left: 4px;
+  margin-right: 4px;
+  transition: all 0.25s ease;
+}
+
+/* 有窗口的工作区 */
+#waybar.main #workspaces button.active {
+  color: @window;
+}
+
+/* 当前聚焦的工作区 */
+#waybar.main #workspaces button.focused {
+  color: @window;
+  border: 1.5px solid @caution;
+}
+
+/* 悬停 */
+#waybar.main #workspaces button:hover {
+  color: @window;
+}
+
+/* ── 工具提示 ─────────────────────────────────────── */
+tooltip {
+  background: @background;
+  border: 3px solid @caution;
+  border-radius: 8px;
+  font-weight: 500;
+  font-family: "JetBrainsMono Nerd Font";
+}
+
+#waybar.main #tray menu {
+  background: @background;
+  border: 3px solid @caution;
+  border-radius: 8px;
+}

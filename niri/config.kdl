@@ -1,0 +1,154 @@
+// niri 配置 — macOS / AeroSpace 风格按键(主键 = Alt)
+// 修改本文件后 niri 会自动热重载,无需重启。
+// 校验:`niri validate`
+
+input {
+    keyboard {
+        xkb {
+            layout "us"
+            options "ctrl:nocaps"
+        }
+        track-layout "global"
+    }
+
+    touchpad {
+        tap
+        natural-scroll
+    }
+
+    mouse {
+        accel-profile "flat"
+    }
+
+    // 鼠标悬停即聚焦窗口
+    focus-follows-mouse
+}
+
+// 外接显示器 DP-2 (H24T27 @ 100Hz)
+output "DP-2" {
+    mode "2560x1440@100"
+}
+
+// 内屏 eDP-1 (2880x1800,高分屏缩放 ~167%)
+output "eDP-1" {
+    scale 1.6666
+}
+
+layout {
+    gaps 8
+    center-focused-column "on-overflow"  // never/always/on-overflow
+
+    default-column-width {
+        proportion 0.5
+    }
+
+    focus-ring {
+        width 2
+        active-color "#cba6f7"
+        inactive-color "#45475a"
+    }
+
+    preset-column-widths {
+        // 无名字列表:Mod+Ctrl+1/2 循环切换(官方写法)
+        proportion 0.33333
+        proportion 0.5
+        proportion 0.66667
+        // fixed 1920  // 也可以按逻辑像素固定宽度
+    }
+}
+
+// fcitx5 输入法环境变量由 ~/.config/environment.d/fcitx.conf 全局注入(本 niri 构建无 env 节点)
+
+// ── 开机自启 ──────────────────────────────────────
+spawn-at-startup "waybar"
+spawn-at-startup "mako"
+spawn-at-startup "swayosd-server"
+spawn-at-startup "walker" "--gapplication-service"   // 常驻服务,Alt+Space 唤起/收起
+spawn-at-startup "fcitx5" "-d"
+spawn-at-startup "cc-switch"
+
+binds {
+    // ── 终端 & 启动器 ─────────────────────────────
+    Alt+Return { spawn "alacritty"; }
+    Alt+Space  { spawn "walker"; }
+
+    // ── 窗口 ──────────────────────────────────────
+    Alt+C            { close-window; }          // 关闭窗口(macOS Cmd+W 习惯,C 键防冲突)
+    Alt+F            { fullscreen-window; }     // 全屏
+    Alt+Shift+F      { toggle-window-floating; } // 浮动/平铺切换
+    Alt+M            { maximize-column; }       // 最大化列
+    Alt+Shift+M      { center-window; }         // 居中窗口
+
+    // ── 焦点(AeroSpace 映射:H=左 J=下 K=上 L=右)─
+    Alt+H       { focus-column-left; }
+    Alt+L       { focus-column-right; }
+    Alt+J       { focus-window-down; }
+    Alt+K       { focus-window-up; }
+    Alt+Ctrl+H  { focus-monitor-left; }
+    Alt+Ctrl+L  { focus-monitor-right; }
+
+    // ── 移动窗口 ──────────────────────────────────
+    Alt+Shift+H        { move-column-left; }
+    Alt+Shift+L        { move-column-right; }
+    Alt+Shift+J        { move-window-down; }
+    Alt+Shift+K        { move-window-up; }
+    Alt+Ctrl+Shift+H   { move-column-to-monitor-left; }
+    Alt+Ctrl+Shift+L   { move-column-to-monitor-right; }
+    Alt+Home           { move-column-to-first; }
+    Alt+End            { move-column-to-last; }
+
+    // ── 列宽 ──────────────────────────────────────
+    Alt+Shift+Minus { set-column-width "-10%"; }
+    Alt+Shift+Equal { set-column-width "+10%"; }
+    Alt+Ctrl+1 { switch-preset-column-width; }       // 循环列宽预设
+    Alt+Ctrl+2 { switch-preset-column-width-back; }  // 反向循环
+
+    // ── 工作区(AeroSpace 映射:1-5 + QWER)─────────
+    Alt+1       { focus-workspace "1"; }
+    Alt+2       { focus-workspace "2"; }
+    Alt+3       { focus-workspace "3"; }
+    Alt+4       { focus-workspace "4"; }
+    Alt+5       { focus-workspace "5"; }
+    Alt+Q       { focus-workspace "Q"; }
+    Alt+W       { focus-workspace "W"; }
+    Alt+E       { focus-workspace "E"; }
+    Alt+R       { focus-workspace "R"; }
+
+    Alt+Shift+1 { move-window-to-workspace "1"; }
+    Alt+Shift+2 { move-window-to-workspace "2"; }
+    Alt+Shift+3 { move-window-to-workspace "3"; }
+    Alt+Shift+4 { move-window-to-workspace "4"; }
+    Alt+Shift+5 { move-window-to-workspace "5"; }
+    Alt+Shift+Q { move-window-to-workspace "Q"; }
+    Alt+Shift+W { move-window-to-workspace "W"; }
+    Alt+Shift+E { move-window-to-workspace "E"; }
+    Alt+Shift+R { move-window-to-workspace "R"; }
+
+    Alt+Tab       { focus-workspace-previous; }   // 上一个工作区(往返)
+    Alt+Shift+Tab { move-workspace-to-monitor-next; }
+
+    // ── 截图(grim+slurp,脚本在 niri/scripts/)────
+    Print      { spawn "bash" "-c" "$HOME/dotfiles/niri/scripts/screenshot.sh region"; }
+    Shift+Print { spawn "bash" "-c" "$HOME/dotfiles/niri/scripts/screenshot.sh full"; }
+
+    // ── 系统 ──────────────────────────────────────
+    Alt+Shift+Escape { quit; }
+
+    // ── 媒体键 ────────────────────────────────────
+    XF86AudioRaiseVolume { spawn "swayosd-client" "--output-volume" "5+"; }
+    XF86AudioLowerVolume { spawn "swayosd-client" "--output-volume" "5-"; }
+    XF86AudioMute        { spawn "swayosd-client" "--output-volume" "toggle-mute"; }
+    XF86AudioMicMute     { spawn "swayosd-client" "--input-volume" "toggle-mute"; }
+    XF86MonBrightnessUp   { spawn "swayosd-client" "--brightness" "5+"; }
+    XF86MonBrightnessDown { spawn "swayosd-client" "--brightness" "5-"; }
+    XF86AudioPlay         { spawn "playerctl" "play-pause"; }
+    XF86AudioNext         { spawn "playerctl" "next"; }
+    XF86AudioPrev         { spawn "playerctl" "previous"; }
+}
+
+// ── 窗口规则(按需取消注释)─────────────────────────
+// window-rule {
+//     match app-id == "org.gnome.Nautilus" {
+//         // 例:默认全屏打开文件管理器
+//     }
+// }

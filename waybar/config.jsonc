@@ -1,0 +1,164 @@
+[
+  {
+    // MAIN BAR — niri (was Hyprland; modules converted to niri/*)
+    "layer": "top",
+    "position": "top",
+    "name": "main",
+
+    // 悬浮胶囊外观:四周留 8px 边距
+    "margin-top": 8,
+    "margin-left": 8,
+    "margin-right": 8,
+
+    // niri 支持 layer-shell exclusive zone,窗口不会盖住栏
+    "exclusive": true,
+
+    "modules-left": [
+      "niri/workspaces",
+      "niri/window"
+    ],
+
+    "modules-right": [
+      "tray",
+      "cpu",
+      "memory#ram",
+      "memory#swap",
+      "disk",
+      "network",
+      "custom/pulseaudio",
+      "backlight",
+      "battery",
+      "custom/weather",
+      "clock"
+    ],
+
+    // ── Modules ─────────────────────────────────────
+
+    "niri/workspaces": {
+      "format": "{value}",
+      "all-outputs": true
+    },
+
+    "niri/window": {
+      "format": "{title}",
+      "max-length": 48,
+      "icon": true,
+      "icon-size": 18,
+      "tooltip": true
+    },
+
+    "tray": {
+      "icon-size": 17,
+      "spacing": 8
+    },
+
+    "cpu": {
+      "interval": 4,
+      "format": " {usage}%",
+      "states": {
+        "warning": 80,
+        "critical": 95
+      }
+    },
+
+    "memory#ram": {
+      "interval": 4,
+      "format": " {percentage}%",
+      "states": {
+        "warning": 80,
+        "critical": 95
+      },
+      "tooltip": "{}",
+      "tooltip-format": "{used}/{total} GiB"
+    },
+
+    "memory#swap": {
+      "interval": 16,
+      "format": "󰾵 {swapPercentage}%",
+      "tooltip": "{}",
+      "tooltip-format": "{swapUsed}/{swapTotal} GiB"
+    },
+
+    "disk": {
+      "interval": 16,
+      "format": " {percentage_used}%",
+      "tooltip": "{}",
+      "tooltip-format": "Free {free}",
+      "states": {
+        "warning": 85,
+        "critical": 95
+      }
+    },
+
+    "network": {
+      "interval": 2,
+      "format-disconnected": "󱘖 Offline",
+      "format-wifi": "{icon} {bandwidthDownBits}",
+      "format-ethernet": "󰈀 {bandwidthDownBits}",
+      "min-length": 11,
+      "tooltip": "{}",
+      "tooltip-format-wifi": "{ifname}\n{essid}\n{signalStrength}% \n{frequency} GHz\n󰇚 {bandwidthDownBits}\n󰕒 {bandwidthUpBits}",
+      "tooltip-format-ethernet": "{ifname}\n󰇚 {bandwidthDownBits} \n󰕒 {bandwidthUpBits}",
+      "on-click": "gnome-control-center network",
+      "format-icons": ["󰤫", "󰤟", "󰤢", "󰤥", "󰤨"],
+      "states": {
+        "normal": 25
+      }
+    },
+
+    "custom/pulseaudio": {
+      "format": "{icon} {text}%",
+      "return-type": "json",
+      "exec": "~/.config/waybar/scripts/volume.sh",
+      "on-click": "gnome-control-center sound",
+      "on-click-right": "wpctl set-mute $(wpctl status | awk '/Sinks:/ {f=1; next} /Sources:/ {f=0} f && /\\*/ {gsub(/\\./, \"\", $2); print $2; exit}') toggle"
+    },
+
+    "backlight": {
+      "device": "amdgpu_bl1",
+      "format": "{icon} {percent}%",
+      "format-icons": ["󱩎", "󱩑", "󱩓", "󱩕", "󰛨"],
+      "scroll-step": 5
+    },
+
+    "battery": {
+      "interval": 30,
+      "format": "{icon} {capacity}%",
+      "format-icons": ["󰂎", "󰁺", "󰁼", "󰁾", "󰂀", "󰂂", "󰁹"],
+      "states": {
+        "warning": 20,
+        "critical": 10
+      },
+      "tooltip": true,
+      "on-click": "gnome-control-center power"
+    },
+
+    "custom/weather": {
+      "format": "{}°",
+      "tooltip": true,
+      "interval": 1800,
+      "exec": "wttrbar --nerd --location Tokyo",
+      "return-type": "json"
+    },
+
+    "clock": {
+      "interval": 1,
+      "format": " {:%H:%M:%S    %d/%m}",
+      "tooltip-format": "{:%d.%m.%Y   Week %W}\n\n<tt><small>{calendar}</small></tt>",
+      "calendar": {
+        "mode": "month",
+        "mode-mon-col": 3,
+        "weeks-pos": "right",
+        "on-scroll": 1,
+        "format": {
+          "months": "<span color='#cba6f7'><b>{}</b></span>",
+          "days": "<span color='#cdd6f4'><b>{}</b></span>",
+          "weeks": "<span color='#94e2d5'> W{}</span>",
+          "weekdays": "<span color='#f9e2af'><b>{}</b></span>",
+          "today": "<span color='#f5e0dc'><b><u>{}</u></b></span>"
+        }
+      },
+      "on-click": "chromium --app=https://calendar.google.com"
+    }
+  }
+]

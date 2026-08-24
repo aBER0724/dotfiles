@@ -6,7 +6,9 @@ Personal configuration files.
 
 | Config | Description |
 |--------|-------------|
-| [aerospace](/aerospace) | AeroSpace tiling window manager |
+| [aerospace](/aerospace) | AeroSpace tiling window manager (macOS) |
+| [niri](/niri) | Niri scrollable-tiling compositor — AeroSpace-style bindings, scripts/ |
+| [waybar](/waybar) | Waybar for niri (niri/workspaces, Catppuccin Mocha) |
 | [kaku](/kaku) | Terminal (WezTerm-based) |
 | [nvim](/nvim) | Neovim (LazyVim) |
 | [fastfetch](/fastfetch) | System info |

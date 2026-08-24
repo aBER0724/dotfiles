@@ -20,6 +20,8 @@ LINK_TABLE=(
   "p10k|zsh/p10k.zsh|$HOME/.p10k.zsh"
   "nvim|nvim|$HOME/.config/nvim"
   "kaku|kaku|$HOME/.config/kaku"
+  "niri|niri|$HOME/.config/niri"
+  "waybar|waybar|$HOME/.config/waybar"
   "fastfetch|fastfetch|$HOME/.config/fastfetch"
   "pi-settings|pi-agent/settings.json|$HOME/.pi/agent/settings.json"
   "pi-models|pi-agent/models.json|$HOME/.pi/agent/models.json"
@@ -33,6 +35,7 @@ GROUP_TABLE=(
   "pi|pi-settings pi-models pi-extensions"
   "zsh|zshrc zshenv zprofile shinit p10k"
   "herdr|herdr"
+  "wm|niri waybar"
 )
 
 # Expand aliases in "$*" to concrete names (set -u + empty string is fine here).
