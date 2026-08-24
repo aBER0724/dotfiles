@@ -63,7 +63,7 @@ synced from [`pi-agent/`](pi-agent/).
 
 ### What's NOT synced
 
-- `auth.json` — API credentials; run `/login` + `/model` per device
+- `auth.json` — API keys; never synced (all providers are third-party key-based, see below)
 - `models-store.json`, `sessions/`, `state/`, `fff/` — machine-local
 - `npm/`, `git/` — package install caches, rebuilt automatically
 
@@ -72,6 +72,18 @@ synced from [`pi-agent/`](pi-agent/).
 `settings.json`'s `packages` array stores *sources* (e.g. `npm:pi-subagents`),
 not the plugins themselves. Pi re-installs any missing package on startup, so
 the `npm/ git/` caches are per-device and never synced.
+
+### API keys (third-party providers, no login)
+
+All providers in `models.json` are third-party OpenAI-compatible endpoints
+(`new-api`), so there is **no OAuth login** — auth is a plain API key.
+Keys are **never committed**; set them per device in one of two ways:
+
+- `~/.pi/agent/auth.json` — `{ "new-api": "sk-..." }` (pi's storage)
+- environment variable — e.g. `NEW_API_KEY` referenced as `"apiKey": "$NEW_API_KEY"`
+
+Either way is just a key, no `/login` flow. `/model` only picks the default
+model — it does not authenticate.
 
 ### Adding a new pi package
 
@@ -88,7 +100,9 @@ ln -sf ~/dotfiles/pi-agent/settings.json ~/.pi/agent/settings.json
 ln -sf ~/dotfiles/pi-agent/models.json  ~/.pi/agent/models.json
 ln -sf ~/dotfiles/pi-agent/extensions ~/.pi/agent/extensions
 pi          # start: auto-installs all packages on first launch
-/login      # once per device: API key (stored in local auth.json)
+# set the API key (no login; providers are key-based):
+mkdir -p ~/.pi/agent && printf '{"new-api": "sk-..."}' > ~/.pi/agent/auth.json
+# or export the env var referenced in models.json
 /model      # pick default model (defaultProvider from settings.json)
 ```
 

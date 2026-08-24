@@ -19,7 +19,7 @@ synced.
 
 ## What's intentionally NOT synced
 
-- `auth.json` — API credentials. Run `/login` + `/model` on each new device.
+- `auth.json` — API keys, never synced. All providers are third-party key-based (no OAuth login); set the key per device.
 - `models-store.json`, `sessions/`, `state/`, `fff/` — machine-local.
 - `npm/`, `git/` — package install caches, rebuilt automatically.
 
@@ -34,9 +34,12 @@ ln -sf ~/dotfiles/pi-agent/extensions ~/.pi/agent/extensions
 # ensure dirs exist before first pi run
 mkdir -p ~/.pi/agent
 
-# login + pick default model once per device
+# set API key once per device (no login — providers are key-based):
+printf '{"new-api": "sk-..."}' > ~/.pi/agent/auth.json
+# or export $NEW_API_KEY and reference it as apiKey in models.json
+
+# then pick default model once per device
 pi
-/login
 ```
 
 > Note: `defaultProvider`/`defaultModel` from settings.json apply only if the
