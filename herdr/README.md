@@ -29,9 +29,10 @@ which is enough to reinstall everything on a new device.
 ## New device setup
 
 ```bash
-# 1. required binaries (Homebrew)
-brew install herdr            # official core formula
-brew install macintacos/tap/herdr-scratch   # 3rd-party tap: binary for the scratch plugin
+# 1. required binaries — Linux and macOS both support Homebrew:
+brew install herdr                       # official core formula
+brew install macintacos/tap/herdr-scratch  # 3rd-party tap: binary for the scratch plugin
+# (no brew? herdr's own installer works on both too: curl -fsSL https://herdr.dev/install.sh | sh)
 
 # 2. link config
 ln -sf ~/dotfiles/herdr/config.toml ~/.config/herdr/config.toml
