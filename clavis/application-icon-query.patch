@@ -1,0 +1,16 @@
+diff --git a/Services/ApplicationService.qml b/Services/ApplicationService.qml
+index 45e350b..6ab3692 100644
+--- a/Services/ApplicationService.qml
++++ b/Services/ApplicationService.qml
+@@ -62,8 +62,10 @@ Singleton {
+             return value;
+         if (value.startsWith("/"))
+             return "file://" + value;
++        const queryIndex = value.indexOf("?");
++        const normalized = queryIndex >= 0 ? value.substring(0, queryIndex) : value;
+         const resolved = Quickshell.iconPath(
+-            value || "application-x-executable", "application-x-executable");
++            normalized || "application-x-executable", "application-x-executable");
+         return resolved && resolved !== ""
+             ? resolved : "image://icon/application-x-executable";
+     }

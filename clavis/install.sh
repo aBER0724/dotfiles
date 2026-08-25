@@ -6,6 +6,7 @@ set -euo pipefail
 PREFIX="${CLAVIS_PREFIX:-$HOME/.local}"
 CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/clavis-source-build"
 JOBS="${CLAVIS_BUILD_JOBS:-2}"
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
 CLAVIS_REPO="https://github.com/StatIndet/quickshell"
 CLAVIS_REV="8a7b1989d8995bd49a0b00cf9c19650f22d54d7b"
@@ -21,7 +22,7 @@ WLOGOUT_REV="2db390f3bb1f57e73b3172a7c24f4c1fe35c0c96"
 MATERIAL_ICONS_REV="e083cc60a0828fdd3b404cea0cb8a5b900e9c23e"
 
 manual_packages="qt6-tools qt6-lottie qtkeychain-qt6 cava"
-required_commands="git cmake ninja pkg-config c++ cc ar npm meson qs curl sha256sum fc-cache"
+required_commands="git cmake ninja pkg-config c++ cc ar npm meson qs curl sha256sum fc-cache gtk-update-icon-cache"
 missing=""
 for command_name in $required_commands; do
     command -v "$command_name" >/dev/null 2>&1 || missing="$missing $command_name"
@@ -61,6 +62,8 @@ clone_at() {
     fi
     git -C "$destination" fetch --depth 1 origin "$revision"
     git -C "$destination" checkout --detach "$revision"
+    git -C "$destination" reset --hard "$revision"
+    git -C "$destination" clean -fdx
 }
 
 mkdir -p "$CACHE" "$PREFIX/bin" "$PREFIX/lib/pkgconfig" "$PREFIX/include/cava"
@@ -90,6 +93,8 @@ export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PAT
 
 printf '\n== Clavis Shell ==\n'
 clone_at "$CLAVIS_REPO" "$CLAVIS_REV" "$CACHE/clavis"
+git -C "$CACHE/clavis" apply --check "$SCRIPT_DIR/application-icon-query.patch"
+git -C "$CACHE/clavis" apply "$SCRIPT_DIR/application-icon-query.patch"
 rm -rf "$CACHE/clavis-build"
 cmake -S "$CACHE/clavis" -B "$CACHE/clavis-build" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
@@ -151,6 +156,25 @@ for font_spec in \
     chmod 0644 "$font_file"
 done
 fc-cache -f "${XDG_DATA_HOME:-$HOME/.local/share}/fonts"
+
+printf '\n== Freedesktop icon fallbacks (user-local) ==\n'
+icon_theme_root="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor"
+icon_package_dir="$CACHE/material-symbols-svg"
+rm -rf "$icon_package_dir"
+mkdir -p "$icon_package_dir" "$icon_theme_root/scalable/devices" "$icon_theme_root/scalable/status"
+icon_package=$(npm pack @material-symbols/svg-400@0.46.0 --silent --pack-destination "$icon_package_dir")
+tar -xzf "$icon_package_dir/$icon_package" -C "$icon_package_dir" --strip-components=1
+printf '%s  %s\n' "be7e130425c9a267863e89b684118d01e4a34736235539eb91790f05e32f55c4" "$icon_package_dir/rounded/keyboard.svg" | sha256sum --check --status
+printf '%s  %s\n' "0887adc18e858115fe4ca130fc290b6053e76fc18a5f55c3f5f9542f351850df" "$icon_package_dir/rounded/lan.svg" | sha256sum --check --status
+if [[ ! -f "$icon_theme_root/index.theme" ]]; then
+    cp /usr/share/icons/hicolor/index.theme "$icon_theme_root/index.theme"
+fi
+install -m 0644 "$icon_package_dir/rounded/keyboard.svg" "$icon_theme_root/scalable/devices/input-keyboard-symbolic.svg"
+install -m 0644 "$icon_package_dir/rounded/keyboard.svg" "$icon_theme_root/scalable/devices/input-keyboard.svg"
+install -m 0644 "$icon_package_dir/rounded/lan.svg" "$icon_theme_root/scalable/devices/network-wired-symbolic.svg"
+install -m 0644 "$icon_package_dir/rounded/lan.svg" "$icon_theme_root/scalable/status/network-wired.svg"
+install -m 0644 "$icon_package_dir/rounded/lan.svg" "$icon_theme_root/scalable/status/network-wired-symbolic.svg"
+gtk-update-icon-cache -f -t "$icon_theme_root" >/dev/null
 printf '\n== Meteocons assets ==\n'
 meteocons="$PREFIX/share/quickshell/clavis/assets/icons/weather/meteocons"
 tmp_assets="$CACHE/meteocons-packages"
@@ -161,6 +185,9 @@ lottie_package=$(npm pack @meteocons/lottie@0.1.0 --silent --pack-destination "$
 tar -xzf "$tmp_assets/svg/$svg_package" -C "$meteocons/svg" --strip-components=1
 tar -xzf "$tmp_assets/lottie/$lottie_package" -C "$meteocons/lottie" --strip-components=1
 
+if [[ ! -e "$HOME/.face" ]]; then
+    install -m 0644 "$PREFIX/share/quickshell/clavis/assets/images/dino.png" "$HOME/.face"
+fi
 mkdir -p "$HOME/.config/quickshell"
 ln -sfn "$PREFIX/share/quickshell/clavis" "$HOME/.config/quickshell/clavis"
 
