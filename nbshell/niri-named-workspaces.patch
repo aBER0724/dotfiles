@@ -11,6 +11,19 @@ index 5393577..c6711ca 100644
          color: Theme.yellow
          wrapMode: Text.WordWrap
      }
+diff --git a/shell/Bar/Widgets/Tray.qml b/shell/Bar/Widgets/Tray.qml
+index e9ae767..3db5b93 100644
+--- a/shell/Bar/Widgets/Tray.qml
++++ b/shell/Bar/Widgets/Tray.qml
+@@ -40,7 +40,7 @@ Cell {
+             id: toggle
+
+             anchors.verticalCenter: parent.verticalCenter
+-            text: root.expanded ? "<" : ">"
++            text: root.expanded ? ">" : "<"
+             color: Theme.textDim
+
+             MouseArea {
 diff --git a/shell/Menu/Dashboard.qml b/shell/Menu/Dashboard.qml
 index df3d5cc..519739b 100644
 --- a/shell/Menu/Dashboard.qml
