@@ -19,11 +19,13 @@ delivery = "terminal"
 key = "prefix+g"
 type = "plugin_action"
 command = "herdr-lazygit.open"
+description = "open lazygit in split pane"
 
 [[keys.command]]              # lazygit: open in its own tab
 key = "prefix+shift+g"
 type = "plugin_action"
 command = "herdr-lazygit.open-tab"
+description = "open lazygit in new tab"
 
 # scratch
 [[keys.command]]
@@ -50,21 +52,25 @@ description = "open file explorer in a new tab"
 key = "prefix+shift+m"
 type = "plugin_action"
 command = "mirror.start"       # start / resume the daemon
+description = "remote-start"
 
 [[keys.command]]
 key = "prefix+shift+s"
 type = "plugin_action"
 command = "mirror.pause"       # freeze syncing; start again to resume
+description = "remote-pasue"
 
 [[keys.command]]
 key = "prefix+shift+b"         # "bring back" (shift+r is native reload_config)
 type = "plugin_action"
 command = "mirror.restore"     # un-close mirrors you closed locally
+description = "remote-restore"
 
 [[keys.command]]
 key = "prefix+alt+d"           # destructive: closes ALL mirrors + clears state
 type = "plugin_action"
 command = "mirror.teardown"    # stop mirroring everything (start to resume)
+description = "remote-teardown"
 
 # Create objects on the REMOTE host, or locally when invoked outside a mirror.
 # Each is herdr's native local key + alt (Option): same muscle memory, remote
@@ -73,21 +79,25 @@ command = "mirror.teardown"    # stop mirroring everything (start to resume)
 key = "prefix+alt+n"           # native new_workspace = prefix+shift+n
 type = "plugin_action"
 command = "mirror.remote-new-workspace"
+description = "remote-new-workspace"
 
 [[keys.command]]
 key = "prefix+alt+c"           # native new_tab = prefix+c
 type = "plugin_action"
 command = "mirror.remote-new-tab"
+description = "remote-new-tab"
 
 [[keys.command]]
 key = "prefix+alt+v"           # native split_vertical = prefix+v
 type = "plugin_action"
 command = "mirror.remote-split-right"
+description = "remote-split-right"
 
 [[keys.command]]
 key = "prefix+alt+minus"       # native split_horizontal = prefix+minus
 type = "plugin_action"
 command = "mirror.remote-split-down"
+description = "remote-split-down"
 
 # plugin-manager
 [[keys.command]]
