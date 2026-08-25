@@ -37,6 +37,19 @@ index df3d5cc..519739b 100644
                              Repeater {
                                  model: root.nextEvents.slice(0, 5)
                                  Item {
+diff --git a/shell/Services/Compositor.qml b/shell/Services/Compositor.qml
+index 27aeef4..d272752 100644
+--- a/shell/Services/Compositor.qml
++++ b/shell/Services/Compositor.qml
+@@ -33,7 +33,7 @@ Singleton {
+     readonly property string focusedAppId: focusedWindow?.app_id ?? ""
+
+     function workspacesForOutput(output) {
+-        return workspaces.filter(w => !output || !w.output || w.output === output).sort((a, b) => a.idx - b.idx);
++        return workspaces.filter(w => (!output || !w.output || w.output === output) && (!isNiri || String(w.name || "") !== "")).sort((a, b) => a.idx - b.idx);
+     }
+
+     function focusWorkspace(value) {
 diff --git a/shell/Services/Niri.qml b/shell/Services/Niri.qml
 index 3e7ca9b..e9f807f 100644
 --- a/shell/Services/Niri.qml
