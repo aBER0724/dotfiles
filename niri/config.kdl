@@ -28,11 +28,21 @@ input {
 output "DP-2" {
     mode "2560x1440@100"
 }
-
 // 内屏 eDP-1 (2880x1800,高分屏缩放 ~167%)
 output "eDP-1" {
     scale 1.6666
 }
+
+// ── 命名工作区(AeroSpace 式固定 9 个,始终存在)──────
+workspace "1" {}
+workspace "2" {}
+workspace "3" {}
+workspace "4" {}
+workspace "5" {}
+workspace "Q" {}
+workspace "W" {}
+workspace "E" {}
+workspace "R" {}
 
 layout {
     gaps 8
