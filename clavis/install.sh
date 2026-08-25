@@ -18,9 +18,10 @@ CAVA_REPO="https://github.com/karlstav/cava"
 CAVA_REV="adfe24a51711d240a9f9017088ff3a9a9e291aa0"
 WLOGOUT_REPO="https://github.com/ArtsyMacaw/wlogout"
 WLOGOUT_REV="2db390f3bb1f57e73b3172a7c24f4c1fe35c0c96"
+MATERIAL_ICONS_REV="e083cc60a0828fdd3b404cea0cb8a5b900e9c23e"
 
 manual_packages="qt6-tools qt6-lottie qtkeychain-qt6 cava"
-required_commands="git cmake ninja pkg-config c++ cc ar npm meson qs"
+required_commands="git cmake ninja pkg-config c++ cc ar npm meson qs curl sha256sum fc-cache"
 missing=""
 for command_name in $required_commands; do
     command -v "$command_name" >/dev/null 2>&1 || missing="$missing $command_name"
@@ -134,6 +135,22 @@ meson setup "$CACHE/wlogout-build" "$CACHE/wlogout" \
 ninja -C "$CACHE/wlogout-build" -j "$JOBS"
 meson install -C "$CACHE/wlogout-build"
 
+printf '\n== Material Symbols fonts (user-local) ==\n'
+font_dir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/clavis"
+mkdir -p "$font_dir"
+for font_spec in \
+    "Rounded:c2c185c2f31193348f34ae454215d990bb49f494c45e79348d9f2b3d653607d7" \
+    "Outlined:45b022a58ac39268b80c8e314dcb928874d693988ced8118e164b384020e4acd"; do
+    style=${font_spec%%:*}
+    expected_sha=${font_spec#*:}
+    font_file="$font_dir/MaterialSymbols${style}.ttf"
+    font_url="https://raw.githubusercontent.com/google/material-design-icons/$MATERIAL_ICONS_REV/variablefont/MaterialSymbols${style}%5BFILL%2CGRAD%2Copsz%2Cwght%5D.ttf"
+    curl -fL --retry 3 "$font_url" -o "$font_file.tmp"
+    printf '%s  %s\n' "$expected_sha" "$font_file.tmp" | sha256sum --check --status
+    mv "$font_file.tmp" "$font_file"
+    chmod 0644 "$font_file"
+done
+fc-cache -f "${XDG_DATA_HOME:-$HOME/.local/share}/fonts"
 printf '\n== Meteocons assets ==\n'
 meteocons="$PREFIX/share/quickshell/clavis/assets/icons/weather/meteocons"
 tmp_assets="$CACHE/meteocons-packages"
