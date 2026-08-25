@@ -37,7 +37,6 @@
 
 #waybar.main #custom-power,
 #waybar.main #custom-weather,
-#waybar.main #custom-battery,
 #waybar.main #network,
 #waybar.main #battery,
 #waybar.main #backlight,
@@ -50,32 +49,38 @@
 #waybar.main #tray,
 #waybar.main #window,
 #waybar.main #disk {
-  padding-left: 8pt;
-  padding-right: 8pt;
-  padding-bottom: 4px;
-  padding-top: 4px;
-  background: transparent;
+  padding: 4px 9pt;
+  margin: 4px 3px;
+  background: @background;
+  border: 1px solid alpha(@caution, 0.5);
+  border-radius: 999px;
 }
 
 #waybar.main #tray {
-  padding-right: 6pt;
+  padding-left: 9pt;
+  padding-right: 9pt;
 }
 
 #waybar.main #custom-weather {
-  padding-right: 3pt;
+  padding-right: 8pt;
 }
 
-/* ── 左中右三段胶囊 ─────────────────────────────── */
+/* ── 每个模块都是独立胶囊 ─────────────────────────── */
 #waybar.main .modules-left,
 #waybar.main .modules-center,
 #waybar.main .modules-right {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+#waybar.main #workspaces {
   background: @background;
   border: 1px solid alpha(@caution, 0.5);
-  border-radius: 16px;
-  padding-left: 8pt;
-  padding-right: 8pt;
-  margin-top: 4px;
-  margin-bottom: 4px;
+  border-radius: 999px;
+  padding: 0 5pt;
+  margin: 4px 3px;
 }
 
 /* 工作区:只显示有窗口的(GTK 不支持 display:none,改用塌缩零宽)*/
@@ -121,21 +126,16 @@
 }
 
 #waybar.main #network.info {
-  padding-right: 10px;
-  padding-left: 10px;
   color: @caution;
-  background: transparent;
 }
 
 #waybar.main #network.info.wifi.normal,
 #waybar.main #network.info.ethernet {
   color: @performance;
-  padding-right: 15px;
 }
 
 #waybar.main #network.info.wifi {
   color: @warning;
-  padding-right: 15px;
 }
 
 /* ── 临界/警告状态 ────────────────────────────────── */
