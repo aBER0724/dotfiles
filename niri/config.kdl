@@ -158,9 +158,9 @@ binds {
     XF86AudioPrev         { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell media previous"; }
 }
 
-// ── 窗口规则(按需取消注释)─────────────────────────
-// window-rule {
-//     match app-id == "org.gnome.Nautilus" {
-//         // 例:默认全屏打开文件管理器
-//     }
-// }
+// ── 窗口圆角──────────────────────────────────────
+// 轻微柔化应用窗口，同时保留紧凑、硬朗的 TUI 风格。
+window-rule {
+    geometry-corner-radius 4
+    clip-to-geometry true
+}

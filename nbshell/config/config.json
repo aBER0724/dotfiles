@@ -10,7 +10,7 @@
   "padX": 1,
   "widgetGap": 1,
   "padY": 4,
-  "radius": 0,
+  "radius": 4,
   "borderWidth": 1,
   "barBorder": true,
   "opacity": 0.94,
