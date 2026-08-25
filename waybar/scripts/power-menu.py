@@ -173,7 +173,6 @@ def main() -> int:
         return False
 
     win.connect("key-press-event", on_key)
-    win.connect("focus-out-event", close)
     win.connect("destroy", lambda *_: Gtk.main_quit())
     signal.signal(signal.SIGTERM, lambda *_: win.close())
 

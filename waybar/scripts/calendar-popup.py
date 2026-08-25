@@ -2,7 +2,7 @@
 """Waybar 时钟的轻量下拉日历。
 
 使用 gtk-layer-shell 显示在屏幕顶部中央：不参与 niri 平铺、不占任务栏。
-再次点击时钟、按 Esc 或点击窗外都会关闭。
+再次点击时钟或按 Esc 关闭；失去焦点时保持显示。
 """
 import atexit
 import os
@@ -108,7 +108,6 @@ def main() -> int:
         return False
 
     win.connect("key-press-event", on_key)
-    win.connect("focus-out-event", close)
     win.connect("destroy", lambda *_: Gtk.main_quit())
     signal.signal(signal.SIGTERM, lambda *_: win.close())
 
