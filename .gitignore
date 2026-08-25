@@ -37,3 +37,4 @@ herdr-client.sock
 session.json
 release-notes.json
 config.toml.hunkdiff-backup
+herdr/scratch/bin/

@@ -48,6 +48,10 @@ echo "== Linking local plugins =="
 if [ -d "$SCRATCH" ]; then
   mkdir -p ~/.local/share
   ln -sfn "$SCRATCH" ~/.local/share/herdr-scratch
+  # `herdr plugin link` runs no [[build]] steps, so the checkout needs its
+  # binary in place. Point it at the brew-installed herdr-scratch.
+  mkdir -p "$SCRATCH/bin"
+  ln -sfn "$(command -v herdr-scratch)" "$SCRATCH/bin/herdr-scratch"
   herdr plugin link ~/.local/share/herdr-scratch
 fi
 

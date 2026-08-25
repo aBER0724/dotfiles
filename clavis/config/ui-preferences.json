@@ -16,7 +16,66 @@
   "sidebarCookieMinuteHandStyle": "medium",
   "sidebarCookieSecondHandStyle": "dot",
   "sidebarCookieDateStyle": "bubble",
-  "drawerGridLayout": {},
+  "drawerGridLayout": {
+    "version": 7,
+    "tiles": [
+      {
+        "id": "time",
+        "column": 0,
+        "row": 0
+      },
+      {
+        "id": "battery",
+        "column": 2,
+        "row": 0
+      },
+      {
+        "id": "cpu",
+        "column": 0,
+        "row": 2
+      },
+      {
+        "id": "gpu",
+        "column": 1,
+        "row": 2
+      },
+      {
+        "id": "memoryUsed",
+        "column": 2,
+        "row": 2
+      },
+      {
+        "id": "wifi",
+        "column": 0,
+        "row": 3
+      },
+      {
+        "id": "network",
+        "column": 1,
+        "row": 3
+      },
+      {
+        "id": "storage",
+        "column": 0,
+        "row": 4
+      },
+      {
+        "id": "calendar",
+        "column": 0,
+        "row": 5
+      },
+      {
+        "id": "weather",
+        "column": 1,
+        "row": 5
+      },
+      {
+        "id": "media",
+        "column": 0,
+        "row": 7
+      }
+    ]
+  },
   "systemCards": {
     "version": 3,
     "globalDesktopLayoutMode": "free",

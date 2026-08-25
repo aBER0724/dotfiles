@@ -45,10 +45,10 @@ index 5393577..c6711ca 100644
          wrapMode: Text.WordWrap
      }
 diff --git a/shell/Bar/Widgets/Tray.qml b/shell/Bar/Widgets/Tray.qml
-index e9ae767..36d7340 100644
+index e9ae767..1e6160b 100644
 --- a/shell/Bar/Widgets/Tray.qml
 +++ b/shell/Bar/Widgets/Tray.qml
-@@ -14,7 +14,7 @@ import qs.Widgets
+@@ -14,17 +14,12 @@ import qs.Widgets
  // Links startet, Mitte ist die zweite Aktion des Programms, rechts oeffnet
  // dessen Menue. Genau das erwartet ein SNI-Programm.
  //
@@ -57,7 +57,17 @@ index e9ae767..36d7340 100644
  // die Anzahl ist unwichtig, weil die Symbole selbst direkt daneben erscheinen.
  // Der Zustand steht in der Config und ueberlebt damit den Neustart.
  Cell {
-@@ -40,7 +40,7 @@ Cell {
+     id: root
+
+-    // Welches Symbol gerade sein Menue zeigt. Der Anker des Popouts wandert
+-    // mit, damit es unter dem richtigen Symbol steht.
+-    property var menuItem: null
+-    property Item menuAnchor: null
+-
+     readonly property var items: SystemTray.items?.values ?? []
+
+     readonly property bool expanded: Config.value("trayExpanded", false)
+@@ -40,7 +35,7 @@ Cell {
              id: toggle
 
              anchors.verticalCenter: parent.verticalCenter
@@ -66,6 +76,76 @@ index e9ae767..36d7340 100644
              color: Theme.textDim
 
              MouseArea {
+@@ -81,24 +76,21 @@ Cell {
+
+                     onClicked: mouseEvent => {
+                         const item = entry.modelData;
+-                        if (mouseEvent.button === Qt.RightButton || item.onlyMenu) {
+-                            if (!item.hasMenu)
+-                                return;
+-                            // Dasselbe Symbol noch einmal schliesst das Menue.
+-                            if (menuPopout.visible && root.menuItem === item) {
+-                                menuPopout.close();
+-                                return;
+-                            }
+-                            root.menuItem = item;
+-                            root.menuAnchor = entry;
+-                            menuPopout.open();
+-                            return;
+-                        }
+                         if (mouseEvent.button === Qt.MiddleButton) {
+                             item.secondaryActivate();
+                             return;
+                         }
+-                        item.activate();
++                        if (item.hasMenu) {
++                            // Most of the current tray applications expose a menu
++                            // but do not mark themselves as menu-only. Opening that
++                            // menu for either primary or context click gives both
++                            // buttons a reliable visible action under Niri.
++                            const point = entry.mapToItem(null, mouseEvent.x, mouseEvent.y);
++                            item.display(entry.QsWindow.window, Math.round(point.x), Math.round(point.y));
++                            return;
++                        }
++                        if (mouseEvent.button === Qt.LeftButton)
++                            item.activate();
+                     }
+
+                     onWheel: wheelEvent => entry.modelData.scroll(wheelEvent.angleDelta.y, false)
+@@ -107,33 +99,4 @@ Cell {
+         }
+     }
+
+-    // Ein Popout fuer alle Symbole: es haengt jeweils an dem, das zuletzt
+-    // angeklickt wurde.
+-    Popout {
+-        id: menuPopout
+-
+-        anchorItem: root.menuAnchor ?? root
+-        takesKeyboard: false
+-        contentComponent: menuComponent
+-    }
+-
+-    Component {
+-        id: menuComponent
+-
+-        Column {
+-            spacing: Theme.cellH * 0.3
+-
+-            Line {
+-                text: root.menuItem?.title || root.menuItem?.id || ""
+-                color: Theme.fgDim
+-            }
+-
+-            MenuView {
+-                handle: root.menuItem?.menu ?? null
+-                dismiss: () => {
+-                    menuPopout.close();
+-                }
+-            }
+-        }
+-    }
+ }
 diff --git a/shell/Menu/Dashboard.qml b/shell/Menu/Dashboard.qml
 index df3d5cc..519739b 100644
 --- a/shell/Menu/Dashboard.qml
