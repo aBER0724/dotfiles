@@ -32,7 +32,8 @@
       "network",
       "custom/pulseaudio",
       "backlight",
-      "battery"
+      "battery",
+      "custom/power"
     ],
 
     // ── Modules ─────────────────────────────────────
@@ -134,6 +135,13 @@
       },
       "tooltip": true,
       "on-click": "gnome-control-center power"
+    },
+
+    "custom/power": {
+      "format": "",
+      "tooltip": true,
+      "tooltip-format": "电源菜单",
+      "on-click": "/usr/bin/python3 ~/.config/waybar/scripts/power-menu.py"
     },
 
     "custom/weather": {

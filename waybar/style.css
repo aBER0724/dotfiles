@@ -35,6 +35,7 @@
   transition: all 0.15s ease-in-out;
 }
 
+#waybar.main #custom-power,
 #waybar.main #custom-weather,
 #waybar.main #custom-battery,
 #waybar.main #network,
@@ -102,6 +103,12 @@
 #waybar.main #battery,
 #waybar.main #backlight {
   color: @misc;
+}
+
+#waybar.main #custom-power {
+  color: @warning;
+  padding-left: 9pt;
+  padding-right: 7pt;
 }
 
 #waybar.main #custom-weather,
