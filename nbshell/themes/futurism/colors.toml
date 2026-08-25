@@ -1,0 +1,32 @@
+# Futurism palette adapted for nbshell from the local Omarchy theme.
+mode = "dark"
+
+accent = "#00BFFF"
+selection = "#132A4A"
+muted = "#52647A"
+
+background = "#0A1428"
+dark_background = "#070E1C"
+darker_background = "#040912"
+lighter_background = "#12213A"
+
+foreground = "#F0F8FF"
+dark_foreground = "#8A9BAD"
+light_foreground = "#F7FBFF"
+bright_foreground = "#FFFFFF"
+
+red = "#FF406C"
+yellow = "#FFD166"
+orange = "#FF8C42"
+green = "#55DDAA"
+cyan = "#00BFFF"
+blue = "#4DA3FF"
+magenta = "#FF40A3"
+brown = "#B58B67"
+
+bright_red = "#FF6B8D"
+bright_yellow = "#FFE08A"
+bright_green = "#7AF0C2"
+bright_cyan = "#5CD6FF"
+bright_blue = "#7DBBFF"
+bright_magenta = "#FF75BE"

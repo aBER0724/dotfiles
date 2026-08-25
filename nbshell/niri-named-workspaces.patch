@@ -1,0 +1,39 @@
+diff --git a/shell/Bar/Widgets/CalendarPanel.qml b/shell/Bar/Widgets/CalendarPanel.qml
+index 5393577..c6711ca 100644
+--- a/shell/Bar/Widgets/CalendarPanel.qml
++++ b/shell/Bar/Widgets/CalendarPanel.qml
+@@ -322,7 +322,7 @@ Column {
+     Line {
+         visible: !Calendar.available
+         width: panel.rowWidth
+-        text: "  " + (Calendar.problem === "khal fehlt" ? "khal is not installed — pacman -S khal vdirsyncer" : Calendar.problem)
++        text: "  " + (Calendar.problem === "khal fehlt" ? "khal is not installed — calendar sync is unavailable" : Calendar.problem)
+         color: Theme.yellow
+         wrapMode: Text.WordWrap
+     }
+diff --git a/shell/Menu/Dashboard.qml b/shell/Menu/Dashboard.qml
+index df3d5cc..519739b 100644
+--- a/shell/Menu/Dashboard.qml
++++ b/shell/Menu/Dashboard.qml
+@@ -282,7 +282,7 @@ PanelWindow {
+                             title: "Upcoming events"
+                             badge: Calendar.loading ? "…" : "OPEN  ·  " + String(root.nextEvents.length)
+                             run: () => root.page = 3
+-                            Line { visible: root.nextEvents.length === 0; text: Calendar.available ? "nothing in the next few days" : Calendar.problem; color: Theme.muted }
++                            Line { visible: root.nextEvents.length === 0; text: Calendar.available ? "nothing in the next few days" : (Calendar.problem === "khal fehlt" ? "calendar sync unavailable" : Calendar.problem); color: Theme.muted }
+                             Repeater {
+                                 model: root.nextEvents.slice(0, 5)
+                                 Item {
+diff --git a/shell/Services/Niri.qml b/shell/Services/Niri.qml
+index 3e7ca9b..e9f807f 100644
+--- a/shell/Services/Niri.qml
++++ b/shell/Services/Niri.qml
+@@ -43,7 +43,7 @@ Singleton {
+     readonly property string focusedAppId: focusedWindow?.app_id ?? ""
+
+     function workspacesForOutput(output) {
+-        return workspaces.filter(w => !output || w.output === output).sort((a, b) => a.idx - b.idx);
++        return workspaces.filter(w => (!output || w.output === output) && String(w.name || "") !== "").sort((a, b) => a.idx - b.idx);
+     }
+
+     function focusWorkspace(idx) {

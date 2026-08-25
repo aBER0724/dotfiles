@@ -1,0 +1,55 @@
+{
+  "theme": "futurism",
+  "mode": "bar",
+  "edge": "top",
+  "font": "JetBrainsMono Nerd Font",
+  "fontSize": 14,
+  "locale": "zh_CN",
+  "clockFormat": "ddd MM-dd  HH:mm",
+  "gap": 0,
+  "padX": 1,
+  "widgetGap": 1,
+  "padY": 4,
+  "radius": 0,
+  "borderWidth": 1,
+  "barBorder": true,
+  "opacity": 0.94,
+  "barTransparent": false,
+  "widgetStyle": "plain",
+  "meterStyle": "blocks",
+  "visualizerStyle": "blocks",
+  "widgetIcons": true,
+  "quietWidgets": false,
+  "workspaceStyle": "numbers",
+  "workspaceClassic": false,
+  "osdInPill": false,
+  "notifications": true,
+  "themeExport": false,
+  "wallpaper": true,
+  "wallpaperBlur": false,
+  "wallpaperOverride": "/home/aber/.config/omarchy/themes/futurism/backgrounds/wallpaper.jpg",
+  "wallpaperPickerScope": "theme",
+  "enabledPlugins": [],
+  "collapsedWidgets": [
+    "clock"
+  ],
+  "leftWidgets": [
+    "workspaces",
+    "sep",
+    "window"
+  ],
+  "centerWidgets": [
+    "clock"
+  ],
+  "rightWidgets": [
+    "sys",
+    "sep",
+    "tray",
+    "notifications",
+    "volume",
+    "control",
+    "themes",
+    "battery"
+  ],
+  "trayExpanded": false
+}

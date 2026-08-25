@@ -70,14 +70,14 @@ layout {
 // fcitx5 输入法环境变量由 ~/.config/environment.d/fcitx.conf 全局注入(本 niri 构建无 env 节点)
 
 // ── 开机自启 ──────────────────────────────────────
-spawn-at-startup "sh" "-c" "PATH=$HOME/.local/bin:$PATH QML_IMPORT_PATH=$HOME/.local/lib/qt6/qml${QML_IMPORT_PATH:+:$QML_IMPORT_PATH} key shell --daemon"  // Clavis Quickshell 桌面 Shell
+spawn-at-startup "sh" "-c" "systemctl --user start nbshell.service"  // nbshell Nerd/TUI Quickshell 桌面 Shell
 spawn-at-startup "fcitx5" "-d"
 spawn-at-startup "cc-switch"
 
 binds {
     // ── 终端 & 启动器 ─────────────────────────────
     Alt+Return { spawn "alacritty"; }
-    Alt+Space  { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH key ipc call spotlight toggle"; }  // Clavis Spotlight
+    Alt+Space  { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell launcher"; }  // nbshell 启动器
 
     // ── 窗口 ──────────────────────────────────────
     Alt+C            { close-window; }          // 关闭窗口(macOS Cmd+W 习惯,C 键防冲突)
@@ -140,19 +140,22 @@ binds {
 
     // ── 系统 ──────────────────────────────────────
     Alt+Shift+Escape { quit; }
-    Alt+T        { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH key ipc call control-center toggle theme"; }  // Clavis 主题设置
-    Alt+Shift+T  { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH key ipc call wallpaper next"; }  // Clavis 下一张壁纸
+    Alt+T        { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell picker"; }  // nbshell 主题选择器
+    Alt+Shift+T  { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell wallpaper pick"; }  // nbshell 壁纸选择器
+    Alt+Ctrl+T   { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell dashboard"; }  // nbshell Dashboard
+    Alt+Escape   { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell power menu"; }  // nbshell 电源菜单
+    Alt+N        { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell notify center"; }  // nbshell 通知中心
 
     // ── 媒体键 ────────────────────────────────────
-    XF86AudioRaiseVolume { spawn "wpctl" "set-volume" "-l" "1.0" "@DEFAULT_AUDIO_SINK@" "5%+"; }
-    XF86AudioLowerVolume { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%-"; }
-    XF86AudioMute        { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
-    XF86AudioMicMute     { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
-    XF86MonBrightnessUp   { spawn "brightnessctl" "set" "+5%"; }
-    XF86MonBrightnessDown { spawn "brightnessctl" "set" "5%-"; }
-    XF86AudioPlay         { spawn "playerctl" "play-pause"; }
-    XF86AudioNext         { spawn "playerctl" "next"; }
-    XF86AudioPrev         { spawn "playerctl" "previous"; }
+    XF86AudioRaiseVolume { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell audio up"; }
+    XF86AudioLowerVolume { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell audio down"; }
+    XF86AudioMute        { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell audio mute"; }
+    XF86AudioMicMute     { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell audio micmute"; }
+    XF86MonBrightnessUp   { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell brightness up"; }
+    XF86MonBrightnessDown { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell brightness down"; }
+    XF86AudioPlay         { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell media playpause"; }
+    XF86AudioNext         { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell media next"; }
+    XF86AudioPrev         { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell media previous"; }
 }
 
 // ── 窗口规则(按需取消注释)─────────────────────────
@@ -161,7 +164,3 @@ binds {
 //         // 例:默认全屏打开文件管理器
 //     }
 // }
-
-// BEGIN CLAVIS CURSOR
-include optional=true "clavis/cursor.kdl"
-// END CLAVIS CURSOR

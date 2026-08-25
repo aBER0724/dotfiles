@@ -23,6 +23,7 @@ LINK_TABLE=(
   "niri|niri|$HOME/.config/niri"
   "waybar|waybar|$HOME/.config/waybar"
   "clavis|clavis/config|$HOME/.config/clavis"
+  "nbshell|nbshell/config/config.json|$HOME/.config/nbshell/config.json"
   "fastfetch|fastfetch|$HOME/.config/fastfetch"
   "pi-settings|pi-agent/settings.json|$HOME/.pi/agent/settings.json"
   "pi-models|pi-agent/models.json|$HOME/.pi/agent/models.json"
@@ -36,7 +37,7 @@ GROUP_TABLE=(
   "pi|pi-settings pi-models pi-extensions"
   "zsh|zshrc zshenv zprofile shinit p10k"
   "herdr|herdr"
-  "wm|niri clavis"
+  "wm|niri nbshell"
 )
 
 # Expand aliases in "$*" to concrete names (set -u + empty string is fine here).
@@ -185,16 +186,17 @@ cmd_install() {
   # herdr plugins are a whole-package install: only re-run them when the
   # user asked for the herdr entry/group (or nothing, i.e. everything).
   # `dotfiles install pi` or `install nvim` just links, no plugin churn.
-  local want_herdr=0 want_pi=0 want_zsh=0 want_clavis=0 w
+  local want_herdr=0 want_pi=0 want_zsh=0 want_clavis=0 want_nbshell=0 w
   for w in $1; do
     case "$w" in
       herdr|herdr/*) want_herdr=1 ;;
       pi-settings|pi-models|pi-extensions) want_pi=1 ;;
       zshrc|zshenv|zprofile|shinit|p10k) want_zsh=1 ;;
       clavis) want_clavis=1 ;;
+      nbshell) want_nbshell=1 ;;
     esac
   done
-  if [ -z "$1" ]; then want_herdr=1; want_pi=1; want_zsh=1; want_clavis=1; fi
+  if [ -z "$1" ]; then want_herdr=1; want_pi=1; want_zsh=1; want_nbshell=1; fi
 
   cmd_link
   echo
@@ -207,6 +209,10 @@ cmd_install() {
   if [ "$want_clavis" = 1 ]; then
     echo "== clavis (user-local, never sudo) =="
     bash "$DOTFILES/clavis/install.sh"
+  fi
+  if [ "$want_nbshell" = 1 ]; then
+    echo "== nbshell (user-local, never sudo) =="
+    bash "$DOTFILES/nbshell/install.sh"
   fi
   echo
   if [ "$want_pi" = 1 ]; then
