@@ -140,7 +140,7 @@ binds {
 
     // ── 系统 ──────────────────────────────────────
     Alt+Shift+Escape { quit; }
-    Alt+T        { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell picker"; }  // nbshell 主题选择器
+    Alt+T        { spawn "bash" "-c" "$HOME/.config/nbshell/theme-next-sync"; }  // 切换主题并同步 nvim/Herdr
     Alt+Shift+T  { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell wallpaper pick"; }  // nbshell 壁纸选择器
     Alt+Ctrl+T   { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell dashboard"; }  // nbshell Dashboard
     Alt+Escape   { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell power menu"; }  // nbshell 电源菜单

@@ -1,0 +1,26 @@
+// Von nbshell geschrieben -- Theme: tokyo-night
+// Do not edit manually; every theme change overwrites this file.
+
+layout {
+    focus-ring {
+        active-color "#7aa2f7"
+        inactive-color "#414868"
+        urgent-color "#f7768e"
+    }
+
+    border {
+        active-color "#7aa2f7"
+        inactive-color "#414868"
+        urgent-color "#f7768e"
+    }
+
+    tab-indicator {
+        active-color "#7aa2f7"
+        inactive-color "#414868"
+        urgent-color "#f7768e"
+    }
+
+    insert-hint {
+        color "#7aa2f780"
+    }
+}

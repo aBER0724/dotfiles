@@ -1,8 +1,19 @@
 onboarding = false
 
+# BEGIN nbshell managed theme
 [theme]
-name = "solarized"
-auto_switch = true
+name = "tokyo-night"
+auto_switch = false
+
+[theme.custom]
+sidebar_bg = "#13141c"
+active_row_bg = "#24283b"
+selection_bg = "#292e42"
+panel_bg = "#1a1b26"
+accent = "#7aa2f7"
+red = "#f7768e"
+green = "#9ece6a"
+# END nbshell managed theme
 
 [experimental]
 kitty_graphics = true
