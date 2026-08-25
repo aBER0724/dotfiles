@@ -1,5 +1,5 @@
 diff --git a/shell/Bar/Bar.qml b/shell/Bar/Bar.qml
-index a7a2296..a654efe 100644
+index a7a2296..8ff3eeb 100644
 --- a/shell/Bar/Bar.qml
 +++ b/shell/Bar/Bar.qml
 @@ -194,7 +194,7 @@ Variants {
@@ -11,6 +11,26 @@ index a7a2296..a654efe 100644
              color: Theme.alpha(Theme.bg, Config.barOpacity)
              border.width: Config.barBorder ? Theme.borderWidth : 0
              border.color: Theme.muted
+@@ -203,15 +203,10 @@ Variants {
+                 ColorAnimation { duration: 140 }
+             }
+
+-            // Doppelklick auf die Leiste: Hintergrund transparent bzw. wieder
+-            // auf die konfigurierte Deckkraft stellen. NoModifier laesst den
+-            // bestehenden Shift+Drag zum Verschieben der Kante unberuehrt.
+-            TapHandler {
+-                acceptedButtons: Qt.LeftButton
+-                acceptedModifiers: Qt.NoModifier
+-                gesturePolicy: TapHandler.ReleaseWithinBounds
+-                onDoubleTapped: Config.toggleBarTransparency()
+-            }
++            // Do not put a no-modifier TapHandler over the complete bar. It
++            // competes with the MouseAreas inside custom widgets (notably SNI
++            // tray icons) and can consume their click sequence. Transparency
++            // remains available from settings/IPC instead.
+
+             // Shift+Linksklick ziehen verschiebt die Leiste an die andere
+             // Bildschirmkante. Der Modifier verhindert, dass normale Klicks
 diff --git a/shell/Bar/Widgets/CalendarPanel.qml b/shell/Bar/Widgets/CalendarPanel.qml
 index 5393577..c6711ca 100644
 --- a/shell/Bar/Widgets/CalendarPanel.qml
@@ -25,9 +45,18 @@ index 5393577..c6711ca 100644
          wrapMode: Text.WordWrap
      }
 diff --git a/shell/Bar/Widgets/Tray.qml b/shell/Bar/Widgets/Tray.qml
-index e9ae767..3db5b93 100644
+index e9ae767..36d7340 100644
 --- a/shell/Bar/Widgets/Tray.qml
 +++ b/shell/Bar/Widgets/Tray.qml
+@@ -14,7 +14,7 @@ import qs.Widgets
+ // Links startet, Mitte ist die zweite Aktion des Programms, rechts oeffnet
+ // dessen Menue. Genau das erwartet ein SNI-Programm.
+ //
+-// Eingeklappt steht nur ein schlichtes `>` da. Aufgeklappt wird es zu `<` --
++// Eingeklappt steht nur ein schlichtes `<` da. Aufgeklappt wird es zu `>` --
+ // die Anzahl ist unwichtig, weil die Symbole selbst direkt daneben erscheinen.
+ // Der Zustand steht in der Config und ueberlebt damit den Neustart.
+ Cell {
 @@ -40,7 +40,7 @@ Cell {
              id: toggle
 
