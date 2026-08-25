@@ -144,7 +144,8 @@ binds {
 
     // ── 系统 ──────────────────────────────────────
     Alt+Shift+Escape { quit; }
-    Alt+T { spawn "bash" "-c" "/home/aber/.local/share/omarchy/bin/omarchy-theme-next"; }  // 循环切换配色主题(omarchy)
+    Alt+T        { spawn "bash" "-c" "/home/aber/.local/share/omarchy/bin/omarchy-theme-next"; }  // 循环切换配色主题(omarchy)
+    Alt+Shift+T  { spawn "bash" "-c" "/home/aber/.local/share/omarchy/bin/omarchy-theme-bg-next"; }  // 循环当前主题壁纸
 
     // ── 媒体键 ────────────────────────────────────
     XF86AudioRaiseVolume { spawn "swayosd-client" "--output-volume" "5+"; }
