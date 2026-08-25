@@ -36,7 +36,8 @@
 
     "niri/workspaces": {
       "format": "{value}",
-      "all-outputs": true
+      "all-outputs": true,
+      "current-only": true
     },
 
     "niri/window": {
