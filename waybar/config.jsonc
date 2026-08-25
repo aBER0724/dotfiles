@@ -161,7 +161,7 @@
           "today": "<span color='#f5e0dc'><b><u>{}</u></b></span>"
         }
       },
-      "on-click": "chromium --app=https://calendar.google.com"
+      "on-click": "/usr/bin/python3 ~/.config/waybar/scripts/calendar-popup.py"
     }
   }
 ]
