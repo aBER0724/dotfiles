@@ -16,9 +16,24 @@ end
 local config = {}
 local bundled = resolve_bundled_config()
 if bundled then
+  -- The bundled Kaku handler clears right status whenever the window is not
+  -- fullscreen. Registering our system monitor after it would make every pulse
+  -- alternate between empty and populated text. Suppress only that one bundled
+  -- registration while preserving all other Kaku event handlers.
+  local original_on = wezterm.on
+  wezterm.on = function(event_name, callback)
+    if event_name == 'update-right-status' then
+      return
+    end
+    return original_on(event_name, callback)
+  end
+
   local ok, loaded = pcall(dofile, bundled)
+  wezterm.on = original_on
   if ok and type(loaded) == 'table' then
     config = loaded
+  elseif not ok then
+    wezterm.log_error('failed to load bundled Kaku config: ' .. tostring(loaded))
   end
 end
 
@@ -45,7 +60,12 @@ local function padding_matches(current, expected)
     and current.bottom == expected.bottom
 end
 
-local fullscreen_uniform_padding = equal_padding('40px')
+local fullscreen_uniform_padding = {
+  left = '40px',
+  right = '0px',
+  top = '40px',
+  bottom = '30px',
+}
 
 local function update_window_config(window, is_full_screen)
   local overrides = window:get_config_overrides() or {}
@@ -121,20 +141,30 @@ wezterm.on('format-tab-title', function(tab, tabs, hover, max_width, _, _)
   return ' ' .. tostring(tab_idx) .. ' ' .. text .. ' '
 end)
 
+-- Kaku 0.19 repaints the tab bar whenever this callback runs. Keep the
+-- callback interval aligned with the stats producer and avoid resetting
+-- identical content, so CPU/memory/time remain visible without 1 Hz churn.
+local last_status_by_window = {}
+local last_stats_fetch = 0
+local cached_cpu_pct = '?'
+local cached_mem_pct = '?'
+
+
 wezterm.on('update-right-status', function(window)
   local dims = window:get_dimensions()
   update_window_config(window, dims.is_full_screen)
 
-  -- Read stats from cache file (written by launchd/cron every 5s)
-  local cpu_pct = '?'
-  local mem_pct = '?'
-  local f = io.open('/tmp/kaku-stats', 'r')
-  if f then
-    local data = f:read('*a')
-    f:close()
-    local c, m = data:match('(%d+)%s+(%d+)')
-    if c then cpu_pct = c end
-    if m then mem_pct = m end
+  local now = os.time()
+  if now - last_stats_fetch >= 4 then
+    local f = io.open('/tmp/kaku-stats', 'r')
+    if f then
+      local data = f:read('*a')
+      f:close()
+      local cpu, mem = data:match('(%d+)%s+(%d+)')
+      if cpu then cached_cpu_pct = cpu end
+      if mem then cached_mem_pct = mem end
+    end
+    last_stats_fetch = now
   end
 
   local cpu_icon = wezterm.nerdfonts.md_cpu_64_bit or ''
@@ -142,16 +172,17 @@ wezterm.on('update-right-status', function(window)
   local clock_icon = wezterm.nerdfonts.md_clock_time_four_outline
     or wezterm.nerdfonts.md_clock_outline
     or ''
-
   local time_text = wezterm.strftime('%H:%M')
-
-  window:set_right_status(
-    ' ' .. cpu_icon .. ' ' .. cpu_pct .. '% '
+  local status = ' ' .. cpu_icon .. ' ' .. cached_cpu_pct .. '% '
       .. '│'
-      .. ' ' .. mem_icon .. ' ' .. mem_pct .. '% '
+      .. ' ' .. mem_icon .. ' ' .. cached_mem_pct .. '% '
       .. '│'
       .. ' ' .. clock_icon .. ' ' .. time_text .. ' '
-  )
+
+  if status ~= last_status_by_window[window] then
+    window:set_right_status(status)
+    last_status_by_window[window] = status
+  end
 end)
 
 -- ===== Font =====
@@ -170,7 +201,7 @@ config.font_rules = {
 
 config.bold_brightens_ansi_colors = false
 config.font_size = 15
-config.cell_width = 1.02
+config.cell_width = 1.0
 config.harfbuzz_features = { 'calt=1', 'clig=1', 'liga=1' }
 config.use_cap_height_to_scale_fallback_fonts = false
 
@@ -197,7 +228,7 @@ config.selection_word_boundary = ' \t\n{}[]()"\'-'  -- Smart selection boundarie
 -- ===== Window =====
 config.window_padding = {
   left = '40px',
-  right = '40px',
+  right = '0px',
   top = '70px',
   bottom = '30px',
 }
@@ -659,11 +690,24 @@ wezterm.on('gui-startup', function(cmd)
 end)
 
 
+-- Root cause of the right-side ~130pt blank (fixed): Kaku lays out the tab
+-- bar with render_metrics (ceil(raw_cell x cell_width) = 21px) but paints it
+-- with tab_metrics (with_font_metrics, no cell_width multiplier = 20px).
+-- The right status right-aligns to title_width in 21px cells, so it stopped
+-- 243 x (21-20) = ~243px short of the window edge. Setting cell_width = 1.0
+-- makes both paths agree on 20px cells -> status now reaches the window edge.
 config.window_background_opacity = 0.6
 config.macos_window_background_blur = 70
-config.window_decorations = 'INTEGRATED_BUTTONS|RESIZE|MACOS_FORCE_DISABLE_SHADOW'
+-- Kaku's documented traffic-light-free mode. Without INTEGRATED_BUTTONS the
+-- retro tab bar can use the full window width for the right status.
+config.window_decorations = 'RESIZE|MACOS_FORCE_DISABLE_SHADOW'
 config.tab_title_show_basename_only = true
 config.enable_scroll_bar = false
-config.color_scheme = (wezterm.gui and wezterm.gui.get_appearance() or 'Dark'):find('Dark') and 'Kaku Dark' or 'Kaku Light'
+config.color_scheme = 'Kaku Dark'
 config.line_height = 0.8
+config.tab_title_show_foreground_process = true
+config.remember_last_cwd = false
+config.restore_previous_session = false
+
+
 return config
