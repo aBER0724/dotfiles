@@ -34,6 +34,32 @@ EOF
     exit 2
 fi
 
+optional_packages=()
+while IFS= read -r package_name; do
+    [[ -n "$package_name" && "$package_name" != \#* ]] || continue
+    if ! command -v pacman >/dev/null 2>&1 || ! pacman -Q "$package_name" >/dev/null 2>&1; then
+        optional_packages+=("$package_name")
+    fi
+done < "$SCRIPT_DIR/packages.arch.txt"
+
+if ((${#optional_packages[@]})); then
+    printf '\nnbshell optional Arch packages are missing: %s\n' "${optional_packages[*]}" >&2
+    printf 'Install manually if those features are wanted:\n  sudo pacman -S --needed' >&2
+    printf ' %q' "${optional_packages[@]}" >&2
+    printf '\n\n' >&2
+fi
+
+if command -v tuned-adm >/dev/null 2>&1; then
+    if ! systemctl is-enabled tuned.service >/dev/null 2>&1 || ! systemctl is-active tuned.service >/dev/null 2>&1; then
+        cat >&2 <<'EOF'
+
+tuned is installed but its system service is not enabled and active.
+Enable it manually if nbshell power profiles are wanted:
+  sudo systemctl enable --now tuned.service
+EOF
+    fi
+fi
+
 clone_at() {
     local repo=$1 revision=$2 destination=$3
     if [[ ! -d "$destination/.git" ]]; then

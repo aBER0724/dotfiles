@@ -47,6 +47,10 @@ Waybar remain in the repository only as manual rollback configurations.
 runtime, CLI, themes and user service entirely below `~/.local`/`~/.config`. It never calls
 `sudo` or a package manager. The synchronized default uses the local Futurism palette and
 wallpaper, Chinese locale, 24-hour time, named Niri workspaces and TUI block meters.
+Optional Arch dependencies are recorded in `nbshell/packages.arch.txt`. The installer checks
+the list and prints the manual `sudo pacman -S --needed ...` command when packages are
+missing, but never executes it. `tuned` additionally requires the one-time manual command
+`sudo systemctl enable --now tuned.service`.
 
 ```bash
 systemctl --user enable --now nbshell.service  # start and enable
