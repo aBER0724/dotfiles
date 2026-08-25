@@ -1,3 +1,16 @@
+diff --git a/shell/Bar/Bar.qml b/shell/Bar/Bar.qml
+index a7a2296..a654efe 100644
+--- a/shell/Bar/Bar.qml
++++ b/shell/Bar/Bar.qml
+@@ -194,7 +194,7 @@ Variants {
+                 return closedWidth + (openWidth - closedWidth) * win.openProgress;
+             }
+
+-            radius: win.barMode ? 0 : Theme.radius
++            radius: Theme.radius
+             color: Theme.alpha(Theme.bg, Config.barOpacity)
+             border.width: Config.barBorder ? Theme.borderWidth : 0
+             border.color: Theme.muted
 diff --git a/shell/Bar/Widgets/CalendarPanel.qml b/shell/Bar/Widgets/CalendarPanel.qml
 index 5393577..c6711ca 100644
 --- a/shell/Bar/Widgets/CalendarPanel.qml
