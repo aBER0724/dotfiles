@@ -1,17 +1,9 @@
-/* waybar style — niri 版,沿用 Catppuccin Mocha 配色 */
+/* waybar style — niri 版,配色由 omarchy 主题提供 */
+/* 切换主题(Alt+T)后,此文件引用的主题调色板自动变化 */
+@import url("../omarchy/current/theme/waybar.css");
 
-/* ── 配色 ─────────────────────────────────────────── */
-@define-color background  rgba(21, 21, 32, 0.75);
-@define-color warning     #f38ba8;
-@define-color caution     #45475a;
-@define-color performance #f5c2e7;
-@define-color audio       #cba6f7;
-@define-color misc        #94e2d5;
-@define-color date        #a6e3a1;
-@define-color work        #b4befe;
-@define-color window      #b4befe;
-@define-color process     #89b4fa;
-
+/* 主题提供: @foreground @background @warning @caution @performance
+   @audio @misc @date @work @window @process */
 /* ── 重置 ─────────────────────────────────────────── */
 * {
   border: none;

@@ -76,6 +76,7 @@ spawn-at-startup "swayosd-server"
 spawn-at-startup "walker" "--gapplication-service"   // 常驻服务,Alt+Space 唤起/收起
 spawn-at-startup "fcitx5" "-d"
 spawn-at-startup "cc-switch"
+spawn-at-startup "sh" "-c" "swaybg -i /home/aber/.config/omarchy/current/background -m fill"  // 主题壁纸(切换主题 Alt+T 时由 omarchy 重启 swaybg)
 
 binds {
     // ── 终端 & 启动器 ─────────────────────────────
@@ -143,6 +144,7 @@ binds {
 
     // ── 系统 ──────────────────────────────────────
     Alt+Shift+Escape { quit; }
+    Alt+T { spawn "bash" "-c" "/home/aber/.local/share/omarchy/bin/omarchy-theme-next"; }  // 循环切换配色主题(omarchy)
 
     // ── 媒体键 ────────────────────────────────────
     XF86AudioRaiseVolume { spawn "swayosd-client" "--output-volume" "5+"; }
