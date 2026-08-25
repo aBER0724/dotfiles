@@ -20,6 +20,7 @@ CAVA_REV="adfe24a51711d240a9f9017088ff3a9a9e291aa0"
 WLOGOUT_REPO="https://github.com/ArtsyMacaw/wlogout"
 WLOGOUT_REV="2db390f3bb1f57e73b3172a7c24f4c1fe35c0c96"
 MATERIAL_ICONS_REV="e083cc60a0828fdd3b404cea0cb8a5b900e9c23e"
+NERD_FONTS_REV="v3.4.0"
 
 manual_packages="qt6-tools qt6-lottie qtkeychain-qt6 cava"
 required_commands="git cmake ninja pkg-config c++ cc ar npm meson qs curl sha256sum fc-cache gtk-update-icon-cache"
@@ -95,6 +96,8 @@ printf '\n== Clavis Shell ==\n'
 clone_at "$CLAVIS_REPO" "$CLAVIS_REV" "$CACHE/clavis"
 git -C "$CACHE/clavis" apply --check "$SCRIPT_DIR/application-icon-query.patch"
 git -C "$CACHE/clavis" apply "$SCRIPT_DIR/application-icon-query.patch"
+git -C "$CACHE/clavis" apply --check "$SCRIPT_DIR/nerd-font-icons.patch"
+git -C "$CACHE/clavis" apply "$SCRIPT_DIR/nerd-font-icons.patch"
 rm -rf "$CACHE/clavis-build"
 cmake -S "$CACHE/clavis" -B "$CACHE/clavis-build" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
@@ -140,7 +143,17 @@ meson setup "$CACHE/wlogout-build" "$CACHE/wlogout" \
 ninja -C "$CACHE/wlogout-build" -j "$JOBS"
 meson install -C "$CACHE/wlogout-build"
 
-printf '\n== Material Symbols fonts (user-local) ==\n'
+printf '\n== Nerd Font desktop icons (user-local) ==\n'
+font_dir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/clavis"
+mkdir -p "$font_dir"
+nerd_font="$font_dir/SymbolsNerdFont-Regular.ttf"
+nerd_font_url="https://raw.githubusercontent.com/ryanoasis/nerd-fonts/$NERD_FONTS_REV/patched-fonts/NerdFontsSymbolsOnly/SymbolsNerdFont-Regular.ttf"
+curl -fL --retry 3 "$nerd_font_url" -o "$nerd_font.tmp"
+printf '%s  %s\n' "71db104aa66567d0efe0b98758f9dfc1895573a453fe85fb53d1c38544a55106" "$nerd_font.tmp" | sha256sum --check --status
+mv "$nerd_font.tmp" "$nerd_font"
+chmod 0644 "$nerd_font"
+
+printf '\n== Material Symbols compatibility fonts (user-local) ==\n'
 font_dir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/clavis"
 mkdir -p "$font_dir"
 for font_spec in \

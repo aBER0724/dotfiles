@@ -1,0 +1,2106 @@
+diff --git a/Components/MaterialSymbol.qml b/Components/MaterialSymbol.qml
+index 2872d6a..481a4f5 100644
+--- a/Components/MaterialSymbol.qml
++++ b/Components/MaterialSymbol.qml
+@@ -1,36 +1,19 @@
+ import QtQuick
+ import qs.Common
++
+ Text {
+     id: root
+ 
+     property real iconSize: 22
+     property real fill: 0
+-    readonly property real roundedFill: Number(fill).toFixed(1)
+-    // Qt creates a new variable-font face for every distinct pixel/opsz
+-    // combination. Continuously animated values therefore retain thousands
+-    // of mappings for the 14 MiB Material Symbols font. Keep the rendered
+-    // font on a small, stable set of values; geometry can animate around it.
+-    readonly property int renderedIconSize:
+-        Math.max(1, Math.round(root.iconSize))
+-    readonly property int opticalSize: {
+-        if (root.renderedIconSize <= 20)
+-            return 20;
+-        if (root.renderedIconSize <= 28)
+-            return 24;
+-        if (root.renderedIconSize <= 44)
+-            return 40;
+-        return 48;
+-    }
++    property string symbolName: ""
+ 
++    text: NerdIcons.glyph(symbolName)
+     renderType: Text.NativeRendering
+     font {
+-        family: Fonts.materialSymbolsRounded
+-        pixelSize: root.renderedIconSize
+-        weight: Font.Normal + (Font.DemiBold - Font.Normal) * root.roundedFill
+-        variableAxes: {
+-            "FILL": root.roundedFill,
+-            "opsz": root.opticalSize
+-        }
++        family: NerdIcons.family
++        pixelSize: Math.max(1, Math.round(root.iconSize))
++        weight: root.fill >= 0.5 ? Font.DemiBold : Font.Normal
+     }
+     horizontalAlignment: Text.AlignHCenter
+     verticalAlignment: Text.AlignVCenter
+diff --git a/Modules/Bar/ActiveWindow/ActiveWindow.qml b/Modules/Bar/ActiveWindow/ActiveWindow.qml
+index 3ac34fb..eb2b7ee 100644
+--- a/Modules/Bar/ActiveWindow/ActiveWindow.qml
++++ b/Modules/Bar/ActiveWindow/ActiveWindow.qml
+@@ -73,7 +73,7 @@ Item {
+ 
+             MaterialSymbol {
+                 anchors.fill: parent
+-                text: "desktop_windows"
++                symbolName: "desktop_windows"
+                 iconSize: 18
+                 color: Appearance.colors.colPrimary
+                 visible: root.isDesktop
+diff --git a/Modules/Bar/ActiveWindow/SidebarWeatherButton.qml b/Modules/Bar/ActiveWindow/SidebarWeatherButton.qml
+index 0649ac7..dd3f933 100644
+--- a/Modules/Bar/ActiveWindow/SidebarWeatherButton.qml
++++ b/Modules/Bar/ActiveWindow/SidebarWeatherButton.qml
+@@ -65,7 +65,7 @@ Item {
+                     Layout.preferredWidth: root.vertical ? root.buttonHeight : root.iconSlotWidth
+                     Layout.preferredHeight: root.vertical ? 20 : root.buttonHeight
+                     Layout.alignment: Qt.AlignCenter
+-                    text: WeatherPlugin.currentIconName || "cloud"
++                    symbolName: WeatherPlugin.currentIconName || "cloud"
+                     iconSize: root.iconSize
+                     fill: 0
+                     color: Appearance.colors.colOnTertiaryContainer
+diff --git a/Modules/Bar/QuickSettings/Network.qml b/Modules/Bar/QuickSettings/Network.qml
+index 4f308fb..5dc357d 100644
+--- a/Modules/Bar/QuickSettings/Network.qml
++++ b/Modules/Bar/QuickSettings/Network.qml
+@@ -103,7 +103,7 @@ Item {
+                 MaterialSymbol {
+                     width: 18
+                     height: 18
+-                    text: root.networkIcon
++                    symbolName: root.networkIcon
+                     iconSize: 18
+                     fill: 0
+                     color: Appearance.colors.colOnPrimaryContainer
+diff --git a/Modules/Bar/SysMonitor/ResourcePie.qml b/Modules/Bar/SysMonitor/ResourcePie.qml
+index 1f9e6e1..fcd5b74 100644
+--- a/Modules/Bar/SysMonitor/ResourcePie.qml
++++ b/Modules/Bar/SysMonitor/ResourcePie.qml
+@@ -85,7 +85,7 @@ Item {
+ 
+         MaterialSymbol {
+             anchors.centerIn: parent
+-            text: root.icon
++            symbolName: root.icon
+             iconSize: root.iconSize
+             color: root.iconColor
+             fill: 1
+diff --git a/Modules/Bar/Tray/Tray.qml b/Modules/Bar/Tray/Tray.qml
+index d31c562..7dbcebf 100644
+--- a/Modules/Bar/Tray/Tray.qml
++++ b/Modules/Bar/Tray/Tray.qml
+@@ -187,7 +187,7 @@ Item {
+ 
+             contentItem: MaterialSymbol {
+                 anchors.centerIn: parent
+-                text: "expand_more"
++                symbolName: "expand_more"
+                 iconSize: 19
+                 color: root.trayOverflowOpen || trayOverflowButton.pointerHovered
+                     ? Appearance.colors.colOnSecondaryContainer
+diff --git a/Modules/Bar/Tray/TrayMenu.qml b/Modules/Bar/Tray/TrayMenu.qml
+index acbcdc1..5164e17 100644
+--- a/Modules/Bar/Tray/TrayMenu.qml
++++ b/Modules/Bar/Tray/TrayMenu.qml
+@@ -274,7 +274,7 @@ PopupWindow {
+                     }
+ 
+                     MaterialSymbol {
+-                        text: "chevron_left"
++                        symbolName: "chevron_left"
+                         iconSize: 20
+                         color: backButton.pointerHovered ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colOnLayer0
+                     }
+diff --git a/Modules/Bar/Tray/TrayMenuEntry.qml b/Modules/Bar/Tray/TrayMenuEntry.qml
+index c991667..d318c83 100644
+--- a/Modules/Bar/Tray/TrayMenuEntry.qml
++++ b/Modules/Bar/Tray/TrayMenuEntry.qml
+@@ -136,7 +136,7 @@ RippleButton {
+ 
+                 sourceComponent: MaterialSymbol {
+                     anchors.centerIn: parent
+-                    text: root.entryCheckState === Qt.PartiallyChecked ? "check_indeterminate_small" : "check"
++                    symbolName: root.entryCheckState === Qt.PartiallyChecked ? "check_indeterminate_small" : "check"
+                     iconSize: 20
+                     color: root.entryForeground
+                 }
+@@ -182,7 +182,7 @@ RippleButton {
+             Layout.alignment: Qt.AlignVCenter
+ 
+             sourceComponent: MaterialSymbol {
+-                text: "chevron_right"
++                symbolName: "chevron_right"
+                 iconSize: 20
+                 color: root.entryForeground
+             }
+diff --git a/Modules/ControlCenter/AccountPage.qml b/Modules/ControlCenter/AccountPage.qml
+index 14758cf..ae3fbea 100644
+--- a/Modules/ControlCenter/AccountPage.qml
++++ b/Modules/ControlCenter/AccountPage.qml
+@@ -291,7 +291,7 @@ Item {
+                                         spacing: Appearance.spacing.small
+ 
+                                         MaterialSymbol {
+-                                            text: root.bluetoothIcon(deviceRow.modelData)
++                                            symbolName: root.bluetoothIcon(deviceRow.modelData)
+                                             iconSize: 22
+                                             color: Appearance.colors.colPrimary
+                                         }
+@@ -611,7 +611,7 @@ Item {
+ 
+                             MaterialSymbol {
+                                 anchors.centerIn: parent
+-                                text: WallpaperService.scanning ? "progress_activity" : "wallpaper"
++                                symbolName: WallpaperService.scanning ? "progress_activity" : "wallpaper"
+                                 iconSize: 28
+                                 color: Appearance.colors.colOnSurfaceVariant
+                             }
+@@ -623,7 +623,7 @@ Item {
+                         spacing: Appearance.spacing.medium
+ 
+                         MaterialSymbol {
+-                            text: "palette"
++                            symbolName: "palette"
+                             iconSize: 22
+                             color: Appearance.colors.colOnSurfaceVariant
+                         }
+diff --git a/Modules/ControlCenter/AppBrowserPopup.qml b/Modules/ControlCenter/AppBrowserPopup.qml
+index 69a580a..101195a 100644
+--- a/Modules/ControlCenter/AppBrowserPopup.qml
++++ b/Modules/ControlCenter/AppBrowserPopup.qml
+@@ -172,7 +172,7 @@ FloatingWindow {
+ 
+                         MaterialSymbol {
+                             anchors.centerIn: parent
+-                            text: "apps"
++                            symbolName: "apps"
+                             iconSize: Metrics.iconM
+                             fill: 1
+                             color: Appearance.colors.colOnPrimaryContainer
+@@ -226,7 +226,7 @@ FloatingWindow {
+                 leadingContent: Component {
+                     MaterialSymbol {
+                         anchors.centerIn: parent
+-                        text: "search"
++                        symbolName: "search"
+                         iconSize: Metrics.iconM - Metrics.spacingXXS
+                         color: Appearance.colors.colOnSurfaceVariant
+                     }
+@@ -311,7 +311,7 @@ FloatingWindow {
+ 
+                         MaterialSymbol {
+                             Layout.alignment: Qt.AlignVCenter
+-                            text: "add"
++                            symbolName: "add"
+                             iconSize: Metrics.iconM
+                             color: Appearance.colors.colPrimary
+                         }
+@@ -334,7 +334,7 @@ FloatingWindow {
+ 
+                     MaterialSymbol {
+                         anchors.horizontalCenter: parent.horizontalCenter
+-                        text: "search_off"
++                        symbolName: "search_off"
+                         iconSize: Metrics.iconL
+                         color: Appearance.colors.colOnSurfaceVariant
+                     }
+diff --git a/Modules/ControlCenter/AutostartPage.qml b/Modules/ControlCenter/AutostartPage.qml
+index abd4099..4f60989 100644
+--- a/Modules/ControlCenter/AutostartPage.qml
++++ b/Modules/ControlCenter/AutostartPage.qml
+@@ -256,7 +256,7 @@ StyledFlickable {
+ 
+                         MaterialSymbol {
+                             Layout.alignment: Qt.AlignHCenter
+-                            text: "rocket_launch"
++                            symbolName: "rocket_launch"
+                             iconSize: Metrics.iconL
+                             color: Appearance.colors.colOnSurfaceVariant
+                         }
+diff --git a/Modules/ControlCenter/BezierCurveLayerEditor.qml b/Modules/ControlCenter/BezierCurveLayerEditor.qml
+index 1a9e1ee..9f8b9ed 100644
+--- a/Modules/ControlCenter/BezierCurveLayerEditor.qml
++++ b/Modules/ControlCenter/BezierCurveLayerEditor.qml
+@@ -966,7 +966,7 @@ FloatingWindow {
+ 
+             contentItem: MaterialSymbol {
+                 anchors.centerIn: parent
+-                text: "add"
++                symbolName: "add"
+                 iconSize: 28 - 5 * fab.morphProgress
+                 color: Appearance.colors.colOnPrimary
+                 rotation: 45 * fab.morphProgress
+@@ -1039,7 +1039,7 @@ FloatingWindow {
+             MaterialSymbol {
+                 Layout.preferredWidth: 21
+                 Layout.preferredHeight: 21
+-                text: miniFab.iconName
++                symbolName: miniFab.iconName
+                 iconSize: 20
+                 color: Appearance.colors.colOnPrimaryContainer
+                 fill: miniButton.pointerHovered ? 1 : 0
+diff --git a/Modules/ControlCenter/ControlCenterWindow.qml b/Modules/ControlCenter/ControlCenterWindow.qml
+index 253c934..43feb38 100644
+--- a/Modules/ControlCenter/ControlCenterWindow.qml
++++ b/Modules/ControlCenter/ControlCenterWindow.qml
+@@ -160,7 +160,7 @@ FloatingWindow {
+ 
+                 MaterialSymbol {
+                     anchors.centerIn: parent
+-                    text: "close"
++                    symbolName: "close"
+                     iconSize: 20
+                     color: Appearance.colors.colOnLayer1
+                 }
+diff --git a/Modules/ControlCenter/DefaultAppsPage.qml b/Modules/ControlCenter/DefaultAppsPage.qml
+index 7facef1..6a0d316 100644
+--- a/Modules/ControlCenter/DefaultAppsPage.qml
++++ b/Modules/ControlCenter/DefaultAppsPage.qml
+@@ -42,7 +42,7 @@ StyledFlickable {
+                 Layout.alignment: Qt.AlignVCenter
+                 Layout.preferredWidth: Metrics.iconM
+                 Layout.preferredHeight: Metrics.iconM
+-                text: settingRow.iconName
++                symbolName: settingRow.iconName
+                 iconSize: Metrics.iconM
+                 color: Appearance.colors.colOnSurfaceVariant
+ 
+diff --git a/Modules/ControlCenter/FloatingActionButton.qml b/Modules/ControlCenter/FloatingActionButton.qml
+index f492408..ae0718e 100644
+--- a/Modules/ControlCenter/FloatingActionButton.qml
++++ b/Modules/ControlCenter/FloatingActionButton.qml
+@@ -61,7 +61,7 @@ RippleButton {
+             anchors.verticalCenter: parent.verticalCenter
+             iconSize: 26
+             color: root.contentColor
+-            text: root.iconText
++            symbolName: root.iconText
+         }
+ 
+         Item {
+diff --git a/Modules/ControlCenter/GeneralSubpageHeader.qml b/Modules/ControlCenter/GeneralSubpageHeader.qml
+index bcdb96b..b603b5c 100644
+--- a/Modules/ControlCenter/GeneralSubpageHeader.qml
++++ b/Modules/ControlCenter/GeneralSubpageHeader.qml
+@@ -33,7 +33,7 @@ Item {
+             visible: root.iconName !== ""
+             Layout.preferredWidth: visible ? Metrics.iconM : 0
+             Layout.preferredHeight: Metrics.iconM
+-            text: root.iconName
++            symbolName: root.iconName
+             iconSize: Metrics.iconM
+             color: Appearance.colors.colOnSurfaceVariant
+         }
+diff --git a/Modules/ControlCenter/HorizontalClockPage.qml b/Modules/ControlCenter/HorizontalClockPage.qml
+index cdaa3a1..042d845 100644
+--- a/Modules/ControlCenter/HorizontalClockPage.qml
++++ b/Modules/ControlCenter/HorizontalClockPage.qml
+@@ -356,7 +356,7 @@ StyledFlickable {
+ 
+                     MaterialSymbol {
+                         Layout.alignment: Qt.AlignVCenter
+-                        text: "restart_alt"
++                        symbolName: "restart_alt"
+                         iconSize: 18
+                         color: Appearance.colors.colOnSecondaryContainer
+                     }
+diff --git a/Modules/ControlCenter/KeystoneSection.qml b/Modules/ControlCenter/KeystoneSection.qml
+index 1f5142f..ef3a9cb 100644
+--- a/Modules/ControlCenter/KeystoneSection.qml
++++ b/Modules/ControlCenter/KeystoneSection.qml
+@@ -20,7 +20,7 @@ ColumnLayout {
+         MaterialSymbol {
+             Layout.preferredWidth: 30
+             Layout.preferredHeight: 30
+-            text: root.iconName
++            symbolName: root.iconName
+             iconSize: 26
+             fill: 1
+             color: Appearance.colors.colOnSecondaryContainer
+diff --git a/Modules/ControlCenter/LanguageAndRegionPage.qml b/Modules/ControlCenter/LanguageAndRegionPage.qml
+index e25320e..0af5334 100644
+--- a/Modules/ControlCenter/LanguageAndRegionPage.qml
++++ b/Modules/ControlCenter/LanguageAndRegionPage.qml
+@@ -66,7 +66,7 @@ StyledFlickable {
+ 
+                     MaterialSymbol {
+                         Layout.alignment: Qt.AlignHCenter
+-                        text: "map"
++                        symbolName: "map"
+                         iconSize: 44
+                         fill: 0
+                         color: Appearance.colors.colOutline
+diff --git a/Modules/ControlCenter/MapTilerApiSettingsCard.qml b/Modules/ControlCenter/MapTilerApiSettingsCard.qml
+index d4d14a9..bf91ceb 100644
+--- a/Modules/ControlCenter/MapTilerApiSettingsCard.qml
++++ b/Modules/ControlCenter/MapTilerApiSettingsCard.qml
+@@ -93,7 +93,7 @@ Rectangle {
+ 
+                 MaterialSymbol {
+                     anchors.centerIn: parent
+-                    text: "map"
++                    symbolName: "map"
+                     iconSize: 22
+                     fill: 1
+                     color: Appearance.colors.colOnPrimaryContainer
+@@ -133,7 +133,7 @@ Rectangle {
+                     spacing: 6
+ 
+                     MaterialSymbol {
+-                        text: !WeatherMapPlugin.credentialsReady
++                        symbolName: !WeatherMapPlugin.credentialsReady
+                             || WeatherMapPlugin.mapTilerStatus
+                                 === "loading_credentials"
+                             || WeatherMapPlugin.credentialBusy
+@@ -267,7 +267,7 @@ Rectangle {
+                 spacing: 8
+ 
+                 MaterialSymbol {
+-                    text: WeatherMapPlugin.credentialBusy
++                    symbolName: WeatherMapPlugin.credentialBusy
+                         ? "sync"
+                         : root.feedbackError
+                             ? "error"
+diff --git a/Modules/ControlCenter/NavigationRailButton.qml b/Modules/ControlCenter/NavigationRailButton.qml
+index 31be60b..13d6e2a 100644
+--- a/Modules/ControlCenter/NavigationRailButton.qml
++++ b/Modules/ControlCenter/NavigationRailButton.qml
+@@ -104,7 +104,7 @@ TabButton {
+                 rotation: root.buttonIconRotation
+                 iconSize: 24
+                 fill: root.toggled ? 1 : 0
+-                text: root.buttonIcon
++                symbolName: root.buttonIcon
+                 color: root.toggled ? Appearance.m3colors.m3onSecondaryContainer : Appearance.colors.colOnLayer1
+ 
+                 Behavior on color {
+diff --git a/Modules/ControlCenter/NavigationRailExpandButton.qml b/Modules/ControlCenter/NavigationRailExpandButton.qml
+index f582910..bf09538 100644
+--- a/Modules/ControlCenter/NavigationRailExpandButton.qml
++++ b/Modules/ControlCenter/NavigationRailExpandButton.qml
+@@ -36,7 +36,7 @@ Rectangle {
+ 
+     MaterialSymbol {
+         anchors.centerIn: parent
+-        text: root.expanded ? "menu_open" : "menu"
++        symbolName: root.expanded ? "menu_open" : "menu"
+         iconSize: 24
+         color: Appearance.colors.colOnLayer1
+     }
+diff --git a/Modules/ControlCenter/SplitMenuButton.qml b/Modules/ControlCenter/SplitMenuButton.qml
+index b36f751..b441bbe 100644
+--- a/Modules/ControlCenter/SplitMenuButton.qml
++++ b/Modules/ControlCenter/SplitMenuButton.qml
+@@ -200,7 +200,7 @@ Item {
+                 MaterialSymbol {
+                     Layout.preferredWidth: 18
+                     Layout.preferredHeight: 18
+-                    text: root.leadingIcon
++                    symbolName: root.leadingIcon
+                     iconSize: 18
+                     fill: 1
+                     color: root.buttonTextColor
+@@ -278,7 +278,7 @@ Item {
+                 id: arrowIcon
+ 
+                 anchors.centerIn: parent
+-                text: "expand_more"
++                symbolName: "expand_more"
+                 iconSize: 20
+                 color: root.buttonTextColor
+                 rotation: optionsPopup.visible ? 180 : 0
+@@ -380,7 +380,7 @@ Item {
+                         MaterialSymbol {
+                             Layout.preferredWidth: 24
+                             Layout.preferredHeight: 24
+-                            text: option.selected ? "check" : ""
++                            symbolName: option.selected ? "check" : ""
+                             iconSize: 20
+                             color: Appearance.m3colors.m3onSecondaryContainer
+                         }
+diff --git a/Modules/ControlCenter/ThemePage.qml b/Modules/ControlCenter/ThemePage.qml
+index db7fbec..385292f 100644
+--- a/Modules/ControlCenter/ThemePage.qml
++++ b/Modules/ControlCenter/ThemePage.qml
+@@ -34,7 +34,7 @@ StyledFlickable {
+             MaterialSymbol {
+                 Layout.preferredWidth: 30
+                 Layout.preferredHeight: 30
+-                text: section.iconName
++                symbolName: section.iconName
+                 iconSize: 26
+                 fill: 1
+                 color: Appearance.colors.colOnSecondaryContainer
+@@ -88,7 +88,7 @@ StyledFlickable {
+ 
+             MaterialSymbol {
+                 anchors.centerIn: parent
+-                text: "check"
++                symbolName: "check"
+                 iconSize: 16
+                 fill: 1
+                 color: previewGroup.checkColor
+diff --git a/Modules/ControlCenter/WallpaperPage.qml b/Modules/ControlCenter/WallpaperPage.qml
+index 554fd0c..b344bb3 100644
+--- a/Modules/ControlCenter/WallpaperPage.qml
++++ b/Modules/ControlCenter/WallpaperPage.qml
+@@ -134,7 +134,7 @@ StyledFlickable {
+             MaterialSymbol {
+                 Layout.preferredWidth: 30
+                 Layout.preferredHeight: 30
+-                text: section.iconName
++                symbolName: section.iconName
+                 iconSize: 26
+                 fill: 1
+                 color: Appearance.colors.colOnSecondaryContainer
+@@ -252,7 +252,7 @@ StyledFlickable {
+ 
+         MaterialSymbol {
+             anchors.centerIn: parent
+-            text: "image"
++            symbolName: "image"
+             iconSize: 34
+             color: Appearance.colors.colOnSurfaceVariant
+             visible: preview.sourcePath === ""
+@@ -857,7 +857,7 @@ StyledFlickable {
+                                 MaterialSymbol {
+                                     Layout.preferredWidth: 20
+                                     Layout.preferredHeight: 20
+-                                    text: "edit"
++                                    symbolName: "edit"
+                                     iconSize: 19
+                                     fill: 1
+                                     color: Appearance.colors.colOnPrimaryContainer
+diff --git a/Modules/ControlCenter/WeatherApiSettings.qml b/Modules/ControlCenter/WeatherApiSettings.qml
+index b8c324c..8e75770 100644
+--- a/Modules/ControlCenter/WeatherApiSettings.qml
++++ b/Modules/ControlCenter/WeatherApiSettings.qml
+@@ -116,7 +116,7 @@ StyledFlickable {
+             MaterialSymbol {
+                 Layout.preferredWidth: 40
+                 Layout.preferredHeight: 40
+-                text: "partly_cloudy_day"
++                symbolName: "partly_cloudy_day"
+                 iconSize: 30
+                 fill: 1
+                 color: Appearance.colors.colOnSecondaryContainer
+@@ -164,7 +164,7 @@ StyledFlickable {
+ 
+                         MaterialSymbol {
+                             anchors.centerIn: parent
+-                            text: "key"
++                            symbolName: "key"
+                             iconSize: 22
+                             fill: 1
+                             color: Appearance.colors.colOnPrimaryContainer
+@@ -202,7 +202,7 @@ StyledFlickable {
+                             spacing: 6
+ 
+                             MaterialSymbol {
+-                                text: !WeatherMapPlugin.credentialsReady
++                                symbolName: !WeatherMapPlugin.credentialsReady
+                                     || WeatherMapPlugin.credentialBusy
+                                     ? "sync"
+                                     : WeatherMapPlugin.apiConfigured
+@@ -330,7 +330,7 @@ StyledFlickable {
+                         spacing: 8
+ 
+                         MaterialSymbol {
+-                            text: WeatherMapPlugin.credentialBusy
++                            symbolName: WeatherMapPlugin.credentialBusy
+                                 ? "sync"
+                                 : root.feedbackError
+                                     ? "error"
+@@ -427,7 +427,7 @@ StyledFlickable {
+ 
+                 MaterialSymbol {
+                     Layout.alignment: Qt.AlignTop
+-                    text: "info"
++                    symbolName: "info"
+                     iconSize: 21
+                     color: Appearance.colors.colPrimary
+                 }
+diff --git a/Modules/FilePicker/FilePickerWindow.qml b/Modules/FilePicker/FilePickerWindow.qml
+index a45b8b2..488c195 100644
+--- a/Modules/FilePicker/FilePickerWindow.qml
++++ b/Modules/FilePicker/FilePickerWindow.qml
+@@ -436,7 +436,7 @@ FloatingWindow {
+ 
+                         MaterialSymbol {
+                             anchors.centerIn: parent
+-                            text: root.windowIconName
++                            symbolName: root.windowIconName
+                             iconSize: 25
+                             fill: 1
+                             color: Appearance.colors.colOnPrimaryContainer
+@@ -715,7 +715,7 @@ FloatingWindow {
+ 
+                             MaterialSymbol {
+                                 Layout.alignment: Qt.AlignHCenter
+-                                text: "scan_delete"
++                                symbolName: "scan_delete"
+                                 iconSize: 52
+                                 color: Appearance.colors.colOutline
+                             }
+@@ -864,7 +864,7 @@ FloatingWindow {
+ 
+                                             MaterialSymbol {
+                                                 anchors.centerIn: parent
+-                                                text: fileItem.fileIsDir
++                                                symbolName: fileItem.fileIsDir
+                                                     ? "folder"
+                                                     : root.isImageName(fileItem.fileName) ? "image" : "draft"
+                                                 iconSize: 38
+@@ -887,7 +887,7 @@ FloatingWindow {
+ 
+                                             MaterialSymbol {
+                                                 anchors.centerIn: parent
+-                                                text: "check"
++                                                symbolName: "check"
+                                                 iconSize: 17
+                                                 color: Appearance.colors.colOnPrimary
+                                             }
+@@ -942,7 +942,7 @@ FloatingWindow {
+                                     MaterialSymbol {
+                                         Layout.preferredWidth: 22
+                                         Layout.preferredHeight: 22
+-                                        text: root.selectedIsDir ? "folder" : root.selectionValid ? "image" : "info"
++                                        symbolName: root.selectedIsDir ? "folder" : root.selectionValid ? "image" : "info"
+                                         iconSize: 20
+                                         color: root.selectionValid
+                                             ? Appearance.colors.colPrimary
+@@ -1020,7 +1020,7 @@ FloatingWindow {
+                     Layout.preferredWidth: breadcrumbButton.iconName === "" ? 0 : 18
+                     Layout.preferredHeight: 18
+                     visible: breadcrumbButton.iconName !== ""
+-                    text: breadcrumbButton.iconName
++                    symbolName: breadcrumbButton.iconName
+                     iconSize: 17
+                     fill: 1
+                     color: Appearance.colors.colOnSurfaceVariant
+@@ -1060,7 +1060,7 @@ FloatingWindow {
+             : Appearance.colors.colOnSurface
+ 
+         contentItem: MaterialSymbol {
+-            text: toolButton.iconName
++            symbolName: toolButton.iconName
+             iconSize: 20
+             fill: toolButton.active ? 1 : 0
+             color: toolButton.active
+@@ -1106,7 +1106,7 @@ FloatingWindow {
+             MaterialSymbol {
+                 Layout.preferredWidth: 22
+                 Layout.preferredHeight: 22
+-                text: locationButton.iconName
++                symbolName: locationButton.iconName
+                 iconSize: 20
+                 fill: locationButton.active ? 1 : 0
+                 color: locationButton.active
+@@ -1156,7 +1156,7 @@ FloatingWindow {
+                     Layout.preferredWidth: actionButton.iconName === "" ? 0 : 19
+                     Layout.preferredHeight: 19
+                     visible: actionButton.iconName !== ""
+-                    text: actionButton.iconName
++                    symbolName: actionButton.iconName
+                     iconSize: 18
+                     color: actionButton.primary
+                         ? Appearance.colors.colOnPrimary
+diff --git a/Modules/Keystone/DashboardContent/DashboardWeatherCard.qml b/Modules/Keystone/DashboardContent/DashboardWeatherCard.qml
+index 78622e4..731bb39 100644
+--- a/Modules/Keystone/DashboardContent/DashboardWeatherCard.qml
++++ b/Modules/Keystone/DashboardContent/DashboardWeatherCard.qml
+@@ -129,7 +129,7 @@ Rectangle {
+         spacing: 7
+ 
+         MaterialSymbol {
+-            text: "location_on"
++            symbolName: "location_on"
+             iconSize: 18
+             fill: 1
+             color: root.night ? Qt.rgba(0.87, 0.91, 0.98, 0.78) : Qt.rgba(0.2, 0.28, 0.38, 0.66)
+diff --git a/Modules/Keystone/DashboardContent/UserCard.qml b/Modules/Keystone/DashboardContent/UserCard.qml
+index 799b4c0..68471ff 100644
+--- a/Modules/Keystone/DashboardContent/UserCard.qml
++++ b/Modules/Keystone/DashboardContent/UserCard.qml
+@@ -102,7 +102,7 @@ Rectangle {
+             MaterialSymbol {
+                 anchors.centerIn: parent
+                 visible: profileAvatar.status !== Image.Ready && fallbackAvatar.status !== Image.Ready
+-                text: "person_add"
++                symbolName: "person_add"
+                 iconSize: 40
+                 fill: 1
+                 color: Appearance.colors.colOnSurfaceVariant
+@@ -146,7 +146,7 @@ Rectangle {
+ 
+                 MaterialSymbol {
+                     anchors.centerIn: parent
+-                    text: "person_edit"
++                    symbolName: "person_edit"
+                     iconSize: 25
+                     fill: 1
+                     color: Appearance.colors.colOnPrimary
+@@ -203,7 +203,7 @@ Rectangle {
+ 
+         MaterialSymbol {
+             anchors.centerIn: parent
+-            text: "clock_arrow_up"
++            symbolName: "clock_arrow_up"
+             iconSize: 22
+             fill: 1
+             color: Appearance.colors.colOnTertiaryContainer
+@@ -256,7 +256,7 @@ Rectangle {
+ 
+             MaterialSymbol {
+                 anchors.verticalCenter: parent.verticalCenter
+-                text: "select_window"
++                symbolName: "select_window"
+                 iconSize: 18
+                 color: Appearance.colors.colOnSecondaryContainer
+             }
+diff --git a/Modules/Keystone/Hub/HubContent.qml b/Modules/Keystone/Hub/HubContent.qml
+index ae6012a..8811adc 100644
+--- a/Modules/Keystone/Hub/HubContent.qml
++++ b/Modules/Keystone/Hub/HubContent.qml
+@@ -80,7 +80,7 @@ Item {
+                 spacing: 6
+ 
+                 MaterialSymbol {
+-                    text: parent.parent.icon
++                    symbolName: parent.parent.icon
+                     iconSize: 22
+                     fill: parent.parent.active ? 1 : 0
+                     color: parent.parent.active ? Appearance.colors.colOnLayer0 : Appearance.applyAlpha(Appearance.colors.colOnLayer0, 0.5)
+diff --git a/Modules/Keystone/LyricsContent/LyricsAlbumArt.qml b/Modules/Keystone/LyricsContent/LyricsAlbumArt.qml
+index ee6f3eb..4396047 100644
+--- a/Modules/Keystone/LyricsContent/LyricsAlbumArt.qml
++++ b/Modules/Keystone/LyricsContent/LyricsAlbumArt.qml
+@@ -40,7 +40,7 @@ Item {
+     MaterialSymbol {
+         anchors.centerIn: parent
+         visible: root.sourceUrl === ""
+-        text: "music_note"
++        symbolName: "music_note"
+         iconSize: 14
+         color: Appearance.applyAlpha(Appearance.colors.colOnLayer0, 0.5)
+     }
+diff --git a/Modules/Keystone/Styles/Recording/AudioStopButton.qml b/Modules/Keystone/Styles/Recording/AudioStopButton.qml
+index f2ddd79..a7da5e3 100644
+--- a/Modules/Keystone/Styles/Recording/AudioStopButton.qml
++++ b/Modules/Keystone/Styles/Recording/AudioStopButton.qml
+@@ -56,7 +56,7 @@ RoundButton {
+     contentItem: Item {
+         MaterialSymbol {
+             anchors.centerIn: parent
+-            text: "stop"
++            symbolName: "stop"
+             iconSize: 20
+             fill: 1
+             color: Appearance.colors.colOnErrorContainer
+diff --git a/Modules/Keystone/Styles/Recording/BangsRecordingVisual.qml b/Modules/Keystone/Styles/Recording/BangsRecordingVisual.qml
+index cc8485a..c4b11a1 100644
+--- a/Modules/Keystone/Styles/Recording/BangsRecordingVisual.qml
++++ b/Modules/Keystone/Styles/Recording/BangsRecordingVisual.qml
+@@ -110,7 +110,7 @@ Item {
+             }
+ 
+             contentItem: MaterialSymbol {
+-                text: "close"
++                symbolName: "close"
+                 iconSize: 20
+                 fill: 1
+                 color: Appearance.colors.colOnErrorContainer
+@@ -222,7 +222,7 @@ Item {
+ 
+             MaterialSymbol {
+                 anchors.centerIn: parent
+-                text: "hourglass_top"
++                symbolName: "hourglass_top"
+                 iconSize: 20
+                 fill: 1
+                 color: Appearance.colors.colOnErrorContainer
+@@ -340,7 +340,7 @@ Item {
+             }
+ 
+             contentItem: MaterialSymbol {
+-                text: "close"
++                symbolName: "close"
+                 iconSize: 20
+                 fill: 1
+                 color: Appearance.colors.colOnErrorContainer
+@@ -368,7 +368,7 @@ Item {
+ 
+             MaterialSymbol {
+                 anchors.centerIn: parent
+-                text: "hourglass_top"
++                symbolName: "hourglass_top"
+                 iconSize: 20
+                 fill: 1
+                 color: Appearance.colors.colOnErrorContainer
+@@ -389,7 +389,7 @@ Item {
+ 
+         MaterialSymbol {
+             anchors.verticalCenter: parent.verticalCenter
+-            text: root.recordingType === "gif" ? "gif_box" : "videocam"
++            symbolName: root.recordingType === "gif" ? "gif_box" : "videocam"
+             iconSize: 18
+             fill: 1
+             color: root.typeColor
+diff --git a/Modules/Keystone/Styles/Recording/HorizontalPillRecordingVisual.qml b/Modules/Keystone/Styles/Recording/HorizontalPillRecordingVisual.qml
+index f6f42ed..5756f1f 100644
+--- a/Modules/Keystone/Styles/Recording/HorizontalPillRecordingVisual.qml
++++ b/Modules/Keystone/Styles/Recording/HorizontalPillRecordingVisual.qml
+@@ -119,7 +119,7 @@ Item {
+ 
+             MaterialSymbol {
+                 anchors.centerIn: parent
+-                text: root.recordingType === "gif" ? "gif_box" : "videocam"
++                symbolName: root.recordingType === "gif" ? "gif_box" : "videocam"
+                 iconSize: 18
+                 fill: 1
+                 color: root.typeContentColor
+@@ -154,7 +154,7 @@ Item {
+ 
+             MaterialSymbol {
+                 anchors.centerIn: parent
+-                text: "hourglass_top"
++                symbolName: "hourglass_top"
+                 iconSize: 18
+                 fill: 1
+                 color: root.typeContentColor
+@@ -190,7 +190,7 @@ Item {
+ 
+         MaterialSymbol {
+             anchors.centerIn: parent
+-            text: "stop"
++            symbolName: "stop"
+             iconSize: 20
+             fill: 1
+             color: Appearance.colors.colOnErrorContainer
+diff --git a/Modules/Keystone/Styles/Recording/VerticalPillRecordingVisual.qml b/Modules/Keystone/Styles/Recording/VerticalPillRecordingVisual.qml
+index 6e0cc83..df74b57 100644
+--- a/Modules/Keystone/Styles/Recording/VerticalPillRecordingVisual.qml
++++ b/Modules/Keystone/Styles/Recording/VerticalPillRecordingVisual.qml
+@@ -121,7 +121,7 @@ Item {
+ 
+             MaterialSymbol {
+                 anchors.centerIn: parent
+-                text: root.recordingType === "gif" ? "gif_box" : "videocam"
++                symbolName: root.recordingType === "gif" ? "gif_box" : "videocam"
+                 iconSize: 18
+                 fill: 1
+                 color: root.typeContentColor
+@@ -156,7 +156,7 @@ Item {
+ 
+         MaterialSymbol {
+             anchors.horizontalCenter: parent.horizontalCenter
+-            text: "hourglass_top"
++            symbolName: "hourglass_top"
+             iconSize: 20
+             fill: 1
+             color: root.typeContentColor
+@@ -187,7 +187,7 @@ Item {
+ 
+         MaterialSymbol {
+             anchors.centerIn: parent
+-            text: "stop"
++            symbolName: "stop"
+             iconSize: 20
+             fill: 1
+             color: Appearance.colors.colOnErrorContainer
+diff --git a/Modules/Keystone/VolumeContent/VolumeContent.qml b/Modules/Keystone/VolumeContent/VolumeContent.qml
+index 019521f..cc20ca5 100644
+--- a/Modules/Keystone/VolumeContent/VolumeContent.qml
++++ b/Modules/Keystone/VolumeContent/VolumeContent.qml
+@@ -55,7 +55,7 @@ Item {
+         MaterialSymbol {
+             id: sliderIcon
+ 
+-            text: root.effectiveIconName
++            symbolName: root.effectiveIconName
+             iconSize: 24
+             fill: root.isMuted ? 1 : 0
+             color: Appearance.colors.colOnLayer0
+diff --git a/Modules/Keystone/WallpaperContent/WallpaperContent.qml b/Modules/Keystone/WallpaperContent/WallpaperContent.qml
+index 8b121a7..ddc08e8 100644
+--- a/Modules/Keystone/WallpaperContent/WallpaperContent.qml
++++ b/Modules/Keystone/WallpaperContent/WallpaperContent.qml
+@@ -277,7 +277,7 @@ Item {
+ 
+                 MaterialSymbol {
+                     anchors.centerIn: parent
+-                    text: "image"
++                    symbolName: "image"
+                     iconSize: 36
+                     fill: 1
+                     color: Appearance.colors.colOutline
+@@ -377,7 +377,7 @@ Item {
+ 
+             MaterialSymbol {
+                 anchors.verticalCenter: parent.verticalCenter
+-                text: WallpaperService.scanning ? "progress_activity" : "wallpaper_slideshow"
++                symbolName: WallpaperService.scanning ? "progress_activity" : "wallpaper_slideshow"
+                 iconSize: WallpaperPickerTokens.emptyIconSize
+                 fill: 1
+                 color: Appearance.colors.colOnSurfaceVariant
+@@ -484,7 +484,7 @@ Item {
+             anchors.left: parent.left
+             anchors.leftMargin: WallpaperPickerTokens.searchIconInset
+             anchors.verticalCenter: parent.verticalCenter
+-            text: "search"
++            symbolName: "search"
+             iconSize: WallpaperPickerTokens.searchIconSize
+             color: Appearance.colors.colOnSurfaceVariant
+         }
+diff --git a/Modules/Keystone/WeatherContent/WeatherContent.qml b/Modules/Keystone/WeatherContent/WeatherContent.qml
+index 6fba80d..25deaa9 100644
+--- a/Modules/Keystone/WeatherContent/WeatherContent.qml
++++ b/Modules/Keystone/WeatherContent/WeatherContent.qml
+@@ -262,7 +262,7 @@ Item {
+ 
+                         MaterialSymbol {
+                             Layout.alignment: Qt.AlignHCenter
+-                            text: "cloud_off"
++                            symbolName: "cloud_off"
+                             iconSize: 38
+                             color: Appearance.colors.colError
+                             visible: !WeatherPlugin.loading
+@@ -387,7 +387,7 @@ Item {
+             spacing: 4
+ 
+             MaterialSymbol {
+-                text: parent.parent.iconName
++                symbolName: parent.parent.iconName
+                 iconSize: 15
+                 color: parent.parent.accentColor
+                 Layout.alignment: Qt.AlignVCenter
+diff --git a/Modules/Keystone/WeatherContent/WeatherCurrent.qml b/Modules/Keystone/WeatherContent/WeatherCurrent.qml
+index 1e7cac0..bac8a67 100644
+--- a/Modules/Keystone/WeatherContent/WeatherCurrent.qml
++++ b/Modules/Keystone/WeatherContent/WeatherCurrent.qml
+@@ -72,7 +72,7 @@ Item {
+ 
+         MaterialSymbol {
+             Layout.alignment: Qt.AlignVCenter
+-            text: root.currentIcon
++            symbolName: root.currentIcon
+             iconSize: 64
+             fill: 1
+             color: Appearance.colors.colPrimary
+diff --git a/Modules/Keystone/WeatherContent/WeatherFiveDayForecast.qml b/Modules/Keystone/WeatherContent/WeatherFiveDayForecast.qml
+index 3b32ea0..002106e 100644
+--- a/Modules/Keystone/WeatherContent/WeatherFiveDayForecast.qml
++++ b/Modules/Keystone/WeatherContent/WeatherFiveDayForecast.qml
+@@ -99,7 +99,7 @@ Item {
+                 }
+ 
+                 MaterialSymbol {
+-                    text: modelData.icon
++                    symbolName: modelData.icon
+                     iconSize: 26
+                     fill: 1
+                     color: Appearance.colors.colPrimary
+diff --git a/Modules/Keystone/WeatherContent/WeatherMapCard.qml b/Modules/Keystone/WeatherContent/WeatherMapCard.qml
+index 73ca220..7ee6001 100644
+--- a/Modules/Keystone/WeatherContent/WeatherMapCard.qml
++++ b/Modules/Keystone/WeatherContent/WeatherMapCard.qml
+@@ -448,7 +448,7 @@ Rectangle {
+ 
+                         MaterialSymbol {
+                             anchors.fill: parent
+-                            text: "location_on"
++                            symbolName: "location_on"
+                             iconSize: 30
+                             fill: 1
+                             color: Appearance.colors.colPrimary
+@@ -609,7 +609,7 @@ Rectangle {
+                 }
+ 
+                 contentItem: MaterialSymbol {
+-                    text: "my_location"
++                    symbolName: "my_location"
+                     iconSize: 20
+                     fill: root.followingLocation ? 1 : 0
+                     color: recenterButton.enabled
+@@ -676,7 +676,7 @@ Rectangle {
+ 
+                     MaterialSymbol {
+                         Layout.alignment: Qt.AlignHCenter
+-                        text: "location_off"
++                        symbolName: "location_off"
+                         iconSize: 28
+                         color: Appearance.colors.colOnSurfaceVariant
+                     }
+diff --git a/Modules/Keystone/WeatherContent/WeatherMoonPhase.qml b/Modules/Keystone/WeatherContent/WeatherMoonPhase.qml
+index 6bb1c30..e3cf6be 100644
+--- a/Modules/Keystone/WeatherContent/WeatherMoonPhase.qml
++++ b/Modules/Keystone/WeatherContent/WeatherMoonPhase.qml
+@@ -69,7 +69,7 @@ Item {
+             Layout.preferredWidth: 56
+             Layout.preferredHeight: 56
+             Layout.alignment: Qt.AlignVCenter
+-            text: root.moonPhaseSymbolForIndex(root.currentPhaseIndex)
++            symbolName: root.moonPhaseSymbolForIndex(root.currentPhaseIndex)
+             iconSize: 56
+             fill: 1
+             color: Appearance.colors.colOnSurface
+@@ -118,7 +118,7 @@ Item {
+                             
+                             MaterialSymbol {
+                                 anchors.centerIn: parent
+-                                text: root.moonPhaseSymbolForIndex(index)
++                                symbolName: root.moonPhaseSymbolForIndex(index)
+                                 iconSize: index === root.currentPhaseIndex ? 30 : 22
+                                 fill: index === root.currentPhaseIndex ? 1 : 0
+                                 color: index === root.currentPhaseIndex ? Appearance.colors.colPrimary : Appearance.applyAlpha(Appearance.colors.colOnSurfaceVariant, 0.5)
+diff --git a/Modules/Keystone/WeatherContent/WeatherParameters.qml b/Modules/Keystone/WeatherContent/WeatherParameters.qml
+index 2d0a023..94476cc 100644
+--- a/Modules/Keystone/WeatherContent/WeatherParameters.qml
++++ b/Modules/Keystone/WeatherContent/WeatherParameters.qml
+@@ -97,7 +97,7 @@ Item {
+                     spacing: 4
+ 
+                     MaterialSymbol {
+-                        text: modelData.icon
++                        symbolName: modelData.icon
+                         iconSize: 26
+                         color: Appearance.applyAlpha(Appearance.colors.colOnSurfaceVariant, 0.7)
+                         Layout.alignment: Qt.AlignVCenter
+diff --git a/Modules/Keystone/WeatherContent/WeatherSunriseSunset.qml b/Modules/Keystone/WeatherContent/WeatherSunriseSunset.qml
+index ced02d4..adb92b9 100644
+--- a/Modules/Keystone/WeatherContent/WeatherSunriseSunset.qml
++++ b/Modules/Keystone/WeatherContent/WeatherSunriseSunset.qml
+@@ -82,7 +82,7 @@ Item {
+                 spacing: 2
+                 
+                 MaterialSymbol {
+-                    text: "wb_twilight"
++                    symbolName: "wb_twilight"
+                     fill: 1
+                     iconSize: 26
+                     color: Appearance.colors.colOnSurface
+@@ -102,7 +102,7 @@ Item {
+                 spacing: 2
+                 
+                 MaterialSymbol {
+-                    text: "wb_twilight"
++                    symbolName: "wb_twilight"
+                     fill: 1
+                     iconSize: 26
+                     color: Appearance.colors.colOnSurface
+@@ -129,7 +129,7 @@ Item {
+ 
+             MaterialSymbol {
+                 id: sunIcon
+-                text: "light_mode"
++                symbolName: "light_mode"
+                 fill: 1
+                 iconSize: 28
+                 color: Appearance.colors.colOnSurface
+diff --git a/Modules/Launcher/SpotlightResultsPanel.qml b/Modules/Launcher/SpotlightResultsPanel.qml
+index 7dd2343..694618b 100644
+--- a/Modules/Launcher/SpotlightResultsPanel.qml
++++ b/Modules/Launcher/SpotlightResultsPanel.qml
+@@ -300,7 +300,7 @@ Item {
+                     }
+ 
+                     MaterialSymbol {
+-                        text: "keyboard_return"
++                        symbolName: "keyboard_return"
+                         iconSize: 19
+                         color: root.style.selectedContentColor
+                         opacity: appDelegate.index === root.selectedIndex
+@@ -386,7 +386,7 @@ Item {
+ 
+                         MaterialSymbol {
+                             anchors.centerIn: parent
+-                            text: "image"
++                            symbolName: "image"
+                             iconSize: 34
+                             fill: 1
+                             color: Appearance.colors.colOutline
+@@ -457,7 +457,7 @@ Item {
+ 
+                             MaterialSymbol {
+                                 anchors.centerIn: parent
+-                                text: "check"
++                                symbolName: "check"
+                                 iconSize: 19
+                                 fill: 1
+                                 color:
+@@ -673,7 +673,7 @@ Item {
+                             MaterialSymbol {
+                                 anchors.centerIn: parent
+                                 visible: !clipboardPreviewFrame.visible
+-                                text: clipboardDelegate.displayData.icon
++                                symbolName: clipboardDelegate.displayData.icon
+                                 iconSize: 24
+                                 color:
+                                     clipboardDelegate.index
+@@ -787,7 +787,7 @@ Item {
+                                 MaterialSymbol {
+                                     anchors.verticalCenter:
+                                         parent.verticalCenter
+-                                    text: root.clipboardActionState
++                                    symbolName: root.clipboardActionState
+                                         === "copied" ? "check" : "error"
+                                     iconSize: 18
+                                     fill: 1
+@@ -859,7 +859,7 @@ Item {
+             MaterialSymbol {
+                 anchors.horizontalCenter: parent.horizontalCenter
+                 visible: !root.loading
+-                text: !root.providerAvailable
++                symbolName: !root.providerAvailable
+                     ? "content_paste_off" : "search_off"
+                 iconSize: 32
+                 color: Appearance.colors.colOnSurfaceVariant
+diff --git a/Modules/Launcher/SpotlightSearchBar.qml b/Modules/Launcher/SpotlightSearchBar.qml
+index 7fcaa5c..f284d00 100644
+--- a/Modules/Launcher/SpotlightSearchBar.qml
++++ b/Modules/Launcher/SpotlightSearchBar.qml
+@@ -147,7 +147,7 @@ Item {
+             anchors.verticalCenter: parent.verticalCenter
+             width: root.style.searchIconSize
+             height: width
+-            text: "search"
++            symbolName: "search"
+             iconSize: root.style.searchIconSize
+             color: Appearance.colors.colOnSurfaceVariant
+         }
+@@ -292,7 +292,7 @@ Item {
+ 
+             MaterialSymbol {
+                 anchors.centerIn: parent
+-                text: modeButton.modelData.icon
++                symbolName: modeButton.modelData.icon
+                 iconSize: 23
+                 fill: modeButton.activeMode ? 1 : 0
+                 color: modeButton.logicalFocus || modeButton.activeMode
+diff --git a/Modules/Sidebars/Left/LeftSidebarContent.qml b/Modules/Sidebars/Left/LeftSidebarContent.qml
+index b8d8db5..e63e69d 100644
+--- a/Modules/Sidebars/Left/LeftSidebarContent.qml
++++ b/Modules/Sidebars/Left/LeftSidebarContent.qml
+@@ -149,7 +149,7 @@ Item {
+                             MaterialSymbol {
+                                 anchors.verticalCenter:
+                                     parent.verticalCenter
+-                                text: tabButton.modelData.icon
++                                symbolName: tabButton.modelData.icon
+                                 iconSize: 22
+                                 fill: tabButton.active ? 1 : 0
+                                 color: tabButton.active
+diff --git a/Modules/Sidebars/Left/drawer/SystemUnavailableState.qml b/Modules/Sidebars/Left/drawer/SystemUnavailableState.qml
+index de594dd..b36691c 100644
+--- a/Modules/Sidebars/Left/drawer/SystemUnavailableState.qml
++++ b/Modules/Sidebars/Left/drawer/SystemUnavailableState.qml
+@@ -34,7 +34,7 @@ Rectangle {
+ 
+         MaterialSymbol {
+             Layout.alignment: Qt.AlignHCenter
+-            text: root.reconnecting ? "sync" : "monitor_heart"
++            symbolName: root.reconnecting ? "sync" : "monitor_heart"
+             iconSize: 32
+             color: root.foregroundColor
+         }
+diff --git a/Modules/Sidebars/Left/infoTools/CalendarWidget.qml b/Modules/Sidebars/Left/infoTools/CalendarWidget.qml
+index c7d9a39..7696e66 100644
+--- a/Modules/Sidebars/Left/infoTools/CalendarWidget.qml
++++ b/Modules/Sidebars/Left/infoTools/CalendarWidget.qml
+@@ -186,7 +186,7 @@ Item {
+ 
+                 anchors.centerIn: parent
+                 visible: headerButton.iconName.length > 0
+-                text: headerButton.iconName
++                symbolName: headerButton.iconName
+                 iconSize: 21
+                 color: Appearance.colors.colOnLayer1
+             }
+diff --git a/Modules/Sidebars/Left/infoTools/InfoToolDrawer.qml b/Modules/Sidebars/Left/infoTools/InfoToolDrawer.qml
+index 0183674..4e12779 100644
+--- a/Modules/Sidebars/Left/infoTools/InfoToolDrawer.qml
++++ b/Modules/Sidebars/Left/infoTools/InfoToolDrawer.qml
+@@ -160,7 +160,7 @@ Rectangle {
+             onClicked: root.setCollapsed(false)
+ 
+             contentItem: MaterialSymbol {
+-                text: "keyboard_arrow_up"
++                symbolName: "keyboard_arrow_up"
+                 iconSize: 22
+                 color: Appearance.colors.colOnLayer1
+             }
+@@ -217,7 +217,7 @@ Rectangle {
+                 onClicked: root.setCollapsed(true)
+ 
+                 contentItem: MaterialSymbol {
+-                    text: "keyboard_arrow_down"
++                    symbolName: "keyboard_arrow_down"
+                     iconSize: 22
+                     color: Appearance.colors.colOnLayer1
+                 }
+@@ -284,7 +284,7 @@ Rectangle {
+ 
+                                     anchors.horizontalCenter: parent.horizontalCenter
+                                     anchors.verticalCenter: parent.verticalCenter
+-                                    text: tabButton.modelData.icon
++                                    symbolName: tabButton.modelData.icon
+                                     iconSize: 24
+                                     fill: tabButton.toggled ? 1 : 0
+                                     color: tabButton.toggled
+diff --git a/Modules/Sidebars/Left/infoTools/TaskList.qml b/Modules/Sidebars/Left/infoTools/TaskList.qml
+index 7bf36eb..395e93c 100644
+--- a/Modules/Sidebars/Left/infoTools/TaskList.qml
++++ b/Modules/Sidebars/Left/infoTools/TaskList.qml
+@@ -123,7 +123,7 @@ Item {
+ 
+             MaterialSymbol {
+                 Layout.alignment: Qt.AlignHCenter
+-                text: root.emptyPlaceholderIcon
++                symbolName: root.emptyPlaceholderIcon
+                 iconSize: 55
+                 color: Appearance.colors.colOutline
+             }
+@@ -153,7 +153,7 @@ Item {
+         Accessible.name: accessibleName
+ 
+         contentItem: MaterialSymbol {
+-            text: iconName
++            symbolName: iconName
+             iconSize: 20
+             color: Appearance.colors.colOnLayer1
+         }
+diff --git a/Modules/Sidebars/Left/infoTools/TodoWidget.qml b/Modules/Sidebars/Left/infoTools/TodoWidget.qml
+index 74a16af..0e900fd 100644
+--- a/Modules/Sidebars/Left/infoTools/TodoWidget.qml
++++ b/Modules/Sidebars/Left/infoTools/TodoWidget.qml
+@@ -145,7 +145,7 @@ Item {
+         onClicked: root.showAddDialog = true
+ 
+         contentItem: MaterialSymbol {
+-            text: "add"
++            symbolName: "add"
+             iconSize: 26
+             color: Appearance.colors.colOnPrimaryContainer
+         }
+diff --git a/Modules/Sidebars/Left/infoTools/ToolSecondaryTabButton.qml b/Modules/Sidebars/Left/infoTools/ToolSecondaryTabButton.qml
+index 45726d5..2d0e658 100644
+--- a/Modules/Sidebars/Left/infoTools/ToolSecondaryTabButton.qml
++++ b/Modules/Sidebars/Left/infoTools/ToolSecondaryTabButton.qml
+@@ -52,7 +52,7 @@ TabButton {
+ 
+         MaterialSymbol {
+             anchors.verticalCenter: parent.verticalCenter
+-            text: root.buttonIcon
++            symbolName: root.buttonIcon
+             iconSize: 21
+             fill: root.checked ? 1 : 0
+             color: root.checked ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer1
+diff --git a/Modules/Sidebars/Left/notifications/NotificationStatusButton.qml b/Modules/Sidebars/Left/notifications/NotificationStatusButton.qml
+index 6fc4a22..eaad7b4 100644
+--- a/Modules/Sidebars/Left/notifications/NotificationStatusButton.qml
++++ b/Modules/Sidebars/Left/notifications/NotificationStatusButton.qml
+@@ -48,7 +48,7 @@ Button {
+ 
+             MaterialSymbol {
+                 visible: root.buttonIcon !== ""
+-                text: root.buttonIcon
++                symbolName: root.buttonIcon
+                 iconSize: 22
+                 color: root.toggled ? Appearance.colors.colOnPrimary : Appearance.colors.colOnLayer2
+             }
+diff --git a/Modules/Sidebars/Right/BluetoothContent.qml b/Modules/Sidebars/Right/BluetoothContent.qml
+index 7b859b5..f1b57b7 100644
+--- a/Modules/Sidebars/Right/BluetoothContent.qml
++++ b/Modules/Sidebars/Right/BluetoothContent.qml
+@@ -480,7 +480,7 @@ WidgetPanel {
+ 
+             MaterialSymbol {
+                 visible: deviceRow.deviceData.batteryAvailable
+-                text: deviceRow.deviceData.batteryLevel > 80
++                symbolName: deviceRow.deviceData.batteryLevel > 80
+                     ? "battery_full"
+                     : deviceRow.deviceData.batteryLevel > 30 ? "battery_4_bar" : "battery_1_bar"
+                 iconSize: 18
+diff --git a/Modules/Sidebars/Right/IdleContent.qml b/Modules/Sidebars/Right/IdleContent.qml
+index 4cf21fc..ea8841e 100644
+--- a/Modules/Sidebars/Right/IdleContent.qml
++++ b/Modules/Sidebars/Right/IdleContent.qml
+@@ -217,7 +217,7 @@ WidgetPanel {
+                     spacing: Appearance.spacing.xSmall
+ 
+                     MaterialSymbol {
+-                        text: "expand_more"
++                        symbolName: "expand_more"
+                         iconSize: 20
+                         color: Appearance.colors.colOnLayer1
+                         rotation: stageEditor.expanded ? 180 : 0
+diff --git a/Modules/Sidebars/Right/NetworkContent.qml b/Modules/Sidebars/Right/NetworkContent.qml
+index ba8990e..445e99c 100644
+--- a/Modules/Sidebars/Right/NetworkContent.qml
++++ b/Modules/Sidebars/Right/NetworkContent.qml
+@@ -216,7 +216,7 @@ WidgetPanel {
+                     }
+ 
+                     MaterialSymbol {
+-                        text: NetworkService.internetAvailable
++                        symbolName: NetworkService.internetAvailable
+                             ? "language"
+                             : NetworkService.captivePortal ? "captive_portal" : "public_off"
+                         iconSize: 19
+@@ -459,14 +459,14 @@ WidgetPanel {
+ 
+                 MaterialSymbol {
+                     visible: itemRoot.networkSecure && !itemRoot.networkActive
+-                    text: "lock"
++                    symbolName: "lock"
+                     iconSize: 18
+                     color: Appearance.colors.colOnLayer1
+                 }
+ 
+                 MaterialSymbol {
+                     visible: itemRoot.targetBusy
+-                    text: "progress_activity"
++                    symbolName: "progress_activity"
+                     iconSize: 19
+                     color: Appearance.colors.colPrimary
+ 
+diff --git a/Modules/SystemCards/ExpressiveMetricTile.qml b/Modules/SystemCards/ExpressiveMetricTile.qml
+index 4ab96b8..b96fcec 100644
+--- a/Modules/SystemCards/ExpressiveMetricTile.qml
++++ b/Modules/SystemCards/ExpressiveMetricTile.qml
+@@ -100,7 +100,7 @@ Rectangle {
+ 
+         MaterialSymbol {
+             anchors.centerIn: parent
+-            text: root.iconName
++            symbolName: root.iconName
+             color: root.accentForegroundColor
+             iconSize: root.dense ? 21 : 25
+             fill: 1
+@@ -208,7 +208,7 @@ Rectangle {
+                 spacing: 2
+ 
+                 MaterialSymbol {
+-                    text: "thermostat"
++                    symbolName: "thermostat"
+                     color: root.foregroundColor
+                     iconSize: Typography.labelMedium.pixelSize
+                     fill: 1
+diff --git a/Modules/SystemCards/SystemBatteryTank.qml b/Modules/SystemCards/SystemBatteryTank.qml
+index c936ef2..941dab0 100644
+--- a/Modules/SystemCards/SystemBatteryTank.qml
++++ b/Modules/SystemCards/SystemBatteryTank.qml
+@@ -193,7 +193,7 @@ Rectangle {
+             margins: Appearance.spacing.medium
+         }
+         z: 4
+-        text: root.batteryIconName()
++        symbolName: root.batteryIconName()
+         iconSize: 36
+         fill: 1
+         color: {
+@@ -247,7 +247,7 @@ Rectangle {
+                 spacing: Appearance.spacing.xSmall
+ 
+                 MaterialSymbol {
+-                    text: "schedule"
++                    symbolName: "schedule"
+                     iconSize: 15
+                     fill: 0
+                     color: contents.foregroundColor
+@@ -269,7 +269,7 @@ Rectangle {
+                 spacing: Appearance.spacing.xSmall
+ 
+                 MaterialSymbol {
+-                    text: "electric_bolt"
++                    symbolName: "electric_bolt"
+                     iconSize: 15
+                     color: contents.foregroundColor
+                 }
+@@ -303,7 +303,7 @@ Rectangle {
+                 spacing: Appearance.spacing.xSmall
+ 
+                 MaterialSymbol {
+-                    text: "health_and_safety"
++                    symbolName: "health_and_safety"
+                     iconSize: 15
+                     color: contents.foregroundColor
+                 }
+@@ -365,7 +365,7 @@ Rectangle {
+                 }
+ 
+                 MaterialSymbol {
+-                    text: root.powerConnected
++                    symbolName: root.powerConnected
+                         ? "power"
+                         : "power_off"
+                     iconSize: 22
+diff --git a/Modules/SystemCards/SystemLiquidMetricCard.qml b/Modules/SystemCards/SystemLiquidMetricCard.qml
+index 59f763d..25d5ff7 100644
+--- a/Modules/SystemCards/SystemLiquidMetricCard.qml
++++ b/Modules/SystemCards/SystemLiquidMetricCard.qml
+@@ -153,7 +153,7 @@ Item {
+ 
+             MaterialSymbol {
+                 Layout.alignment: Qt.AlignHCenter
+-                text: root.iconName
++                symbolName: root.iconName
+                 color: root.contentColor
+                 iconSize: Typography.headlineSmall.pixelSize + 4
+                 fill: 1
+diff --git a/Modules/SystemCards/SystemMediaCard.qml b/Modules/SystemCards/SystemMediaCard.qml
+index e0c6308..2d90d33 100644
+--- a/Modules/SystemCards/SystemMediaCard.qml
++++ b/Modules/SystemCards/SystemMediaCard.qml
+@@ -134,7 +134,7 @@ Item {
+ 
+             MaterialSymbol {
+                 anchors.centerIn: parent
+-                text: control.iconName
++                symbolName: control.iconName
+                 iconSize: control.primaryButton ? 29 : 27
+                 fill: 1
+                 color: control.primaryButton ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSecondaryContainer
+diff --git a/Modules/SystemCards/SystemNetworkCard.qml b/Modules/SystemCards/SystemNetworkCard.qml
+index 7781d45..2b9abe6 100644
+--- a/Modules/SystemCards/SystemNetworkCard.qml
++++ b/Modules/SystemCards/SystemNetworkCard.qml
+@@ -46,7 +46,7 @@ Rectangle {
+ 
+                 MaterialSymbol {
+                     anchors.centerIn: parent
+-                    text: "swap_vert"
++                    symbolName: "swap_vert"
+                     iconSize: 19
+                     fill: 1
+                     color: Appearance.colors.colOnPrimary
+diff --git a/Modules/SystemCards/SystemStorageCard.qml b/Modules/SystemCards/SystemStorageCard.qml
+index 2f8ea11..6ddfd6d 100644
+--- a/Modules/SystemCards/SystemStorageCard.qml
++++ b/Modules/SystemCards/SystemStorageCard.qml
+@@ -106,7 +106,7 @@ Rectangle {
+ 
+                 MaterialSymbol {
+                     Layout.alignment: Qt.AlignHCenter
+-                    text: "hard_drive"
++                    symbolName: "hard_drive"
+                     color: Appearance.colors.colSecondary
+                     iconSize: Typography.titleMedium.pixelSize
+                     fill: 1
+diff --git a/Modules/SystemCards/SystemWeatherCard.qml b/Modules/SystemCards/SystemWeatherCard.qml
+index 5b5547c..6eb9f21 100644
+--- a/Modules/SystemCards/SystemWeatherCard.qml
++++ b/Modules/SystemCards/SystemWeatherCard.qml
+@@ -48,7 +48,7 @@ Item {
+         }
+ 
+         MaterialSymbol {
+-            text: root.weatherIcon
++            symbolName: root.weatherIcon
+             iconSize: 80
+             color: Appearance.colors.colOnPrimaryContainer
+ 
+diff --git a/Widgets/audio/ApplicationVolumeRow.qml b/Widgets/audio/ApplicationVolumeRow.qml
+index 2178ebe..8699301 100644
+--- a/Widgets/audio/ApplicationVolumeRow.qml
++++ b/Widgets/audio/ApplicationVolumeRow.qml
+@@ -45,7 +45,7 @@ Item {
+             MaterialSymbol {
+                 anchors.centerIn: parent
+                 visible: !applicationIcon.visible
+-                text: "apps"
++                symbolName: "apps"
+                 iconSize: 23
+                 color: Appearance.colors.colOnLayer1
+             }
+diff --git a/Widgets/audio/VolumeSlider.qml b/Widgets/audio/VolumeSlider.qml
+index 741a7e4..5cc85e9 100644
+--- a/Widgets/audio/VolumeSlider.qml
++++ b/Widgets/audio/VolumeSlider.qml
+@@ -68,7 +68,7 @@ Item {
+                 MaterialSymbol {
+                     anchors.centerIn: parent
+                     visible: !applicationIcon.visible
+-                    text: root.muted ? root.mutedIconName : root.iconName
++                    symbolName: root.muted ? root.mutedIconName : root.iconName
+                     iconSize: 21
+                     fill: root.muted ? 1 : 0
+                     color: root.muted
+diff --git a/Widgets/common/AccountProfileHeader.qml b/Widgets/common/AccountProfileHeader.qml
+index 7d0d123..11bdbd3 100644
+--- a/Widgets/common/AccountProfileHeader.qml
++++ b/Widgets/common/AccountProfileHeader.qml
+@@ -190,7 +190,7 @@ Rectangle {
+                 anchors.centerIn: parent
+                 visible: profileAvatar.status !== Image.Ready
+                     && fallbackAvatar.status !== Image.Ready
+-                text: "account_circle"
++                symbolName: "account_circle"
+                 iconSize: 42
+                 color: Appearance.colors.colOnPrimaryContainer
+             }
+@@ -205,7 +205,7 @@ Rectangle {
+ 
+                 MaterialSymbol {
+                     anchors.centerIn: parent
+-                    text: "edit"
++                    symbolName: "edit"
+                     iconSize: 28
+                     fill: 1
+                     color: Appearance.colors.colOnImage
+@@ -277,7 +277,7 @@ Rectangle {
+                 }
+ 
+                 MaterialSymbol {
+-                    text: "schedule"
++                    symbolName: "schedule"
+                     iconSize: 18
+                     color: Appearance.colors.colOnSurfaceVariant
+                 }
+@@ -303,7 +303,7 @@ Rectangle {
+                 spacing: Appearance.spacing.small
+ 
+                 MaterialSymbol {
+-                    text: "inventory_2"
++                    symbolName: "inventory_2"
+                     iconSize: 18
+                     color: Appearance.colors.colOnSurfaceVariant
+                 }
+@@ -332,7 +332,7 @@ Rectangle {
+                 spacing: Appearance.spacing.small
+ 
+                 MaterialSymbol {
+-                    text: "system_update_alt"
++                    symbolName: "system_update_alt"
+                     iconSize: 18
+                     color: root.pendingUpdateCount > 0
+                         ? Appearance.colors.colPrimary
+diff --git a/Widgets/common/ActionButton.qml b/Widgets/common/ActionButton.qml
+index e6e174b..b4890a1 100644
+--- a/Widgets/common/ActionButton.qml
++++ b/Widgets/common/ActionButton.qml
+@@ -39,7 +39,7 @@ RippleButton {
+             MaterialSymbol {
+                 Layout.alignment: Qt.AlignVCenter
+                 visible: root.iconName !== ""
+-                text: root.iconName
++                symbolName: root.iconName
+                 iconSize: Metrics.iconS + Metrics.spacingXXS
+                 color: root.filled ? Appearance.colors.colOnPrimary : Appearance.colors.colPrimary
+             }
+diff --git a/Widgets/common/BarCircularButton.qml b/Widgets/common/BarCircularButton.qml
+index 0615a30..2f368bc 100644
+--- a/Widgets/common/BarCircularButton.qml
++++ b/Widgets/common/BarCircularButton.qml
+@@ -82,7 +82,7 @@ Item {
+         }
+ 
+         contentItem: MaterialSymbol {
+-            text: root.iconName
++            symbolName: root.iconName
+             iconSize: root.iconSize
+             fill: root.iconFill
+             color: root.iconColor
+diff --git a/Widgets/common/CloudProviderIcon.qml b/Widgets/common/CloudProviderIcon.qml
+index c9c6b77..701f3f4 100644
+--- a/Widgets/common/CloudProviderIcon.qml
++++ b/Widgets/common/CloudProviderIcon.qml
+@@ -50,7 +50,7 @@ Item {
+     MaterialSymbol {
+         anchors.centerIn: parent
+         visible: root.logoPath === ""
+-        text: root.symbolName
++        symbolName: root.symbolName
+         iconSize: root.iconSize
+         fill: 1
+         color: root.symbolColor
+diff --git a/Widgets/common/ExpressiveMediaCover.qml b/Widgets/common/ExpressiveMediaCover.qml
+index f50060d..67016a6 100644
+--- a/Widgets/common/ExpressiveMediaCover.qml
++++ b/Widgets/common/ExpressiveMediaCover.qml
+@@ -76,7 +76,7 @@ Item {
+     MaterialSymbol {
+         anchors.centerIn: parent
+         visible: coverImage.status === Image.Null || coverImage.status === Image.Error
+-        text: coverImage.status === Image.Error ? "broken_image" : "art_track"
++        symbolName: coverImage.status === Image.Error ? "broken_image" : "art_track"
+         iconSize: root.fallbackIconSize
+         fill: 1
+         color: Appearance.colors.colOnSurfaceVariant
+@@ -87,7 +87,7 @@ Item {
+ 
+         anchors.centerIn: parent
+         visible: coverImage.status === Image.Loading
+-        text: "progress_activity"
++        symbolName: "progress_activity"
+         iconSize: root.loadingIconSize
+         color: Appearance.colors.colPrimary
+ 
+diff --git a/Widgets/common/IconButton.qml b/Widgets/common/IconButton.qml
+index 448ae49..2093635 100644
+--- a/Widgets/common/IconButton.qml
++++ b/Widgets/common/IconButton.qml
+@@ -67,7 +67,7 @@ RippleButton {
+     contentItem: MaterialSymbol {
+         id: iconGlyph
+ 
+-        text: root.selected && root.selectedIconName.length > 0 ? root.selectedIconName : root.iconName
++        symbolName: root.selected && root.selectedIconName.length > 0 ? root.selectedIconName : root.iconName
+         iconSize: root.iconSize
+         fill: root.iconFill
+         color: root.selected ? root.selectedIconColor : root.iconColor
+diff --git a/Widgets/common/InlineStatusBanner.qml b/Widgets/common/InlineStatusBanner.qml
+index 7f29133..463389b 100644
+--- a/Widgets/common/InlineStatusBanner.qml
++++ b/Widgets/common/InlineStatusBanner.qml
+@@ -28,7 +28,7 @@ Rectangle {
+         spacing: Appearance.spacing.small
+ 
+         MaterialSymbol {
+-            text: root.iconName
++            symbolName: root.iconName
+             iconSize: 20
+             color: root.tone === "error"
+                 ? Appearance.colors.colOnErrorContainer
+diff --git a/Widgets/common/MaterialCard.qml b/Widgets/common/MaterialCard.qml
+index d7788f5..08d0081 100644
+--- a/Widgets/common/MaterialCard.qml
++++ b/Widgets/common/MaterialCard.qml
+@@ -41,7 +41,7 @@ Rectangle {
+ 
+                 MaterialSymbol {
+                     anchors.centerIn: parent
+-                    text: root.iconName
++                    symbolName: root.iconName
+                     iconSize: 23
+                     fill: 1
+                     color: Appearance.colors.colOnSecondaryContainer
+diff --git a/Widgets/common/MaterialStepper.qml b/Widgets/common/MaterialStepper.qml
+index 186f913..847bd36 100644
+--- a/Widgets/common/MaterialStepper.qml
++++ b/Widgets/common/MaterialStepper.qml
+@@ -64,7 +64,7 @@ Rectangle {
+ 
+         MaterialSymbol {
+             anchors.centerIn: parent
+-            text: button.increase ? "add" : "remove"
++            symbolName: button.increase ? "add" : "remove"
+             iconSize: Metrics.iconM
+             color: Appearance.colors.colOnLayer2
+             font.weight: Font.Medium
+diff --git a/Widgets/common/QuickMaterialSlider.qml b/Widgets/common/QuickMaterialSlider.qml
+index 6f52e8c..6bfb72d 100644
+--- a/Widgets/common/QuickMaterialSlider.qml
++++ b/Widgets/common/QuickMaterialSlider.qml
+@@ -61,7 +61,7 @@ MaterialSplitSlider {
+             right: nearFull ? quickSlider.handle.right : quickSlider.right
+             rightMargin: nearFull ? 14 : 8
+         }
+-        text: quickSlider.materialSymbol
++        symbolName: quickSlider.materialSymbol
+         iconSize: 20
+         fill: 0
+         color: nearFull ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSecondaryContainer
+@@ -96,7 +96,7 @@ MaterialSplitSlider {
+             right: nearIcon ? quickSlider.handle.right : quickSlider.right
+             rightMargin: nearIcon ? 14 : (1 - quickSlider.secondaryIconLocation) * quickSlider.effectiveDraggingWidth + quickSlider.rightPadding + 8
+         }
+-        text: quickSlider.secondaryMaterialSymbol
++        symbolName: quickSlider.secondaryMaterialSymbol
+         iconSize: 20
+         fill: 0
+         color: quickSlider.value >= quickSlider.secondaryIconLocation - 0.1 ? Appearance.colors.colOnPrimary : Appearance.colors.colOnSecondaryContainer
+diff --git a/Widgets/common/QuickToggleButton.qml b/Widgets/common/QuickToggleButton.qml
+index 5ab5cdf..3d3ac60 100644
+--- a/Widgets/common/QuickToggleButton.qml
++++ b/Widgets/common/QuickToggleButton.qml
+@@ -167,7 +167,7 @@ Rectangle {
+ 
+                 MaterialSymbol {
+                     anchors.centerIn: parent
+-                    text: root.iconName
++                    symbolName: root.iconName
+                     iconSize: root.expanded ? 22 : 24
+                     fill: root.toggled ? 1 : 0
+                     color: root.iconColor
+diff --git a/Widgets/common/SearchSelectMenuField.qml b/Widgets/common/SearchSelectMenuField.qml
+index 121e864..7e00108 100644
+--- a/Widgets/common/SearchSelectMenuField.qml
++++ b/Widgets/common/SearchSelectMenuField.qml
+@@ -346,7 +346,7 @@ FocusScope {
+             anchors.right: parent.right
+             anchors.rightMargin: 12
+             anchors.verticalCenter: parent.verticalCenter
+-            text: "expand_more"
++            symbolName: "expand_more"
+             iconSize: 20
+             color: Appearance.colors.colOnLayer2
+             rotation: root.expanded ? 180 : 0
+@@ -595,7 +595,7 @@ FocusScope {
+ 
+                                     MaterialSymbol {
+                                         anchors.centerIn: parent
+-                                        text: "check"
++                                        symbolName: "check"
+                                         iconSize: 19
+                                         fill: 1
+                                         color: Appearance.colors.colOnPrimaryContainer
+diff --git a/Widgets/common/SettingsActionRow.qml b/Widgets/common/SettingsActionRow.qml
+index 6416574..e4bb60e 100644
+--- a/Widgets/common/SettingsActionRow.qml
++++ b/Widgets/common/SettingsActionRow.qml
+@@ -31,7 +31,7 @@ RippleButton {
+ 
+         MaterialSymbol {
+             visible: root.iconName !== ""
+-            text: root.iconName
++            symbolName: root.iconName
+             iconSize: 22
+             color: Appearance.colors.colOnSurfaceVariant
+         }
+@@ -71,7 +71,7 @@ RippleButton {
+ 
+             MaterialSymbol {
+                 anchors.centerIn: parent
+-                text: root.trailingIconName
++                symbolName: root.trailingIconName
+                 iconSize: 20
+                 color: Appearance.colors.colOnSurfaceVariant
+             }
+diff --git a/Widgets/common/SettingsRow.qml b/Widgets/common/SettingsRow.qml
+index 4d5f39b..7d64637 100644
+--- a/Widgets/common/SettingsRow.qml
++++ b/Widgets/common/SettingsRow.qml
+@@ -64,7 +64,7 @@ Rectangle {
+ 
+             MaterialSymbol {
+                 anchors.centerIn: parent
+-                text: root.iconName
++                symbolName: root.iconName
+                 iconSize: Metrics.iconM - Metrics.spacingXXS
+                 fill: root.iconFill
+                 color: root.highlighted
+diff --git a/Widgets/common/SettingsSection.qml b/Widgets/common/SettingsSection.qml
+index 5eabdea..f6b6dea 100644
+--- a/Widgets/common/SettingsSection.qml
++++ b/Widgets/common/SettingsSection.qml
+@@ -51,7 +51,7 @@ Rectangle {
+ 
+                 MaterialSymbol {
+                     anchors.centerIn: parent
+-                    text: root.iconName
++                    symbolName: root.iconName
+                     iconSize: Metrics.iconM
+                     fill: root.hasIconContainer ? 1 : 0
+                     color: root.hasIconContainer
+diff --git a/Widgets/common/SortableMultiSelectField.qml b/Widgets/common/SortableMultiSelectField.qml
+index 0ccd984..2ffc99b 100644
+--- a/Widgets/common/SortableMultiSelectField.qml
++++ b/Widgets/common/SortableMultiSelectField.qml
+@@ -397,7 +397,7 @@ FocusScope {
+ 
+                             MaterialSymbol {
+                                 anchors.centerIn: parent
+-                                text: "close"
++                                symbolName: "close"
+                                 iconSize: 17
+                                 color: Appearance.colors.colOnPrimaryContainer
+                             }
+@@ -522,7 +522,7 @@ FocusScope {
+             anchors.right: parent.right
+             anchors.rightMargin: 12
+             anchors.verticalCenter: parent.verticalCenter
+-            text: "expand_more"
++            symbolName: "expand_more"
+             iconSize: 20
+             color: Appearance.colors.colOnLayer2
+             rotation: root.expanded ? 180 : 0
+@@ -668,7 +668,7 @@ FocusScope {
+ 
+                             MaterialSymbol {
+                                 anchors.centerIn: parent
+-                                text: "check"
++                                symbolName: "check"
+                                 iconSize: 19
+                                 fill: 1
+                                 color: Appearance.colors.colOnPrimaryContainer
+diff --git a/Widgets/common/StyledButtonGroup.qml b/Widgets/common/StyledButtonGroup.qml
+index 9250b18..352f9f0 100644
+--- a/Widgets/common/StyledButtonGroup.qml
++++ b/Widgets/common/StyledButtonGroup.qml
+@@ -197,7 +197,7 @@ RowLayout {
+                 spacing: root.contentSpacing
+ 
+                 MaterialSymbol {
+-                    text: segment.iconText
++                    symbolName: segment.iconText
+                     iconSize: root.iconSize
+                     fill: segment.active && root.fillActiveIcon ? 1 : 0
+                     color: segment.inkColor
+diff --git a/Widgets/common/WidgetPanel.qml b/Widgets/common/WidgetPanel.qml
+index 17ca201..51a63cf 100644
+--- a/Widgets/common/WidgetPanel.qml
++++ b/Widgets/common/WidgetPanel.qml
+@@ -39,7 +39,7 @@ Rectangle {
+ 
+             MaterialSymbol {
+                 visible: !root.showBackButton
+-                text: root.icon
++                symbolName: root.icon
+                 iconSize: 22
+                 color: Appearance.colors.colPrimary
+                 Layout.preferredWidth: 22
+diff --git a/Common/NerdIcons.qml b/Common/NerdIcons.qml
+new file mode 100644
+index 0000000..57c8686
+--- /dev/null
++++ b/Common/NerdIcons.qml
+@@ -0,0 +1,336 @@
++pragma Singleton
++
++import QtQuick
++
++QtObject {
++    readonly property string family: "Symbols Nerd Font"
++    readonly property string fallback: "\uf128"
++
++    readonly property var aliases: ({
++        "add": "cod-add",
++        "add_triangle": "cod-add",
++        "apps": "oct-apps",
++        "arrow_back": "cod-arrow_left",
++        "arrow_forward": "cod-arrow_right",
++        "arrow_upward": "cod-arrow_up",
++        "autoplay": "fa-circle_play",
++        "backup": "md-backup_restore",
++        "blur_on": "md-blur",
++        "brightness_medium": "md-brightness_6",
++        "center_focus_strong": "md-image_filter_center_focus_strong",
++        "clear": "cod-clear_all",
++        "clock_arrow_up": "fa-clock_rotate_left",
++        "cloud_off": "md-cloud_off_outline",
++        "colorize": "md-eyedropper",
++        "colors": "md-format_color_fill",
++        "dashboard": "cod-dashboard",
++        "dashboard_customize": "md-view_dashboard_edit_outline",
++        "description": "fa-file_lines",
++        "desktop_windows": "oct-device_desktop",
++        "display_settings": "md-monitor_edit",
++        "dock_to_bottom": "md-dock_bottom",
++        "dock_to_left": "md-dock_left",
++        "drag_pan": "cod-move",
++        "edit": "cod-edit",
++        "edit_note": "fa-note_sticky",
++        "electric_bolt": "fa-bolt",
++        "expand_more": "cod-chevron_down",
++        "fastfetch": "linux-archlinux",
++        "filter_center_focus": "md-image_filter_center_focus",
++        "hard_disk": "fa-hard_drive",
++        "hard_drive": "fa-hard_drive",
++        "health_and_safety": "md-shield_check_outline",
++        "hourglass_top": "fa-hourglass_half",
++        "info": "cod-info",
++        "interests": "fa-icons",
++        "inventory_2": "fa-box_archive",
++        "keyboard_arrow_down": "cod-chevron_down",
++        "keyboard_arrow_up": "cod-chevron_up",
++        "keyboard_double_arrow_left": "md-chevron_double_left",
++        "language": "fa-language",
++        "light_mode": "fa-sun",
++        "list_alt": "cod-list_unordered",
++        "location_off": "md-map_marker_off_outline",
++        "location_on": "fa-location_dot",
++        "lyrics": "md-playlist_music",
++        "memory_alt": "fa-memory",
++        "mic": "fa-microphone",
++        "monitoring": "md-monitor_dashboard",
++        "more_horiz": "cod-ellipsis",
++        "more_vert": "cod-kebab_vertical",
++        "my_location": "fa-location_crosshairs",
++        "notifications": "cod-bell",
++        "notifications_active": "cod-bell_dot",
++        "overview": "md-view_quilt_outline",
++        "partly_cloudy_day": "md-weather_partly_cloudy",
++        "person": "cod-person",
++        "person_add": "cod-person_add",
++        "person_edit": "fa-user_pen",
++        "picture_as_pdf": "cod-file_pdf",
++        "power_settings_new": "fa-power_off",
++        "progress_activity": "cod-loading",
++        "queue_music": "md-playlist_music",
++        "restart_alt": "cod-debug_restart",
++        "save": "cod-save",
++        "scan_delete": "md-folder_remove_outline",
++        "schedule": "fa-clock",
++        "search": "cod-search",
++        "search_off": "cod-search_stop",
++        "select_window": "cod-window",
++        "settings": "cod-settings",
++        "settings_suggest": "md-cog_sync_outline",
++        "side_navigation": "cod-layout_sidebar_left",
++        "smart_display": "md-television_play",
++        "speed": "md-speedometer",
++        "splitscreen": "cod-split_horizontal",
++        "sunny": "md-weather_sunny",
++        "swap_vert": "md-swap_vertical",
++        "system_update_alt": "md-update",
++        "terminal": "cod-terminal",
++        "text_format": "md-format_text",
++        "toggle_off": "fa-toggle_off",
++        "view_in_ar": "fa-cube",
++        "visibility": "fa-eye",
++        "volume_up": "fa-volume_high",
++        "wb_sunny": "md-weather_sunny",
++        "wb_twilight": "md-weather_sunset",
++        "window": "cod-window",
++        "workspaces": "cod-layout"
++    })
++
++    function glyph(name) {
++        const key = String(name || "");
++        const glyphName = aliases[key] || "md-" + key;
++        return glyphs[glyphName] || fallback;
++    }
++
++    readonly property var glyphs: ({
++        "cod-add": "\u{ea60}",
++        "cod-arrow_left": "\u{ea9b}",
++        "cod-arrow_right": "\u{ea9c}",
++        "cod-arrow_up": "\u{eaa1}",
++        "cod-bell": "\u{eaa2}",
++        "cod-bell_dot": "\u{eb9a}",
++        "cod-chevron_down": "\u{eab4}",
++        "cod-chevron_up": "\u{eab7}",
++        "cod-clear_all": "\u{eabf}",
++        "cod-dashboard": "\u{eacd}",
++        "cod-debug_restart": "\u{ead2}",
++        "cod-edit": "\u{ea73}",
++        "cod-ellipsis": "\u{ea7c}",
++        "cod-file_pdf": "\u{eaeb}",
++        "cod-info": "\u{ea74}",
++        "cod-kebab_vertical": "\u{eb10}",
++        "cod-layout": "\u{ebeb}",
++        "cod-layout_sidebar_left": "\u{ebf3}",
++        "cod-list_unordered": "\u{eb17}",
++        "cod-loading": "\u{eb19}",
++        "cod-move": "\u{eb22}",
++        "cod-person": "\u{ea67}",
++        "cod-person_add": "\u{ebcd}",
++        "cod-save": "\u{eb4b}",
++        "cod-search": "\u{ea6d}",
++        "cod-search_stop": "\u{eb4e}",
++        "cod-settings": "\u{eb52}",
++        "cod-split_horizontal": "\u{eb56}",
++        "cod-terminal": "\u{ea85}",
++        "cod-window": "\u{eb7f}",
++        "fa-bolt": "\u{f0e7}",
++        "fa-box_archive": "\u{f187}",
++        "fa-circle_play": "\u{f144}",
++        "fa-clock": "\u{f017}",
++        "fa-clock_rotate_left": "\u{f1da}",
++        "fa-cube": "\u{f1b2}",
++        "fa-eye": "\u{f06e}",
++        "fa-file_lines": "\u{f15c}",
++        "fa-hard_drive": "\u{f0a0}",
++        "fa-hourglass_half": "\u{f252}",
++        "fa-icons": "\u{efa8}",
++        "fa-language": "\u{f1ab}",
++        "fa-location_crosshairs": "\u{eea9}",
++        "fa-location_dot": "\u{ed00}",
++        "fa-memory": "\u{efc5}",
++        "fa-microphone": "\u{f130}",
++        "fa-note_sticky": "\u{f249}",
++        "fa-power_off": "\u{f011}",
++        "fa-sun": "\u{f185}",
++        "fa-toggle_off": "\u{f204}",
++        "fa-user_pen": "\u{edc9}",
++        "fa-volume_high": "\u{f028}",
++        "linux-archlinux": "\u{f303}",
++        "md-account": "\u{f0004}",
++        "md-account_circle": "\u{f0009}",
++        "md-adjust": "\u{f001a}",
++        "md-animation": "\u{f05d8}",
++        "md-apps": "\u{f003b}",
++        "md-arch": "\u{f08c7}",
++        "md-backup_restore": "\u{f006f}",
++        "md-bash": "\u{f1183}",
++        "md-battery": "\u{f0079}",
++        "md-battery_charging_20": "\u{f0086}",
++        "md-battery_charging_30": "\u{f0087}",
++        "md-battery_charging_50": "\u{f089d}",
++        "md-battery_charging_60": "\u{f0089}",
++        "md-battery_charging_80": "\u{f008a}",
++        "md-battery_charging_90": "\u{f008b}",
++        "md-battery_unknown": "\u{f0091}",
++        "md-bluetooth": "\u{f00af}",
++        "md-blur": "\u{f00b5}",
++        "md-brightness_2": "\u{f00db}",
++        "md-brightness_4": "\u{f00dd}",
++        "md-brightness_6": "\u{f00df}",
++        "md-brightness_7": "\u{f00e0}",
++        "md-calendar": "\u{f00ed}",
++        "md-calendar_month": "\u{f0e17}",
++        "md-cards": "\u{f0638}",
++        "md-chat": "\u{f0b79}",
++        "md-check": "\u{f012c}",
++        "md-check_circle": "\u{f05e0}",
++        "md-chevron_double_left": "\u{f013d}",
++        "md-chevron_left": "\u{f0141}",
++        "md-chevron_right": "\u{f0142}",
++        "md-clipboard": "\u{f0147}",
++        "md-close": "\u{f0156}",
++        "md-cloud": "\u{f015f}",
++        "md-cloud_alert": "\u{f09e0}",
++        "md-cloud_off_outline": "\u{f0164}",
++        "md-cloud_sync": "\u{f063f}",
++        "md-cloud_upload": "\u{f0167}",
++        "md-coffee": "\u{f0176}",
++        "md-cog_sync_outline": "\u{f1461}",
++        "md-content_copy": "\u{f018f}",
++        "md-content_paste": "\u{f0192}",
++        "md-contrast": "\u{f0195}",
++        "md-cookie": "\u{f0198}",
++        "md-crop_free": "\u{f019f}",
++        "md-debian": "\u{f08da}",
++        "md-delete": "\u{f01b4}",
++        "md-delete_forever": "\u{f05e8}",
++        "md-delete_sweep": "\u{f05e9}",
++        "md-developer_board": "\u{f0697}",
++        "md-disc": "\u{f05ee}",
++        "md-dock_bottom": "\u{f10a9}",
++        "md-dock_left": "\u{f10aa}",
++        "md-download": "\u{f01da}",
++        "md-dropbox": "\u{f01e3}",
++        "md-eyedropper": "\u{f020a}",
++        "md-fedora": "\u{f08db}",
++        "md-file": "\u{f0214}",
++        "md-firefox": "\u{f0239}",
++        "md-folder": "\u{f024b}",
++        "md-folder_open": "\u{f0770}",
++        "md-folder_remove_outline": "\u{f0b9e}",
++        "md-format_color_fill": "\u{f0266}",
++        "md-format_text": "\u{f0284}",
++        "md-function": "\u{f0295}",
++        "md-gentoo": "\u{f08e8}",
++        "md-grid": "\u{f02c1}",
++        "md-group": "\u{f02c3}",
++        "md-handshake": "\u{f1218}",
++        "md-head": "\u{f135e}",
++        "md-headphones": "\u{f02cb}",
++        "md-headset": "\u{f02ce}",
++        "md-home": "\u{f02dc}",
++        "md-identifier": "\u{f0efe}",
++        "md-image": "\u{f02e9}",
++        "md-image_filter_center_focus": "\u{f02f1}",
++        "md-image_filter_center_focus_strong": "\u{f0eff}",
++        "md-information": "\u{f02fc}",
++        "md-key": "\u{f0306}",
++        "md-keyboard": "\u{f030c}",
++        "md-keyboard_return": "\u{f0311}",
++        "md-label": "\u{f0315}",
++        "md-lan": "\u{f0317}",
++        "md-latitude": "\u{f0f57}",
++        "md-launch": "\u{f0327}",
++        "md-linux": "\u{f033d}",
++        "md-loading": "\u{f0772}",
++        "md-lock": "\u{f033e}",
++        "md-longitude": "\u{f0f5a}",
++        "md-mail": "\u{f0ebb}",
++        "md-manjaro": "\u{f160a}",
++        "md-map": "\u{f034d}",
++        "md-map_marker_off_outline": "\u{f12fd}",
++        "md-memory": "\u{f035b}",
++        "md-menu": "\u{f035c}",
++        "md-menu_open": "\u{f0bab}",
++        "md-microphone": "\u{f036c}",
++        "md-monitor_dashboard": "\u{f0a07}",
++        "md-monitor_edit": "\u{f12c6}",
++        "md-mouse": "\u{f037d}",
++        "md-movie": "\u{f0381}",
++        "md-music": "\u{f075a}",
++        "md-music_note": "\u{f0387}",
++        "md-music_off": "\u{f075b}",
++        "md-network": "\u{f06f3}",
++        "md-numeric": "\u{f03a0}",
++        "md-opacity": "\u{f05cc}",
++        "md-open_in_new": "\u{f03cc}",
++        "md-opera": "\u{f03ce}",
++        "md-palette": "\u{f03d8}",
++        "md-panorama": "\u{f03dc}",
++        "md-pause": "\u{f03e4}",
++        "md-phone": "\u{f03f2}",
++        "md-pill": "\u{f0402}",
++        "md-play": "\u{f040a}",
++        "md-playlist_music": "\u{f0cb8}",
++        "md-power": "\u{f0425}",
++        "md-power_off": "\u{f0902}",
++        "md-priority_high": "\u{f0603}",
++        "md-radio": "\u{f0439}",
++        "md-record": "\u{f044a}",
++        "md-rectangle": "\u{f0e5e}",
++        "md-refresh": "\u{f0450}",
++        "md-repeat": "\u{f0456}",
++        "md-replay": "\u{f0459}",
++        "md-restore": "\u{f099b}",
++        "md-rocket_launch": "\u{f14de}",
++        "md-rotate_right": "\u{f0467}",
++        "md-scale": "\u{f0472}",
++        "md-security": "\u{f0483}",
++        "md-shape": "\u{f0831}",
++        "md-shield_check_outline": "\u{f0cc8}",
++        "md-shower": "\u{f09a0}",
++        "md-shuffle": "\u{f049d}",
++        "md-skip_next": "\u{f04ad}",
++        "md-skip_previous": "\u{f04ae}",
++        "md-speaker": "\u{f04c3}",
++        "md-speedometer": "\u{f04c5}",
++        "md-spotify": "\u{f04c7}",
++        "md-spotlight": "\u{f04c8}",
++        "md-stop": "\u{f04db}",
++        "md-swap_vertical": "\u{f04e2}",
++        "md-sync": "\u{f04e6}",
++        "md-television_play": "\u{f0ecf}",
++        "md-text": "\u{f09a8}",
++        "md-thermostat": "\u{f0393}",
++        "md-timer": "\u{f13ab}",
++        "md-timer_10": "\u{f051c}",
++        "md-tools": "\u{f1064}",
++        "md-tooltip": "\u{f0523}",
++        "md-transition": "\u{f0915}",
++        "md-translate": "\u{f05ca}",
++        "md-tray": "\u{f1294}",
++        "md-tune": "\u{f062e}",
++        "md-ubuntu": "\u{f0548}",
++        "md-update": "\u{f06b0}",
++        "md-video": "\u{f0567}",
++        "md-view_agenda": "\u{f056a}",
++        "md-view_column": "\u{f056d}",
++        "md-view_dashboard_edit_outline": "\u{f1948}",
++        "md-view_quilt_outline": "\u{f148e}",
++        "md-vlc": "\u{f057c}",
++        "md-volume_off": "\u{f0581}",
++        "md-wallpaper": "\u{f0e09}",
++        "md-wave": "\u{f0f2e}",
++        "md-weather_partly_cloudy": "\u{f0595}",
++        "md-weather_sunny": "\u{f0599}",
++        "md-weather_sunset": "\u{f059a}",
++        "md-web": "\u{f059f}",
++        "md-widgets": "\u{f072c}",
++        "md-wifi": "\u{f05a9}",
++        "md-wifi_off": "\u{f05aa}",
++        "oct-apps": "\u{f40e}",
++        "oct-device_desktop": "\u{f4a9}"
++    })
++}
