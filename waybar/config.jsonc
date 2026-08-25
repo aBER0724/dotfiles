@@ -18,6 +18,11 @@
       "niri/window"
     ],
 
+    "modules-center": [
+      "custom/weather",
+      "clock"
+    ],
+
     "modules-right": [
       "tray",
       "cpu",
@@ -27,9 +32,7 @@
       "network",
       "custom/pulseaudio",
       "backlight",
-      "battery",
-      "custom/weather",
-      "clock"
+      "battery"
     ],
 
     // ── Modules ─────────────────────────────────────
@@ -37,7 +40,6 @@
     "niri/workspaces": {
       "format": "{value}",
       "all-outputs": true,
-      "current-only": true
     },
 
     "niri/window": {

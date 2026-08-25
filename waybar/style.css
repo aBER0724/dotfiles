@@ -64,6 +64,27 @@
   padding-right: 3pt;
 }
 
+/* ── 左中右三段胶囊 ─────────────────────────────── */
+#waybar.main .modules-left,
+#waybar.main .modules-center,
+#waybar.main .modules-right {
+  background: @background;
+  border: 1px solid alpha(@caution, 0.5);
+  border-radius: 16px;
+  padding-left: 8pt;
+  padding-right: 8pt;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+/* 工作区:只显示有窗口的(GTK 不支持 display:none,改用塌缩零宽)*/
+#waybar.main #workspaces button.empty {
+  font-size: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  min-width: 0;
+}
 /* ── 模块颜色 ─────────────────────────────────────── */
 #waybar.main #cpu,
 #waybar.main #temperature,
