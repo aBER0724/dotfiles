@@ -70,18 +70,14 @@ layout {
 // fcitx5 输入法环境变量由 ~/.config/environment.d/fcitx.conf 全局注入(本 niri 构建无 env 节点)
 
 // ── 开机自启 ──────────────────────────────────────
-spawn-at-startup "waybar"
-spawn-at-startup "mako"
-spawn-at-startup "swayosd-server"
-spawn-at-startup "walker" "--gapplication-service"   // 常驻服务,Alt+Space 唤起/收起
+spawn-at-startup "sh" "-c" "PATH=$HOME/.local/bin:$PATH QML_IMPORT_PATH=$HOME/.local/lib/qt6/qml${QML_IMPORT_PATH:+:$QML_IMPORT_PATH} key shell --daemon"  // Clavis Quickshell 桌面 Shell
 spawn-at-startup "fcitx5" "-d"
 spawn-at-startup "cc-switch"
-spawn-at-startup "sh" "-c" "swaybg -i /home/aber/.config/omarchy/current/background -m fill"  // 主题壁纸(切换主题 Alt+T 时由 omarchy 重启 swaybg)
 
 binds {
     // ── 终端 & 启动器 ─────────────────────────────
     Alt+Return { spawn "alacritty"; }
-    Alt+Space  { spawn "walker"; }
+    Alt+Space  { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH key ipc call spotlight toggle"; }  // Clavis Spotlight
 
     // ── 窗口 ──────────────────────────────────────
     Alt+C            { close-window; }          // 关闭窗口(macOS Cmd+W 习惯,C 键防冲突)
@@ -144,16 +140,16 @@ binds {
 
     // ── 系统 ──────────────────────────────────────
     Alt+Shift+Escape { quit; }
-    Alt+T        { spawn "bash" "-c" "/home/aber/.local/share/omarchy/bin/omarchy-theme-next"; }  // 循环切换配色主题(omarchy)
-    Alt+Shift+T  { spawn "bash" "-c" "/home/aber/.local/share/omarchy/bin/omarchy-theme-bg-next"; }  // 循环当前主题壁纸
+    Alt+T        { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH key ipc call control-center toggle theme"; }  // Clavis 主题设置
+    Alt+Shift+T  { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH key ipc call wallpaper next"; }  // Clavis 下一张壁纸
 
     // ── 媒体键 ────────────────────────────────────
-    XF86AudioRaiseVolume { spawn "swayosd-client" "--output-volume" "5+"; }
-    XF86AudioLowerVolume { spawn "swayosd-client" "--output-volume" "5-"; }
-    XF86AudioMute        { spawn "swayosd-client" "--output-volume" "toggle-mute"; }
-    XF86AudioMicMute     { spawn "swayosd-client" "--input-volume" "toggle-mute"; }
-    XF86MonBrightnessUp   { spawn "swayosd-client" "--brightness" "5+"; }
-    XF86MonBrightnessDown { spawn "swayosd-client" "--brightness" "5-"; }
+    XF86AudioRaiseVolume { spawn "wpctl" "set-volume" "-l" "1.0" "@DEFAULT_AUDIO_SINK@" "5%+"; }
+    XF86AudioLowerVolume { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%-"; }
+    XF86AudioMute        { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle"; }
+    XF86AudioMicMute     { spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle"; }
+    XF86MonBrightnessUp   { spawn "brightnessctl" "set" "+5%"; }
+    XF86MonBrightnessDown { spawn "brightnessctl" "set" "5%-"; }
     XF86AudioPlay         { spawn "playerctl" "play-pause"; }
     XF86AudioNext         { spawn "playerctl" "next"; }
     XF86AudioPrev         { spawn "playerctl" "previous"; }
@@ -165,3 +161,7 @@ binds {
 //         // 例:默认全屏打开文件管理器
 //     }
 // }
+
+// BEGIN CLAVIS CURSOR
+include optional=true "clavis/cursor.kdl"
+// END CLAVIS CURSOR

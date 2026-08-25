@@ -8,7 +8,8 @@ Personal configuration files.
 |--------|-------------|
 | [aerospace](/aerospace) | AeroSpace tiling window manager (macOS) |
 | [niri](/niri) | Niri scrollable-tiling compositor — AeroSpace-style bindings, scripts/ |
-| [waybar](/waybar) | Waybar for niri (niri/workspaces, Catppuccin Mocha) |
+| [clavis](/clavis) | [StatIndet/Clavis](https://github.com/StatIndet/quickshell) Quickshell desktop shell for niri; user-local installer + synced settings |
+| [waybar](/waybar) | Legacy Waybar configuration kept as a manual fallback |
 | [kaku](/kaku) | Terminal (WezTerm-based) |
 | [nvim](/nvim) | Neovim (LazyVim) |
 | [fastfetch](/fastfetch) | System info |
@@ -31,7 +32,27 @@ dotfiles status    # show link state for every synced entry
 dotfiles link      # create missing links; backup+replace conflicting files
 dotfiles deps      # install zsh/herdr runtime deps (plugins, p10k, ...)
 dotfiles install   # link + install group deps + pi bootstrap hint
+dotfiles install wm  # link niri+Clavis; Clavis builds only under ~/.local (never sudo)
 ```
+
+### Niri + Clavis
+
+The `wm` group uses Clavis as the full desktop shell (bar, notifications, wallpaper,
+quick settings, calendar, launcher and power menu). Waybar remains in the repository only
+as a rollback configuration.
+
+Clavis' installer never calls `sudo`, `pacman`, `paru` or `yay`. If a system dependency
+is missing it prints the exact manual command and exits. After installation:
+
+```bash
+key shell --daemon                     # start
+key shell --kill                       # stop
+key ipc show                           # list IPC targets
+key ipc call control-center toggle theme
+```
+
+Current niri shortcuts: `Alt+Space` Spotlight, `Alt+T` theme settings,
+`Alt+Shift+T` next Clavis wallpaper.
 
 ## pi
 
