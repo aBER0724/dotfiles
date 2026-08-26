@@ -9,7 +9,7 @@ niri 版顶栏:模块已从 Hyprland 迁移到 `niri/*`。
 ```
 waybar/
 ├── config.jsonc                # 顶栏布局与模块配置(链接到 ~/.config/waybar/)
-├── style.css                   # 样式 —— 颜色由 omarchy 主题提供,切主题自动跟随
+├── style.css                   # 样式 —— 静态 omarchy 调色板快照(已不随主题切换)
 └── scripts/
     ├── calendar-popup.py       # 时钟的下拉日历(主题化)
     ├── power-menu.py           # 电源下拉菜单(主题化)
@@ -28,7 +28,7 @@ waybar/
 
 ## 样式(style.css)
 
-- 顶部 `@import url("../omarchy/current/theme/waybar.css")` 引入主题调色板(`@foreground` / `@background` / `@warning` 等变量),切换主题(`Alt+T`)后颜色自动跟随
+- 顶部 `@import url("../omarchy/current/theme/waybar.css")` 引入调色板(`@foreground` / `@background` / `@warning` 等变量)—— **遗留快照**:主题跟随已由 nbshell(`Alt+T`)接管,waybar 是回退路径,颜色不再随之变化;如需跟随请同步 `style.css` 的 `@import` 到 [生成的 nbshell 主题](../nbshell/README.md)
 - 其余为重置、关键帧(如 critical 闪烁)与模块专属样式
 
 ## 手动启用(回滚场景)

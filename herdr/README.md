@@ -63,6 +63,13 @@ prefix 按 herdr 默认(通常 `Ctrl+b` 系)。以下为绑定的插件命令:
 herdr 的 `plugins.json` 记录绝对安装路径(`/Users/aber/.config/herdr/plugins/...`),
 机器相关。改为同步 `plugins.txt`(owner/repo + ref),新设备一条命令重装。
 
+## 主题同步(nbshell managed 块)
+
+`config.toml` 内含 `# BEGIN/END nbshell managed theme` 块(见 [nbshell theme-sync](../nbshell/README.md)):
+
+- `[theme] name + auto_switch = false` 固定基础主题(catppuccin / terminal / tokyo-night / dracula / nord / gruvbox / one-dark / solarized / kanagawa / rose-pine / vesper);无内置映射时回退到 `terminal`
+- `[theme.custom]` 用真实主题色覆盖(BG / accent / red / green / selection 等)
+- 每次 `Alt+T` 由 theme-hook.sh 重写该块,再 `herdr server reload-config`,运行中即时生效
 
 ## 鼠标模式泄漏(SGR)防护
 

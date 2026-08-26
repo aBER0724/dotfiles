@@ -6,7 +6,7 @@
 ## 来源
 
 - [LazyVim](https://github.com/LazyVim/LazyVim) — 核心框架(starter 模板)
-- [solarized-osaka](https://github.com/craftzdog/solarized-osaka.nvim) — 主题(替换默认 tokyonight)
+- `colors/nbshell.lua` — 自研动态配色(读 `~/.config/nbshell/palette.sh`,随 `Alt+T` 主题切换自动变色,替换默认 tokyonight)
 - 见下方「插件清单」完整来源列表
 
 ## 目录结构
@@ -44,7 +44,7 @@ nvim/
 | 文件 | 插件 | 用途 |
 |------|------|------|
 | `lua/plugins/bufferline.lua` | [akinsho/bufferline.nvim](https://github.com/akinsho/bufferline.nvim) | 顶部标签栏美化 |
-| `lua/plugins/colorscheme.lua` | [craftzdog/solarized-osaka.nvim](https://github.com/craftzdog/solarized-osaka.nvim) | 主题 |
+| `lua/plugins/colorscheme.lua` | LazyVim 默认 + `colors/nbshell.lua` | 主题(动态跟随 nbshell;`autocmds.lua` 轮询 palette.sh) |
 | `lua/plugins/dashboard.lua` | [folke/snacks.nvim](https://github.com/folke/snacks.nvim) | Dashboard(带 kuuga.txt ASCII art) |
 | `lua/plugins/neo-tree.lua` | [nvim-neo-tree/neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) | 文件树 |
 | `lua/plugins/smart-splits.lua` | [mrjones2014/smart-splits.nvim](https://github.com/mrjones2014/smart-splits.nvim) | 分屏移动/缩放 |

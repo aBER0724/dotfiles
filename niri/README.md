@@ -51,7 +51,7 @@ niri/
 | 按键 | 动作 |
 |------|------|
 | `Alt+Space` | nbshell 启动器 |
-| `Alt+T` | 主题切换 |
+| `Alt+T` | 切换主题并同步下游(theme-next-sync: nvim/herdr/pi/lazygit/yazi/alacritty) |
 | `Alt+Shift+T` | 壁纸切换 |
 | `Alt+Escape` | 电源菜单 |
 

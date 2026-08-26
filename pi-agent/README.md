@@ -17,6 +17,12 @@ pi-agent/
 └── extensions/       # 自定义扩展(pi-autoresearch 白名单、herdr state 工具)
 ```
 
+## 主题(随 nbshell 同步)
+
+`settings.json` 的 `theme: "nbshell"`,对应主题文件 `~/.pi/agent/themes/nbshell.json`(全局目录,55 tokens),
+由 [nbshell theme-sync](../nbshell/README.md) 按 `Alt+T` 生成。激活该主题后,编辑主题文件即热重载——
+所以切主题时 pi 运行中即时变色(无需重启)。
+
 ## 插件清单(packages,来自 settings.json)
 
 | 包 | 用途 |

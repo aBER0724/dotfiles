@@ -57,13 +57,14 @@ systemctl --user enable --now nbshell.service  # start and enable
 nbshell stop                                   # stop
 nbshell launcher                               # application launcher
 nbshell dashboard                              # dashboard
-nbshell picker                                 # theme picker
+~/.config/nbshell/theme-next-sync                  # switch theme + sync nvim/herdr/pi/lazygit/yazi/alacritty
 nbshell wallpaper pick                         # wallpaper picker
 nbshell notify center                          # notification center
 ```
 
-Current niri shortcuts: `Alt+Space` launcher, `Alt+T` theme picker, `Alt+Shift+T`
-wallpaper picker, `Alt+Ctrl+T` dashboard, `Alt+N` notifications and `Alt+Escape` power menu.
+Current niri shortcuts: `Alt+Space` launcher, `Alt+T` theme switch (cycles + syncs downstream
+apps), `Alt+Shift+T` wallpaper picker, `Alt+Ctrl+T` dashboard, `Alt+N` notifications and
+`Alt+Escape` power menu.
 
 Manual Clavis rollback:
 
