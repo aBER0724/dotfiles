@@ -1,0 +1,19 @@
+diff --git a/bin/nbshell b/bin/nbshell
+index 13350ac..d0e2a6d 100755
+--- a/bin/nbshell
++++ b/bin/nbshell
+@@ -788,9 +788,11 @@ for b in d["binds"]:
+         ;;
+     idle|leerlauf)
+         case "${1:-status}" in
+-            on|an)   ipc idle on ;;
+-            off|aus) ipc idle off ;;
+-            *)       ipc idle status ;;
++            on|an)       ipc idle on ;;
++            off|aus)     ipc idle off ;;
++            saver|preview) ipc idle saver ;;
++            status|"")   ipc idle status ;;
++            *) echo "usage: nbshell idle [status|on|off|saver]" >&2; exit 2 ;;
+         esac
+         ;;
+     saver|schoner)

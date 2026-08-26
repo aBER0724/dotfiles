@@ -76,7 +76,7 @@ spawn-at-startup "cc-switch"
 
 binds {
     // ── 终端 & 启动器 ─────────────────────────────
-    Alt+Return { spawn "alacritty"; }
+    Alt+Return { spawn "kitty"; }
     Alt+Space  { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell launcher"; }  // nbshell 启动器
 
     // ── 窗口 ──────────────────────────────────────
@@ -145,6 +145,7 @@ binds {
     Alt+Ctrl+T   { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell dashboard"; }  // nbshell Dashboard
     Alt+Escape   { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell power menu"; }  // nbshell 电源菜单
     Alt+N        { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell notify center"; }  // nbshell 通知中心
+    Alt+B        { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell bar toggle"; }  // 仅切换 nbshell 状态栏显示/隐藏
 
     // ── 媒体键 ────────────────────────────────────
     XF86AudioRaiseVolume { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell audio up"; }

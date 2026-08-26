@@ -1,0 +1,92 @@
+diff --git a/bin/nbshell b/bin/nbshell
+index 13350ac..7ce5085 100755
+--- a/bin/nbshell
++++ b/bin/nbshell
+@@ -394,6 +394,8 @@ nbshell -- an independent Quickshell desktop shell for Wayland compositors
+   nbshell restart
+
+   nbshell bar               full-width bar
++  nbshell bar show|hide|toggle
++                            control only the bar window
+   nbshell island            floating island that collapses to the clock
+   nbshell pill              floating island that stays expanded
+   nbshell mode toggle       cycle through all three modes
+@@ -620,7 +622,16 @@ case "$cmd" in
+         sleep 0.4
+         exec "$QS" -c "$CONFIG_NAME" -d
+         ;;
+-    bar|island|pill)
++    bar)
++        case "${1:-}" in
++            show) ipc bar showBar ;;
++            hide) ipc bar hideBar ;;
++            toggle) ipc bar toggleVisibility ;;
++            "") ipc bar mode bar >/dev/null && echo bar ;;
++            *) echo "usage: nbshell bar [show|hide|toggle]" >&2; exit 2 ;;
++        esac
++        ;;
++    island|pill)
+         ipc bar mode "$cmd" >/dev/null && echo "$cmd"
+         ;;
+     mode|edge)
+diff --git a/shell/Bar/Bar.qml b/shell/Bar/Bar.qml
+index 8ff3eeb..52822d4 100644
+--- a/shell/Bar/Bar.qml
++++ b/shell/Bar/Bar.qml
+@@ -114,6 +114,7 @@ Variants {
+         readonly property bool osdInPill: pillMode && Config.osdInPill && Osd.showing
+
+         screen: modelData
++        visible: Runtime.barVisible
+         color: "transparent"
+
+         WlrLayershell.namespace: "nbshell:bar"
+diff --git a/shell/Common/Runtime.qml b/shell/Common/Runtime.qml
+index 0e6e044..e42f5f5 100644
+--- a/shell/Common/Runtime.qml
++++ b/shell/Common/Runtime.qml
+@@ -12,6 +12,8 @@ Singleton {
+     id: root
+
+     property bool islandOpen: false
++    // Runtime-only visibility: hiding the bar must not stop the rest of the shell.
++    property bool barVisible: true
+     // External actions may have to reveal a widget before its popout can be
+     // mapped. That reveal is temporary and must not pin the island open after
+     // the popout closes. Explicit `nbshell open` remains persistent.
+diff --git a/shell/Ipc/LookIpc.qml b/shell/Ipc/LookIpc.qml
+index db99341..f2e0c0f 100644
+--- a/shell/Ipc/LookIpc.qml
++++ b/shell/Ipc/LookIpc.qml
+@@ -42,6 +42,23 @@ Scope {
+             return next;
+         }
+
++        function showBar(): string {
++            Runtime.barVisible = true;
++            return "shown";
++        }
++
++        function hideBar(): string {
++            Runtime.closeAll();
++            Runtime.barVisible = false;
++            return "hidden";
++        }
++
++        function toggleVisibility(): string {
++            if (Runtime.barVisible)
++                return hideBar();
++            return showBar();
++        }
++
+         function open(): string {
+             Runtime.islandTransient = false;
+             Runtime.islandOpen = true;
+@@ -66,6 +83,7 @@ Scope {
+                 "edge": Config.edge,
+                 "theme": Config.theme,
+                 "open": Runtime.islandOpen,
++                "visible": Runtime.barVisible,
+                 "screens": Quickshell.screens.length
+             });
+         }

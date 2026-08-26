@@ -7,6 +7,7 @@
   "locale": "zh_CN",
   "clockFormat": "ddd MM-dd  HH:mm",
   "gap": 0,
+  "popoutGap": 8,
   "padX": 1,
   "widgetGap": 1,
   "padY": 4,
@@ -25,6 +26,7 @@
   "osdInPill": false,
   "notifications": true,
   "themeExport": false,
+  "terminal": "kitty",
   "wallpaper": true,
   "wallpaperBlur": false,
   "wallpaperOverride": "",
@@ -42,14 +44,14 @@
     "clock"
   ],
   "rightWidgets": [
+    "tray",
     "sys",
     "sep",
-    "tray",
-    "notifications",
     "volume",
     "control",
-    "themes",
-    "battery"
+    "battery",
+    "notifications"
   ],
-  "trayExpanded": false
+  "trayExpanded": false,
+  "trayPinned": []
 }

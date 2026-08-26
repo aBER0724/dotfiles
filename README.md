@@ -57,7 +57,7 @@ systemctl --user enable --now nbshell.service  # start and enable
 nbshell stop                                   # stop
 nbshell launcher                               # application launcher
 nbshell dashboard                              # dashboard
-~/.config/nbshell/theme-next-sync                  # switch theme + sync nvim/herdr/pi/lazygit/yazi/alacritty
+~/.config/nbshell/theme-next-sync                  # switch theme + sync Kitty/nvim/herdr/pi/lazygit/yazi
 nbshell wallpaper pick                         # wallpaper picker
 nbshell notify center                          # notification center
 ```

@@ -16,8 +16,10 @@ BIN_DIR="$PREFIX/bin"
 UNIT_DIR="$CONFIG_HOME/systemd/user"
 CONFIG_DIR="$CONFIG_HOME/nbshell"
 CONFIG_FILE="$CONFIG_DIR/config.json"
+SCREENSAVER_FILE="$CONFIG_DIR/screensaver.txt"
 THEME_DIR="$DATA_HOME/nbshell/themes"
 WALLPAPER_DIR="$DATA_HOME/nbshell/wallpapers"
+FCITX_CONFIG_DIR="$CONFIG_HOME/fcitx5"
 
 required_commands="git qs niri python3 bash flock fc-list"
 missing=""
@@ -74,8 +76,10 @@ clone_at() {
 
 mkdir -p "$CACHE" "$BIN_DIR" "$UNIT_DIR" "$THEME_DIR" "$WALLPAPER_DIR"
 clone_at "$NBSHELL_REPO" "$NBSHELL_REV" "$CACHE/source"
-git -C "$CACHE/source" apply --check "$SCRIPT_DIR/niri-named-workspaces.patch"
-git -C "$CACHE/source" apply "$SCRIPT_DIR/niri-named-workspaces.patch"
+for patch_file in niri-named-workspaces.patch bar-visibility.patch screensaver-fit.patch screensaver-preview.patch tray-polish.patch popout-gap.patch; do
+    git -C "$CACHE/source" apply --check "$SCRIPT_DIR/$patch_file"
+    git -C "$CACHE/source" apply "$SCRIPT_DIR/$patch_file"
+done
 
 printf '\n== Validate pinned nbshell source ==\n'
 bash -n "$CACHE/source/bin/nbshell" "$CACHE/source/bin/nbshell-install-recover"
@@ -137,6 +141,7 @@ if [[ -L "$CONFIG_DIR" ]]; then
     mkdir -p "$CONFIG_DIR"
 fi
 ln -sfnT "$SCRIPT_DIR/config/config.json" "$CONFIG_FILE"
+ln -sfnT "$SCRIPT_DIR/config/screensaver.txt" "$SCREENSAVER_FILE"
 rm -rf "$CONFIG_DIR/themes"
 ln -sfnT "$THEME_DIR" "$CONFIG_DIR/themes"
 rm -rf "$WALLPAPER_DIR"
@@ -147,6 +152,49 @@ if [[ -d "$omarchy_wallpapers" ]]; then
     ln -sfn "$omarchy_wallpapers" "$WALLPAPER_DIR/futurism"
 fi
 
+printf '\n== Configure Kitty terminal ==\n'
+mkdir -p "$CONFIG_HOME/kitty" "$CONFIG_HOME/environment.d"
+ln -sfnT "$SCRIPT_DIR/../kitty/kitty.conf" "$CONFIG_HOME/kitty/kitty.conf"
+cat > "$CONFIG_HOME/environment.d/50-terminal.conf" <<'EOF'
+TERMINAL=kitty
+EOF
+mkdir -p "$DATA_HOME/applications"
+cat > "$DATA_HOME/applications/kitty-default.desktop" <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Kitty Terminal
+Comment=Open Kitty terminal
+Exec=kitty
+Icon=kitty
+Terminal=false
+Categories=System;TerminalEmulator;
+MimeType=x-scheme-handler/terminal;
+EOF
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database "$DATA_HOME/applications" >/dev/null 2>&1 || true
+fi
+if command -v xdg-mime >/dev/null 2>&1; then
+    xdg-mime default kitty-default.desktop x-scheme-handler/terminal || true
+fi
+
+printf '\n== Install Fcitx5/Rime candidate UI ==\n'
+mkdir -p "$FCITX_CONFIG_DIR/conf"
+ln -sfnT "$SCRIPT_DIR/../fcitx5/conf/classicui.conf" "$FCITX_CONFIG_DIR/conf/classicui.conf"
+ln -sfnT "$SCRIPT_DIR/../fcitx5/conf/kimpanel.conf" "$FCITX_CONFIG_DIR/conf/kimpanel.conf"
+python3 - "$FCITX_CONFIG_DIR/config" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text() if path.exists() else "[Behavior]\n"
+text = re.sub(r'(?ms)^\[Behavior/DisabledAddons\]\n.*?(?=^\[|\Z)', '', text).rstrip()
+path.write_text(text + "\n\n[Behavior/DisabledAddons]\n0=kimpanel\n")
+PY
+python3 "$SCRIPT_DIR/../fcitx5/rime-lua-compat.py"
+install -m 0755 "$SCRIPT_DIR/scripts/theme-sync.py" "$CONFIG_DIR/theme-sync.py"
+install -m 0755 "$SCRIPT_DIR/scripts/theme-hook.sh" "$CONFIG_DIR/theme-hook.sh"
+"$CONFIG_DIR/theme-sync.py"
 mkdir -p "$CONFIG_HOME/quickshell"
 ln -sfn "$RUNTIME_DIR" "$CONFIG_HOME/quickshell/nbshell"
 

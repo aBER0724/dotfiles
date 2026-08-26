@@ -11,7 +11,7 @@ nbshell/
 ├── install.sh                  # 固定上游 revision 的用户级安装器(绝不 sudo)
 ├── config/config.json          # 运行时配置(链接到 ~/.config/nbshell/, skip-worktree 管理)
 ├── scripts/
-│   ├── theme-sync.py           # 主题同步生成器: palette.sh / herdr / pi / lazygit / yazi / alacritty / niri
+│   ├── theme-sync.py           # 主题同步生成器: palette.sh / Kitty / herdr / pi / lazygit / yazi / niri
 │   ├── theme-next-sync         # Alt+T 入口: nbshell next → 轮询 config.json → theme-sync.py
 │   └── theme-hook.sh           # 写 herdr managed 主题块并 reload
 ├── themes/futurism/colors.toml # Futurism 调色板(适配自本地 Omarchy 主题)
@@ -52,6 +52,7 @@ nbshell stop                                     # 停止
 | `nbshell wallpaper pick` | 壁纸切换(`Alt+Shift+T`) |
 | `nbshell notify center` | 通知中心(`Alt+N`) |
 | `nbshell power menu` | 电源菜单(`Alt+Escape`) |
+| `nbshell bar toggle` | 仅切换状态栏显示/隐藏(`Alt+B`)，Shell 其他功能保持运行 |
 
 ## 主题同步(`Alt+T`)
 
@@ -66,7 +67,7 @@ nbshell next → 轮询 config.json 直到主题实际变化(最多 1.5s) → th
 | 产物 | 生效方式 |
 |------|----------|
 | `~/.config/nbshell/palette.sh`(NB_* 变量) | nvim / herdr / 脚本共享源 |
-| `~/.config/nbshell/alacritty.toml` | touch 主配置触发 `live_config_reload`,**运行中即时生效** |
+| `~/.config/nbshell/kitty.conf` | 通过 Kitty Unix socket 执行 `load-config`,**运行中即时生效** |
 | `~/.pi/agent/themes/nbshell.json`(51+ tokens) | pi 激活 nbshell 主题后,编辑文件即热重载,**运行中即时生效** |
 | `~/.config/lazygit/config.yml`(`gui.theme`) | 重启 lazygit 生效 |
 | `~/.config/yazi/flavors/<theme>.yazi/` + `theme.toml` | 重启 yazi 生效 |
@@ -77,7 +78,7 @@ nbshell next → 轮询 config.json 直到主题实际变化(最多 1.5s) → th
 
 - **nvim**: `~/.config/nvim/colors/nbshell.lua` 动态读 `palette.sh`;`autocmds.lua` 用 500ms timer 轮询 palette mtime,变化即 `colorscheme nbshell`(**运行中即时生效**)。
 - **pi**: `~/.pi/agent/settings.json` 的 `theme: "nbshell"`;主题文件热重载机制见 pi 文档 `themes.md`。
-- **alacritty**: `~/.config/alacritty/alacritty.toml` 通过 `general.import` 指向生成的 `~/.config/nbshell/alacritty.toml`。
+- **Kitty**: `~/.config/kitty/kitty.conf` 引入生成的 `~/.config/nbshell/kitty.conf`;切换主题时通过每个 Kitty 进程的 Unix socket 热重载。
 - **lazygit**: 0.64+ 无 `customTheme` 字段,主题内联在 `config.yml` 的 `gui.theme`(hex 需加引号,否则 YAML 注释吞色)。
 - **yazi**: flavor 按主题名生成目录;切换主题时写新目录,旧目录保留。
 
@@ -89,6 +90,7 @@ nbshell next → 轮询 config.json 直到主题实际变化(最多 1.5s) → th
 - 数字工作区样式 + 块状 meter / visualizer(契合 niri 命名工作区)
 - 配色随主题切换(`Alt+T`),默认基础主题见 `themes/` 与 `~/.local/share/nbshell/themes/`
 - 杂项: `bongoActive: false`(关闭桌面 Bongo Cat)、`trayExpanded` 等 UI 状态
+- 屏幕保护会按全屏终端的实际列数动态选择字标尺寸；过宽的自定义 `screensaver.txt` 自动回退到内置紧凑字标，避免右侧被裁切
 
 **git 管理**: `config.json` 是运行时状态(`theme`、`bongoActive`、`trayExpanded` 随使用变化),已用 `git update-index --skip-worktree nbshell/config/config.json` 标记,不污染 `git status`,也不会拦截 `git pull`。需要提交快照时:
 

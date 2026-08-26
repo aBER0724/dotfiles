@@ -26,7 +26,7 @@ niri/
 
 | 按键 | 动作 |
 |------|------|
-| `Alt+Return` | 打开 alacritty |
+| `Alt+Return` | 打开 Kitty |
 | `Alt+C` | 关闭窗口(Cmd+W 习惯) |
 | `Alt+F` / `Alt+Shift+F` | 全屏 / 浮动切换 |
 | `Alt+M` / `Alt+Shift+M` | 最大化列 / 居中窗口 |
@@ -51,7 +51,7 @@ niri/
 | 按键 | 动作 |
 |------|------|
 | `Alt+Space` | nbshell 启动器 |
-| `Alt+T` | 切换主题并同步下游(theme-next-sync: nvim/herdr/pi/lazygit/yazi/alacritty) |
+| `Alt+T` | 切换主题并同步下游(theme-next-sync: Kitty/nvim/herdr/pi/lazygit/yazi) |
 | `Alt+Shift+T` | 壁纸切换 |
 | `Alt+Escape` | 电源菜单 |
 

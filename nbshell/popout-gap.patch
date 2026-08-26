@@ -1,0 +1,27 @@
+diff --git a/shell/Common/Config.qml b/shell/Common/Config.qml
+index 389a78f..4aa81e6 100644
+--- a/shell/Common/Config.qml
++++ b/shell/Common/Config.qml
+@@ -43,6 +43,9 @@ Singleton {
+     readonly property string mode: value("mode", "bar")
+     readonly property string edge: value("edge", "top")
+     readonly property int gap: value("gap", 6)
++    // Popup distance is independent from the bar's screen-edge gap. A bar may
++    // sit flush against the output while its menus still need visual clearance.
++    readonly property int popoutGap: value("popoutGap", 6)
+     readonly property int lines: value("lines", 1)
+     // Innenabstand einer Zelle in Zeichen (links wie rechts).
+     readonly property real padX: value("padX", 1)
+diff --git a/shell/Widgets/Popout.qml b/shell/Widgets/Popout.qml
+index 80358cf..bb34545 100644
+--- a/shell/Widgets/Popout.qml
++++ b/shell/Widgets/Popout.qml
+@@ -65,7 +65,7 @@ PopupWindow {
+     implicitHeight: lockedContentHeight > 0 ? lockedContentHeight + padding * 2 + Theme.borderWidth * 2 : 1
+
+     anchor.item: root.anchorItem
+-    anchor.rect.y: Config.edge === "bottom" ? -Config.gap : (root.anchorItem?.height ?? 0) + Config.gap
++    anchor.rect.y: Config.edge === "bottom" ? -Config.popoutGap : (root.anchorItem?.height ?? 0) + Config.popoutGap
+     anchor.gravity: Config.edge === "bottom" ? Edges.Top : Edges.Bottom
+     anchor.adjustment: PopupAdjustment.SlideX
+

@@ -1,5 +1,6 @@
 # Optional Arch packages used by the synchronized nbshell setup.
 # nbshell/install.sh only checks this list; it never invokes pacman or sudo.
+kitty
 tuned
 khal
 vdirsyncer

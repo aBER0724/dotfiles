@@ -1,0 +1,390 @@
+diff --git a/shell/Bar/Widgets/Battery.qml b/shell/Bar/Widgets/Battery.qml
+index 6b8c920..faf7a36 100644
+--- a/shell/Bar/Widgets/Battery.qml
++++ b/shell/Bar/Widgets/Battery.qml
+@@ -9,22 +9,19 @@ Cell {
+     id: root
+
+     shown: PowerService.available
+-    // Percentage and battery-side power stay visible at a glance. Hover still
+-    // swaps to the remaining time without moving the rest of the bar.
+-    slotChars: 13
++    // Keep the bar compact. Detailed power, time and profile information lives
++    // in the popout and hovering must not replace the percentage with "full".
++    slotChars: 4
+     interactive: true
+
+     // Das Symbol fuellt sich mit dem Ladestand, beim Laden steht der Blitz
+     // da -- den Pfeil davor braucht es dann nicht mehr.
+     label: PowerService.charging ? "BAT ↑" : "BAT"
+     icon: PowerService.charging ? Icons.batteryCharge(PowerService.percent) : Icons.battery(PowerService.percent)
+-    text: hovered ? PowerService.timeText
+-        : (PowerService.percent + "% · " + PowerService.powerCompactText)
++    text: PowerService.percent + "%"
+
+     color: PowerService.percent <= 20 && !PowerService.charging ? Theme.red : (PowerService.charging ? Theme.green : Theme.text)
+
+-    onClicked: PowerService.refreshProfile()
+-
+     preview: Component {
+         BarPreview {
+             icon: PowerService.charging ? Icons.batteryCharge(PowerService.percent) : Icons.battery(PowerService.percent)
+@@ -181,6 +178,14 @@ Cell {
+                 onChosen: value => PowerService.setProfile(value)
+             }
+
++            Line {
++                width: panel.rowWidth
++                visible: PowerService.profileError !== ""
++                text: PowerService.profileError
++                color: Theme.red
++                wrapMode: Text.Wrap
++            }
++
+             Line {
+                 width: panel.rowWidth
+                 text: "more profiles: tuned-adm list"
+diff --git a/shell/Bar/Widgets/Tray.qml b/shell/Bar/Widgets/Tray.qml
+index 1e6160b..e2fde8d 100644
+--- a/shell/Bar/Widgets/Tray.qml
++++ b/shell/Bar/Widgets/Tray.qml
+@@ -1,46 +1,65 @@
+ import QtQuick
+ import Quickshell
+ import Quickshell.Services.SystemTray
+-import Quickshell.Widgets
+ import qs.Common
+ import qs.Widgets
+
+-// System-Tray.
+-//
+-// Die Symbole kommen von den Programmen selbst -- das ist die eine Stelle, an
+-// der eine Textoberflaeche nicht mit Text auskommt. Der Rahmen drumherum
+-// bleibt derselbe wie bei jedem anderen Baustein.
+-//
+-// Links startet, Mitte ist die zweite Aktion des Programms, rechts oeffnet
+-// dessen Menue. Genau das erwartet ein SNI-Programm.
+-//
+-// Eingeklappt steht nur ein schlichtes `<` da. Aufgeklappt wird es zu `>` --
+-// die Anzahl ist unwichtig, weil die Symbole selbst direkt daneben erscheinen.
+-// Der Zustand steht in der Config und ueberlebt damit den Neustart.
++// Draggable system tray: hidden applications live left of the divider and
++// pinned applications live right of it. Clicking the chevron shows or hides
++// the hidden side; dragging an icon across the divider persists its side.
+ Cell {
+     id: root
+
+     readonly property var items: SystemTray.items?.values ?? []
+-
++    readonly property var pinnedIds: Config.value("trayPinned", [])
+     readonly property bool expanded: Config.value("trayExpanded", false)
++    readonly property var hiddenItems: items.filter(item => !isPinned(item))
++    readonly property var pinnedItems: items.filter(item => isPinned(item))
++    readonly property real dividerPosition: divider.mapToItem(root, divider.width / 2, 0).x
++    property int dragCount: 0
++
++    function itemKey(item) {
++        return String(item?.id || item?.title || "");
++    }
++
++    function isPinned(item) {
++        return pinnedIds.indexOf(itemKey(item)) >= 0;
++    }
++
++    function setPinned(id, pinned) {
++        const key = String(id || "");
++        if (!key)
++            return;
++        const next = pinnedIds.filter(value => value !== key);
++        if (pinned)
++            next.push(key);
++        Config.set("trayPinned", next);
++    }
++
++    function setDragging(active) {
++        dragCount = Math.max(0, dragCount + (active ? 1 : -1));
++    }
+
+     shown: items.length > 0
+     custom: true
++    // Keep the pinned side beside SYS while the hidden side grows to the left.
++    customAlignRight: true
+
+     Row {
+         spacing: Theme.cellW / 2
+
+-        // Der Pfeil zeigt zugleich Aktion und Zustand, ohne einen Zaehler.
+-        Line {
+-            id: toggle
++        Item {
++            width: Theme.cellH
++            height: Theme.cellH
+
+-            anchors.verticalCenter: parent.verticalCenter
+-            text: root.expanded ? ">" : "<"
+-            color: Theme.textDim
++            Line {
++                anchors.centerIn: parent
++                text: root.expanded ? "›" : "‹"
++                color: root.expanded ? Theme.accent : Theme.textDim
++            }
+
+             MouseArea {
+                 anchors.fill: parent
+-                anchors.margins: -Theme.cellW / 2
+                 hoverEnabled: true
+                 cursorShape: Qt.PointingHandCursor
+                 onClicked: Config.set("trayExpanded", !root.expanded)
+@@ -48,55 +67,42 @@ Cell {
+         }
+
+         Repeater {
+-            model: root.expanded ? root.items : []
+-
+-            Item {
+-                id: entry
++            model: root.expanded ? root.hiddenItems : []
+
++            TrayEntry {
+                 required property var modelData
++                trayItem: modelData
++                trayRoot: root
++                pinned: false
++            }
++        }
++
++        Line {
++            id: divider
++            anchors.verticalCenter: parent.verticalCenter
++            text: "│"
++            color: root.dragCount > 0 ? Theme.accent : Theme.muted
++        }
++
++        Repeater {
++            model: root.pinnedItems
+
+-                width: Theme.cellH
+-                height: Theme.cellH
+-
+-                IconImage {
+-                    id: icon
+-
+-                    anchors.fill: parent
+-                    source: entry.modelData.icon
+-                    // Nicht abschalten, wenn das Programm "passiv" meldet --
+-                    // nur blasser: verschwundene Symbole verwirren mehr, als
+-                    // sie Platz sparen.
+-                    opacity: entry.modelData.status === Status.Passive ? 0.5 : 1
+-                }
+-
+-                MouseArea {
+-                    anchors.fill: parent
+-                    hoverEnabled: true
+-                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+-
+-                    onClicked: mouseEvent => {
+-                        const item = entry.modelData;
+-                        if (mouseEvent.button === Qt.MiddleButton) {
+-                            item.secondaryActivate();
+-                            return;
+-                        }
+-                        if (item.hasMenu) {
+-                            // Most of the current tray applications expose a menu
+-                            // but do not mark themselves as menu-only. Opening that
+-                            // menu for either primary or context click gives both
+-                            // buttons a reliable visible action under Niri.
+-                            const point = entry.mapToItem(null, mouseEvent.x, mouseEvent.y);
+-                            item.display(entry.QsWindow.window, Math.round(point.x), Math.round(point.y));
+-                            return;
+-                        }
+-                        if (mouseEvent.button === Qt.LeftButton)
+-                            item.activate();
+-                    }
+-
+-                    onWheel: wheelEvent => entry.modelData.scroll(wheelEvent.angleDelta.y, false)
+-                }
++            TrayEntry {
++                required property var modelData
++                trayItem: modelData
++                trayRoot: root
++                pinned: true
+             }
+         }
+-    }
+
++        // Separate pinned applications from the stable status data that follows
++        // this widget. With no pinned applications the central zone divider is
++        // already the single separator, so do not render a duplicate.
++        Line {
++            anchors.verticalCenter: parent.verticalCenter
++            visible: root.pinnedItems.length > 0
++            text: "│"
++            color: Theme.muted
++        }
++    }
+ }
+diff --git a/shell/Bar/Widgets/TrayEntry.qml b/shell/Bar/Widgets/TrayEntry.qml
+new file mode 100644
+index 0000000..091deab
+--- /dev/null
++++ b/shell/Bar/Widgets/TrayEntry.qml
+@@ -0,0 +1,77 @@
++import QtQuick
++import Quickshell
++import Quickshell.Services.SystemTray
++import Quickshell.Widgets
++import qs.Common
++
++Item {
++    id: entry
++
++    required property var trayItem
++    required property var trayRoot
++    required property bool pinned
++
++    width: Theme.cellH
++    height: Theme.cellH
++    opacity: iconDrag.active ? 0.45 : 1
++    property real lastDragX: 0
++
++    IconImage {
++        anchors.fill: parent
++        source: entry.trayItem.icon
++        opacity: entry.trayItem.status === Status.Passive ? 0.5 : 1
++    }
++
++    MouseArea {
++        anchors.fill: parent
++        hoverEnabled: true
++        acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
++
++        onClicked: mouseEvent => {
++            const item = entry.trayItem;
++            if (mouseEvent.button === Qt.MiddleButton) {
++                item.secondaryActivate();
++                return;
++            }
++            if (item.hasMenu) {
++                const point = entry.mapToItem(null, mouseEvent.x, mouseEvent.y);
++                item.display(entry.QsWindow.window, Math.round(point.x), Math.round(point.y));
++                return;
++            }
++            if (mouseEvent.button === Qt.LeftButton)
++                item.activate();
++        }
++
++        onWheel: wheelEvent => entry.trayItem.scroll(wheelEvent.angleDelta.y, false)
++    }
++
++    DragHandler {
++        id: iconDrag
++        target: null
++        acceptedButtons: Qt.LeftButton
++        grabPermissions: PointerHandler.CanTakeOverFromAnything
++        cursorShape: active ? Qt.ClosedHandCursor : Qt.OpenHandCursor
++
++        onTranslationChanged: if (active)
++            entry.lastDragX = translation.x
++
++        onActiveChanged: {
++            entry.trayRoot.setDragging(active);
++            if (active) {
++                entry.lastDragX = 0;
++                return;
++            }
++            // DragHandler may reset translation before active becomes false. Use
++            // the last position captured while the pointer grab was active.
++            const dx = entry.lastDragX;
++            // Each delegate knows which side it started on. Crossing toward the
++            // other zone is therefore directional and does not depend on a
++            // divider coordinate that moves while the tray width animates.
++            if (!entry.pinned && dx >= Theme.cellW)
++                entry.trayRoot.setPinned(entry.trayRoot.itemKey(entry.trayItem), true);
++            else if (entry.pinned && dx <= -Theme.cellW)
++                entry.trayRoot.setPinned(entry.trayRoot.itemKey(entry.trayItem), false);
++            entry.lastDragX = 0;
++        }
++    }
++}
+diff --git a/shell/Services/PowerService.qml b/shell/Services/PowerService.qml
+index 3659b3c..75a2e5a 100644
+--- a/shell/Services/PowerService.qml
++++ b/shell/Services/PowerService.qml
+@@ -38,8 +38,10 @@ Singleton {
+     // power on battery and charge power while plugged in; it is not a whole-
+     // system wall-meter reading. Keep zero visible as a valid idle/full value.
+     readonly property real rate: Math.max(0, Number(device?.changeRate ?? 0))
+-    readonly property string powerText: rate.toFixed(1) + " W"
+-    readonly property string powerCompactText: rate.toFixed(1) + "W"
++    // A full battery legitimately reports zero current. Showing "0 W" as if it
++    // were a live measurement is misleading; expose the actual power state.
++    readonly property string powerText: full ? "idle (full)" : rate.toFixed(1) + " W"
++    readonly property string powerCompactText: full ? "full" : rate.toFixed(1) + "W"
+     readonly property string powerLabel: full ? "Battery flow"
+         : (charging ? "Charge power" : "Power draw")
+     readonly property int nativeHealth: device ? Math.round(device.healthPercentage) : 0
+@@ -128,16 +130,27 @@ Singleton {
+     readonly property var profiles: Config.value("powerProfiles", ["powersave", "laptop-battery-powersave", "balanced-battery", "balanced", "desktop", "throughput-performance"])
+
+     property string activeProfile: ""
++    property string profileError: ""
+
+     function refreshProfile() {
+         activeProc.running = true;
+     }
+
+     function setProfile(name) {
+-        setProc.command = ["tuned-adm", "profile", name];
++        profileError = "";
++        // tuned-adm cannot switch anything while its system daemon is stopped.
++        // Start it through polkit on demand, then apply the selected profile.
++        setProc.command = ["sh", "-c",
++            "if ! systemctl is-active --quiet tuned.service; then "
++            + "pkexec systemctl start tuned.service || exit $?; fi; "
++            + "tuned-adm profile " + shellQuote(name)];
+         setProc.running = true;
+     }
+
++    function shellQuote(value) {
++        return "'" + String(value).replace(/'/g, "'\"'\"'") + "'";
++    }
++
+     Process {
+         id: activeProc
+
+@@ -155,6 +168,9 @@ Singleton {
+
+     Process {
+         id: setProc
++        stderr: StdioCollector {
++            onStreamFinished: root.profileError = text.trim()
++        }
+         onExited: root.refreshProfile()
+     }
+
+diff --git a/shell/Widgets/Cell.qml b/shell/Widgets/Cell.qml
+index 10d085c..9c788a5 100644
+--- a/shell/Widgets/Cell.qml
++++ b/shell/Widgets/Cell.qml
+@@ -73,6 +73,9 @@ Item {
+     // als eine Zeichenkette (die Workspaces etwa).
+     default property alias content: contentItem.data
+     property bool custom: false
++    // Variable-width custom content can opt into a stable right edge. This is
++    // useful for controls that reveal extra content to their left.
++    property bool customAlignRight: false
+
+     signal clicked
+     signal rightClicked
+@@ -245,7 +248,10 @@ Item {
+     Item {
+         id: contentItem
+         opacity: root.contentOpacity
+-        anchors.centerIn: parent
++        anchors.verticalCenter: parent.verticalCenter
++        anchors.horizontalCenter: root.customAlignRight ? undefined : parent.horizontalCenter
++        anchors.right: root.customAlignRight ? parent.right : undefined
++        anchors.rightMargin: root.customAlignRight ? Theme.barItemPadding : 0
+         width: childrenRect.width
+         height: childrenRect.height
+     }

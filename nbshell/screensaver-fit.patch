@@ -1,0 +1,59 @@
+diff --git a/shell/scripts/screensaver.sh b/shell/scripts/screensaver.sh
+index 0a12e48..17d3258 100755
+--- a/shell/scripts/screensaver.sh
++++ b/shell/scripts/screensaver.sh
+@@ -31,14 +31,23 @@ HIER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ EIGEN="$HIER/screensaver.py"
+ VORLAGE="${XDG_CONFIG_HOME:-$HOME/.config}/nbshell/screensaver.txt"
+
+-# Eigene Vorlage schlaegt die eingebaute -- so kann man den Schriftzug
+-# austauschen, ohne das Skript anzufassen (wie Omarchys branding-Datei).
+-if [ ! -s "$VORLAGE" ]; then
+-	mkdir -p "$(dirname "$VORLAGE")"
+-	python3 "$EIGEN" --wortmarke >"$VORLAGE" 2>/dev/null || true
++# Generate the built-in wordmark for the actual fullscreen terminal grid. The
++# output is redirected, so Python cannot query the TTY itself; pass COLUMNS
++# explicitly or it falls back to 239 and creates a wordmark wider than Ghostty.
++spalten="$(tput cols 2>/dev/null || printf '80')"
++auto_vorlage="$(mktemp)"
++COLUMNS="$spalten" python3 "$EIGEN" --wortmarke >"$auto_vorlage" 2>/dev/null || true
++
++# Keep a user-provided wordmark when it fits. If it is wider than the current
++# terminal, use the responsive built-in variant instead of letting TTE clip it.
++quelle="$auto_vorlage"
++if [ -s "$VORLAGE" ]; then
++	breite="$(awk '{ if (length > max) max = length } END { print max + 0 }' "$VORLAGE")"
++	[ "$breite" -le "$spalten" ] && quelle="$VORLAGE"
+ fi
+
+ if ! command -v tte >/dev/null 2>&1; then
++	rm -f "$auto_vorlage"
+ 	exec python3 "$EIGEN"
+ fi
+
+@@ -59,6 +68,7 @@ printf '\033[?25l'
+
+ aufraeumen() {
+ 	pkill -x tte 2>/dev/null
++	rm -f "$auto_vorlage"
+ 	printf '\033[?25h\033[0m\033[2J\033[H'
+ 	exit 0
+ }
+@@ -68,7 +78,7 @@ trap aufraeumen INT TERM HUP
+ # laeuft wird auf eine Taste gehorcht. `read -t 1` ist die Uhr dafuer.
+ while true; do
+ 	if printf '%s' "$hilfe" | grep -q -- '--random-effect'; then
+-		tte "${flags[@]}" --random-effect <"$VORLAGE" &
++		tte "${flags[@]}" --random-effect <"$quelle" &
+ 	else
+ 		# Aeltere Fassungen kennen keinen Zufall: dann wird selbst gewuerfelt.
+ 		effekte=(beams binarypath blackhole bouncyballs bubbles burn colorshift
+@@ -76,7 +86,7 @@ while true; do
+ 			orbittingvolley overflow pour print rain randomsequence rings
+ 			scattered slice slide spotlights spray swarm sweep synthgrid
+ 			unstable vhstape waves wipe)
+-		tte "${flags[@]}" "${effekte[RANDOM % ${#effekte[@]}]}" <"$VORLAGE" &
++		tte "${flags[@]}" "${effekte[RANDOM % ${#effekte[@]}]}" <"$quelle" &
+ 	fi
+ 	kind=$!
+
