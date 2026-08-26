@@ -68,6 +68,7 @@ nbshell next → 轮询 config.json 直到主题实际变化(最多 1.5s) → th
 |------|----------|
 | `~/.config/nbshell/palette.sh`(NB_* 变量) | nvim / herdr / 脚本共享源 |
 | `~/.config/nbshell/kitty.conf` | 通过 Kitty Unix socket 执行 `load-config`,**运行中即时生效** |
+| `~/.config/btop/themes/current.theme` | 发送 `SIGUSR2` 重载配置与主题,**运行中即时生效** |
 | `~/.pi/agent/themes/nbshell.json`(51+ tokens) | pi 激活 nbshell 主题后,编辑文件即热重载,**运行中即时生效** |
 | `~/.config/lazygit/config.yml`(`gui.theme`) | 重启 lazygit 生效 |
 | `~/.config/yazi/flavors/<theme>.yazi/` + `theme.toml` | 重启 yazi 生效 |
@@ -79,6 +80,7 @@ nbshell next → 轮询 config.json 直到主题实际变化(最多 1.5s) → th
 - **nvim**: `~/.config/nvim/colors/nbshell.lua` 动态读 `palette.sh`;`autocmds.lua` 用 500ms timer 轮询 palette mtime,变化即 `colorscheme nbshell`(**运行中即时生效**)。
 - **pi**: `~/.pi/agent/settings.json` 的 `theme: "nbshell"`;主题文件热重载机制见 pi 文档 `themes.md`。
 - **Kitty**: `~/.config/kitty/kitty.conf` 引入生成的 `~/.config/nbshell/kitty.conf`;切换主题时通过每个 Kitty 进程的 Unix socket 热重载。
+- **btop**: 配置固定选择 `current`,同步生成 `~/.config/btop/themes/current.theme`,然后向当前用户的 btop 进程发送 `SIGUSR2` 热重载。
 - **lazygit**: 0.64+ 无 `customTheme` 字段,主题内联在 `config.yml` 的 `gui.theme`(hex 需加引号,否则 YAML 注释吞色)。
 - **yazi**: flavor 按主题名生成目录;切换主题时写新目录,旧目录保留。
 

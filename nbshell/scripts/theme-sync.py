@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Export the selected nbshell theme for external applications.
 
-Generates palette.sh plus dynamic configs for Kitty, pi, lazygit, yazi, and
-herdr (via theme-hook.sh). Run after every theme switch.
+Generates palette.sh plus dynamic configs for Kitty, btop, pi, lazygit, yazi,
+and herdr (via theme-hook.sh). Run after every theme switch.
 """
 from __future__ import annotations
 

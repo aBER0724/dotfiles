@@ -194,6 +194,25 @@ text = re.sub(r'(?ms)^\[Behavior/DisabledAddons\]\n.*?(?=^\[|\Z)', '', text).rst
 path.write_text(text + "\n\n[Behavior/DisabledAddons]\n0=kimpanel\n")
 PY
 python3 "$SCRIPT_DIR/../fcitx5/rime-lua-compat.py"
+
+# Keep btop's user preferences, but point its palette at the generated theme.
+mkdir -p "$CONFIG_HOME/btop/themes"
+python3 - "$CONFIG_HOME/btop/btop.conf" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text() if path.exists() else ""
+setting = 'color_theme = "current"'
+if re.search(r'(?m)^color_theme\s*=.*$', text):
+    text = re.sub(r'(?m)^color_theme\s*=.*$', setting, text, count=1)
+elif text:
+    text = setting + "\n" + text
+else:
+    text = setting + "\n"
+path.write_text(text)
+PY
 install -m 0755 "$SCRIPT_DIR/scripts/theme-sync.py" "$CONFIG_DIR/theme-sync.py"
 install -m 0755 "$SCRIPT_DIR/scripts/theme-hook.sh" "$CONFIG_DIR/theme-hook.sh"
 "$CONFIG_DIR/theme-sync.py"
