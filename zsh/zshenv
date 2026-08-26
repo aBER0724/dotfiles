@@ -1,8 +1,9 @@
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"  # rustup (absent when cargo comes from system packages)
 
-# Never trust an exported FPATH from a parent shell. A stale Linuxbrew-only
-# value hides Zsh's core functions and breaks Oh My Zsh. Rebuild the standard
-# platform paths first; later startup files may safely prepend extra entries.
-typeset -ga fpath
-fpath=(/usr/local/share/zsh/site-functions /usr/share/zsh/site-functions /usr/share/zsh/functions/*(N-/))
-export FPATH
+# Linux 专用: 父 shell 导出的 FPATH 可能被 Linuxbrew 污染, 重建标准路径。
+# macOS 上有版本化目录 (/usr/share/zsh/5.9/functions), 用原生 fpath 即可。
+if [[ "$(uname -s)" == "Linux" ]]; then
+  typeset -ga fpath
+  fpath=(/usr/local/share/zsh/site-functions /usr/share/zsh/site-functions /usr/share/zsh/functions/*(N-/))
+  export FPATH
+fi
