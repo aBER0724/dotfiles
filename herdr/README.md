@@ -63,6 +63,29 @@ prefix 按 herdr 默认(通常 `Ctrl+b` 系)。以下为绑定的插件命令:
 herdr 的 `plugins.json` 记录绝对安装路径(`/Users/aber/.config/herdr/plugins/...`),
 机器相关。改为同步 `plugins.txt`(owner/repo + ref),新设备一条命令重装。
 
+
+## 鼠标模式泄漏(SGR)防护
+
+症状:退出 herdr / SSH 断线后,回到 shell 输入行里出现 `[<35;x;yM` 这类裸 SGR 序列,
+滚轮、鼠标移动被当成键盘输入。
+
+原因:TUI 崩溃或被强杀时没发送 `?1003l` / `?1006l` 关闭鼠标上报;鼠标模式是**终端模拟器
+(如 Kaku)的属性**,远程进程死在 SSH 里、本地终端却一直保持 1003h/1006h,回到本地 shell 即泄漏。
+
+herdr 侧(已由上游修复,需 ≥0.8.0):
+
+- **0.8.0** 起,SIGHUP / SIGTERM 时恢复终端状态(#2041)——SSH 断线杀进程不再泄漏
+- **0.7.2** 起,SGR 鼠标上报不再泄漏进 pane(#939)
+- **0.8.2** 起,detach 恢复宿主键盘上报(#2393)、默认解码鼠标上报(#2309)
+
+```bash
+herdr --version          # 本机;确认 ≥ 0.8.0
+ssh firebat 'herdr --version'   # 远程;低版本是 SSH 断线泄漏的头号原因,升级: brew upgrade herdr
+```
+
+shell 侧兜底(已内置在 zsh/zshrc):每次绘制提示符前自动发送
+`ESC[?1000l ?1002l ?1003l ?1006l`,无论哪个 TUI 残留都能清掉;应急可手动 `fixmouse`。
+若不用 herdr 的鼠标交互,也可在 config.toml 设 `[ui] mouse_capture = false` 彻底关闭宿主鼠标捕获。
 ## 新设备安装
 
 ```bash
