@@ -174,6 +174,17 @@ run_herdr_plugins() {
     echo "herdr not installed — skipped (brew install herdr)"
   fi
 }
+setup_pi_theme() {
+  local theme_dir="$HOME/.pi/agent/themes"
+  local theme_file="$theme_dir/nbshell.json"
+  local fallback="$DOTFILES/pi-agent/themes/nbshell-tokyo-night.json"
+  mkdir -p "$theme_dir"
+  if [ "$(uname -s)" = "Darwin" ] || [ ! -f "$theme_file" ]; then
+    cp "$fallback" "$theme_file"
+    echo "theme   pi nbshell → Tokyo Night fallback"
+  fi
+}
+
 
 cmd_deps() {
   # Install runtime deps without touching links (already-linked machines).
@@ -217,6 +228,7 @@ cmd_install() {
   echo
   if [ "$want_pi" = 1 ]; then
     echo "== pi =="
+    setup_pi_theme
     if [ ! -f "$HOME/.pi/agent/auth.json" ]; then
       echo "No pi API key yet. Create it (no login, providers are key-based):"
       echo "  printf '{\"$PI_DEFAULT_PROVIDER\": {\"type\": \"api_key\", \"key\": \"sk-...\"}}' > $HOME/.pi/agent/auth.json"

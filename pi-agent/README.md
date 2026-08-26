@@ -78,6 +78,10 @@ pi 用 `packages` 数组记录**插件来源**(如 `npm:pi-subagents`),
 | `models-store.json` | provider 目录缓存,机器本地 |
 | `sessions/` `state/` `fff/` | 会话/状态,机器本地 |
 | `npm/` `git/` | 包安装缓存,自动重建 |
+macOS 不运行 nbshell，因此 `dotfiles install pi` 会把仓库内的 Tokyo Night
+兜底主题安装为 `~/.pi/agent/themes/nbshell.json`。Linux 上该文件仍由
+`nbshell/scripts/theme-sync.py` 根据系统主题动态生成。
+
 
 ## 新设备安装
 
