@@ -80,7 +80,7 @@ nbshell next → 轮询 config.json 直到主题实际变化(最多 1.5s) → th
 - **nvim**: `~/.config/nvim/colors/nbshell.lua` 动态读 `palette.sh`;`autocmds.lua` 用 500ms timer 轮询 palette mtime,变化即 `colorscheme nbshell`(**运行中即时生效**)。
 - **pi**: `~/.pi/agent/settings.json` 的 `theme: "nbshell"`;主题文件热重载机制见 pi 文档 `themes.md`。
 - **Kitty**: `~/.config/kitty/kitty.conf` 引入生成的 `~/.config/nbshell/kitty.conf`;切换主题时通过每个 Kitty 进程的 Unix socket 热重载。
-- **btop**: 配置固定选择 `current`,同步生成 `~/.config/btop/themes/current.theme`,然后向当前用户的 btop 进程发送 `SIGUSR2` 热重载。
+- **btop**: 不把完整的 `~/.config/btop/btop.conf` 链接进仓库。该文件包含排序、布局、磁盘/网络设备、GPU 与传感器等运行时及机器相关设置,btop 也会主动改写它。安装器保留这些用户设置,只将 `color_theme` 更新为 `current`;主题同步生成 `~/.config/btop/themes/current.theme`,然后向当前用户的 btop 进程发送 `SIGUSR2` 热重载。`btop.conf` 与自动生成的 `current.theme` 均不提交。
 - **lazygit**: 0.64+ 无 `customTheme` 字段,主题内联在 `config.yml` 的 `gui.theme`(hex 需加引号,否则 YAML 注释吞色)。
 - **yazi**: flavor 按主题名生成目录;切换主题时写新目录,旧目录保留。
 
