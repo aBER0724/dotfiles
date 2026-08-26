@@ -227,10 +227,10 @@ config.selection_word_boundary = ' \t\n{}[]()"\'-'  -- Smart selection boundarie
 
 -- ===== Window =====
 config.window_padding = {
-  left = '40px',
-  right = '0px',
-  top = '70px',
-  bottom = '30px',
+  left = '24px',
+  right = '24px',
+  top = '24px',
+  bottom = '24px',
 }
 
 config.initial_cols = 110
