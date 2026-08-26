@@ -12,6 +12,7 @@ Personal configuration files.
 | [clavis](/clavis) | Previous StatIndet/Clavis shell retained as a manual rollback |
 | [waybar](/waybar) | Legacy Waybar configuration retained as a second manual rollback |
 | [kaku](/kaku) | Terminal (WezTerm-based) |
+| [kitty](/kitty) | Kitty terminal — Kaku-inspired port (fonts, Kaku Dark, Cmd keymap) |
 | [nvim](/nvim) | Neovim (LazyVim) |
 | [fastfetch](/fastfetch) | System info |
 | [zsh](/zsh) | Zsh config (zshrc, zprofile, zshenv, p10k) |

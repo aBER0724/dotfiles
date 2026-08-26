@@ -29,6 +29,7 @@ LINK_TABLE=(
   "pi-models|pi-agent/models.json|$HOME/.pi/agent/models.json"
   "pi-extensions|pi-agent/extensions|$HOME/.pi/agent/extensions"
   "herdr|herdr/config.toml|$HOME/.config/herdr/config.toml"
+  "kitty|kitty/kitty.conf|$HOME/.config/kitty/kitty.conf"
 )
 
 # Group aliases: "<alias>|<space-separated names>". Passing the alias to
