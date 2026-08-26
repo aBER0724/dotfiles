@@ -37,6 +37,7 @@ zsh/
 - **PATH**:`/opt/homebrew/bin`、libpq、antigravity、platformio、pnpm 全部 `[ -d ]` 守卫,Linux 上自动忽略 macOS 专属
 - **nvm**:先找 `$HOME/.nvm` 再找 Homebrew
 - `.local/bin` 用 `$HOME` 而非 `/Users/aber`,跨用户可移植
+- **鼠标模式泄漏防护**:precmd hook 每次提示符前清 `1000/1002/1003/1006`;`ssh()` 包装在会话结束后清全部 7 种模式(远程 TUI 会经 SSH 通道把鼠标模式开在本地终端上)
 
 ## 新设备安装
 

@@ -223,3 +223,12 @@ _clear_mouse_mode() {
 }
 fixmouse() { _clear_mouse_mode }
 # <<< 鼠标修复泄漏清理 <<<
+
+# ssh 会话后清理——远程 TUI 可能经 SSH 通道把鼠标/键盘模式开在本地终端上,
+# 会话结束立刻清空(herdr 上游同款 7 模式关闭序列),不等下一个提示符。
+ssh() {
+  command ssh "$@"
+  local rc=$?
+  printf '\033[?1006l\033[?1016l\033[?1015l\033[?1005l\033[?1003l\033[?1002l\033[?1000l'
+  return $rc
+}
