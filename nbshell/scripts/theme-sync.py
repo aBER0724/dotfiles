@@ -130,21 +130,29 @@ color15 {ansi[15]}
 """
 kitty_theme_path = config_dir / "kitty.conf"
 atomic_write(kitty_theme_path, kitty_theme)
-# Reload every running Kitty OS process through its per-process Unix socket.
-kitty_runtime = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
+# Reload every running Kitty OS process. New installs use Kitty's cross-platform
+# temporary directory; keep old cache/runtime locations for existing windows.
+kitty_socket_dirs = [Path(os.environ.get("TMPDIR", "/tmp")), Path.home() / ".cache"]
+xdg_runtime = os.environ.get("XDG_RUNTIME_DIR")
+if xdg_runtime:
+    kitty_socket_dirs.append(Path(xdg_runtime))
+elif sys.platform.startswith("linux"):
+    kitty_socket_dirs.append(Path(f"/run/user/{os.getuid()}"))
 if subprocess.run(
     ["sh", "-c", "command -v kitty >/dev/null"], check=False
 ).returncode == 0:
-    for kitty_socket in kitty_runtime.glob("kitty-*"):
-        if not kitty_socket.is_socket():
-            continue
-        subprocess.run(
-            ["kitty", "@", "--to", f"unix:{kitty_socket}", "load-config"],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-
+    seen_kitty_sockets: set[Path] = set()
+    for kitty_socket_dir in kitty_socket_dirs:
+        for kitty_socket in kitty_socket_dir.glob("kitty-*"):
+            if kitty_socket in seen_kitty_sockets or not kitty_socket.is_socket():
+                continue
+            seen_kitty_sockets.add(kitty_socket)
+            subprocess.run(
+                ["kitty", "@", "--to", f"unix:{kitty_socket}", "load-config"],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
 # ── pi ───────────────────────────────────────────────────────────────────
 pi_colors = {
     # Core UI

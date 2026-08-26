@@ -11,6 +11,16 @@ elif [ -x "$HOME/.linuxbrew/bin/brew" ]; then
   eval "$("$HOME/.linuxbrew/bin/brew" shellenv)"
 fi
 
+# Arch's autojump profile runs inside `emulate sh`, where assigning `fpath`
+# updates only the exported FPATH scalar and can truncate it to two entries.
+# Restore Zsh's core function directories after all /etc/profile snippets.
+if [[ "$(uname -s)" == "Linux" ]]; then
+  typeset -ga fpath
+  fpath=(/usr/local/share/zsh/site-functions /usr/share/zsh/site-functions /usr/share/zsh/functions/*(N-/) ${fpath:#/usr/share/zsh/functions/*})
+  typeset -gaU fpath
+  export FPATH
+fi
+
 # Added by OrbStack: command-line tools and integration
 # Comment this line if you don't want it to be added again.
 source ~/.orbstack/shell/init.zsh 2>/dev/null || :

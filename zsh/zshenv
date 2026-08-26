@@ -1,1 +1,8 @@
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"  # rustup (absent when cargo comes from system packages)
+
+# Never trust an exported FPATH from a parent shell. A stale Linuxbrew-only
+# value hides Zsh's core functions and breaks Oh My Zsh. Rebuild the standard
+# platform paths first; later startup files may safely prepend extra entries.
+typeset -ga fpath
+fpath=(/usr/local/share/zsh/site-functions /usr/share/zsh/site-functions /usr/share/zsh/functions/*(N-/))
+export FPATH
