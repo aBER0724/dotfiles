@@ -155,6 +155,8 @@ fi
 printf '\n== Configure Kitty terminal ==\n'
 mkdir -p "$CONFIG_HOME/kitty" "$CONFIG_HOME/environment.d"
 ln -sfnT "$SCRIPT_DIR/../kitty/kitty.conf" "$CONFIG_HOME/kitty/kitty.conf"
+ln -sfnT "$SCRIPT_DIR/../kitty/platform-linux.conf" "$CONFIG_HOME/kitty/platform-linux.conf"
+ln -sfnT "$SCRIPT_DIR/../kitty/platform-macos.conf" "$CONFIG_HOME/kitty/platform-macos.conf"
 cat > "$CONFIG_HOME/environment.d/50-terminal.conf" <<'EOF'
 TERMINAL=kitty
 EOF
