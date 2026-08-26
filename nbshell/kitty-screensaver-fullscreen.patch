@@ -1,0 +1,48 @@
+--- a/shell/Services/Idle.qml
++++ b/shell/Services/Idle.qml
+@@ -122,34 +122,33 @@
+     // Beendet wird er auf zwei Wegen: das Skript steigt bei Tastendruck und
+     // Mausbewegung selbst aus, und WIR schicken ihm ein SIGTERM, sobald der
+     // Leerlauf endet. Das zweite ist noetig, weil eine Mausbewegung ausserhalb
+     // des Terminalfensters dort nie ankommt.
+     // Das Startskript, nicht das Python direkt: es entscheidet, ob TTE da ist
+     // (39 Effekte, dasselbe Programm wie bei Omarchy) oder ob unsere zehn
+     // eigenen laufen.
+     readonly property string saverScript: Qt.resolvedUrl("../scripts/screensaver.sh").toString().replace("file://", "")
+-    readonly property string terminal: Config.value("terminal", "") || Quickshell.env("TERMINAL") || "ghostty"
++    readonly property string terminal: Config.value("terminal", "") || Quickshell.env("TERMINAL") || "kitty"
+
+-    // Der Titel muss BEIM OEFFNEN stehen, nicht danach: niri wertet seine
+-    // Fensterregel aus, sobald das Fenster auftaucht -- zu dem Zeitpunkt hiess
+-    // es noch "ghostty", und `open-fullscreen` griff nie. Dass das Skript den
+-    // Titel spaeter selbst setzt, kam fuer die Regel zu spaet; deshalb sagt es
+-    // ihn dem Terminal jetzt schon auf der Befehlszeile.
+-    //
+-    // `--fullscreen` obendrauf, weil es der kuerzeste Weg ist und nicht von
+-    // einer Regel in einer fremden Datei abhaengt. Terminals, die die Flaggen
+-    // nicht kennen, bekommen sie nicht -- fuer die bleibt die niri-Regel.
++    // Pass the title and fullscreen state before the window is mapped. Niri
++    // evaluates window state at creation time, and the screensaver script's
++    // later title escape sequence is too late for compositor rules.
+     readonly property bool ghostty: root.terminal.indexOf("ghostty") >= 0
++    readonly property bool kitty: root.terminal.indexOf("kitty") >= 0
+
+     function startSaver() {
+         if (saver.running)
+             return;
+-        const vorn = root.ghostty ? [root.terminal, "--title=nbshell-screensaver", "--fullscreen=true"] : [root.terminal];
+-        saver.command = vorn.concat(["-e", "bash", root.saverScript]);
++        let prefix = [root.terminal];
++        if (root.ghostty)
++            prefix = prefix.concat(["--title=nbshell-screensaver", "--fullscreen=true"]);
++        else if (root.kitty)
++            prefix = prefix.concat(["--title", "nbshell-screensaver", "--start-as=fullscreen"]);
++        saver.command = prefix.concat(["-e", "bash", root.saverScript]);
+         saver.running = true;
+     }
+
+     function stopSaver() {
+         if (saver.running)
+             saver.running = false;
+     }
+
