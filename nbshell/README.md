@@ -9,11 +9,17 @@
 ```
 nbshell/
 ├── install.sh                  # 固定上游 revision 的用户级安装器(绝不 sudo)
-├── config/config.json          # 同步的运行时配置(链接到 ~/.config/nbshell/)
+├── config/config.json          # 运行时配置(链接到 ~/.config/nbshell/, skip-worktree 管理)
+├── scripts/
+│   ├── theme-sync.py           # 主题同步生成器: palette.sh / herdr / pi / lazygit / yazi / alacritty / niri
+│   ├── theme-next-sync         # Alt+T 入口: nbshell next → 轮询 config.json → theme-sync.py
+│   └── theme-hook.sh           # 写 herdr managed 主题块并 reload
 ├── themes/futurism/colors.toml # Futurism 调色板(适配自本地 Omarchy 主题)
 ├── niri-named-workspaces.patch # niri 命名工作区补丁
 └── packages.arch.txt           # 可选 Arch 依赖清单(安装器只检查,不执行 pacman)
 ```
+
+`scripts/` 下的脚本通过 symlink 挂在 `~/.config/nbshell/`,运行路径不变。
 
 ## 安装
 
@@ -42,16 +48,55 @@ nbshell stop                                     # 停止
 |------|------|
 | `nbshell launcher` | 应用启动器(`Alt+Space`) |
 | `nbshell dashboard` | 仪表盘(`Alt+Ctrl+T`) |
-| `nbshell picker` | 主题切换(`Alt+T`) |
+| `~/.config/nbshell/theme-next-sync` | 切换主题并同步下游(`Alt+T`) |
 | `nbshell wallpaper pick` | 壁纸切换(`Alt+Shift+T`) |
 | `nbshell notify center` | 通知中心(`Alt+N`) |
+| `nbshell power menu` | 电源菜单(`Alt+Escape`) |
+
+## 主题同步(`Alt+T`)
+
+`Alt+T` 不再直接打开选择器,而是运行 `theme-next-sync`(见 `niri/config.kdl`):
+
+```
+nbshell next → 轮询 config.json 直到主题实际变化(最多 1.5s) → theme-sync.py → theme-hook.sh
+```
+
+`theme-sync.py` 读取 `config.json` 的当前主题 + `colors.toml`,原子写以下产物:
+
+| 产物 | 生效方式 |
+|------|----------|
+| `~/.config/nbshell/palette.sh`(NB_* 变量) | nvim / herdr / 脚本共享源 |
+| `~/.config/nbshell/alacritty.toml` | touch 主配置触发 `live_config_reload`,**运行中即时生效** |
+| `~/.pi/agent/themes/nbshell.json`(51+ tokens) | pi 激活 nbshell 主题后,编辑文件即热重载,**运行中即时生效** |
+| `~/.config/lazygit/config.yml`(`gui.theme`) | 重启 lazygit 生效 |
+| `~/.config/yazi/flavors/<theme>.yazi/` + `theme.toml` | 重启 yazi 生效 |
+| `niri/nbshell-colors.kdl`(焦点/边框配色) | `niri msg action load-config-file` 生效 |
+| `theme-hook.sh` → `herdr/config.toml` managed 块 | `herdr server reload-config`,**运行中即时生效** |
+
+对应应用侧集成:
+
+- **nvim**: `~/.config/nvim/colors/nbshell.lua` 动态读 `palette.sh`;`autocmds.lua` 用 500ms timer 轮询 palette mtime,变化即 `colorscheme nbshell`(**运行中即时生效**)。
+- **pi**: `~/.pi/agent/settings.json` 的 `theme: "nbshell"`;主题文件热重载机制见 pi 文档 `themes.md`。
+- **alacritty**: `~/.config/alacritty/alacritty.toml` 通过 `general.import` 指向生成的 `~/.config/nbshell/alacritty.toml`。
+- **lazygit**: 0.64+ 无 `customTheme` 字段,主题内联在 `config.yml` 的 `gui.theme`(hex 需加引号,否则 YAML 注释吞色)。
+- **yazi**: flavor 按主题名生成目录;切换主题时写新目录,旧目录保留。
+
+日志: `~/.local/state/nbshell/theme-sync.log`。
 
 ## 同步的配置(config/config.json)
 
-- 主题 `futurism`、顶栏 bar 模式、0.94 不透明度、1px 边框
-- 中文本地化(`locale: zh_CN`)、24 小时制 `ddd MM-dd HH:mm`
+- 顶栏 bar 模式、中文本地化(`locale: zh_CN`)、24 小时制 `ddd MM-dd HH:mm`、0.94 不透明度、1px 边框
 - 数字工作区样式 + 块状 meter / visualizer(契合 niri 命名工作区)
-- 配色改 `themes/futurism/colors.toml`(accent `#00BFFF` 系,详见文件),字体默认 `JetBrainsMono Nerd Font`
+- 配色随主题切换(`Alt+T`),默认基础主题见 `themes/` 与 `~/.local/share/nbshell/themes/`
+- 杂项: `bongoActive: false`(关闭桌面 Bongo Cat)、`trayExpanded` 等 UI 状态
+
+**git 管理**: `config.json` 是运行时状态(`theme`、`bongoActive`、`trayExpanded` 随使用变化),已用 `git update-index --skip-worktree nbshell/config/config.json` 标记,不污染 `git status`,也不会拦截 `git pull`。需要提交快照时:
+
+```bash
+git update-index --no-skip-worktree nbshell/config/config.json
+git add nbshell/config/config.json && git commit -m "nbshell: config snapshot"
+git update-index --skip-worktree nbshell/config/config.json
+```
 
 ## 回滚
 
