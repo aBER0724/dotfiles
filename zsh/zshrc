@@ -210,3 +210,16 @@ if [ -n "$OTTY_SHELL_INTEGRATION" ] && [ -r "$OTTY_SHELL_INTEGRATION/otty-integr
   . "$OTTY_SHELL_INTEGRATION/otty-integration.zsh"
 fi
 # <<< otty shell integration <<<
+
+# >>> 鼠标模式泄漏清理 >>>
+# TUI(Herdr / Claude Code / tmux 等)异常退出后可能残留 SGR mouse reporting
+# (DECSET 1003/1006/1000/1002),回到 zsh 后滚轮/鼠标移动序列泄漏进输入行。
+# 每次绘制提示符前自动关闭这些模式,根源上避免泄漏;
+# 手动清理函数 fixmouse 供异常时应急(生成正确序列后也会自动被上面的 hook 兜底)。
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd _clear_mouse_mode
+_clear_mouse_mode() {
+  printf '\033[?1000l\033[?1002l\033[?1003l\033[?1006l'
+}
+fixmouse() { _clear_mouse_mode }
+# <<< 鼠标修复泄漏清理 <<<
