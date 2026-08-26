@@ -12,6 +12,7 @@ DOTFILES="${DOTFILES_DIR:-$HOME/dotfiles}"
 # Each entry: "<name>|<repo-relative-path>|<target>"
 # `name` is what you pass to status/link/install to act on that one dotfile.
 LINK_TABLE=(
+  "dotfiles-cli|bin/dotfiles|$HOME/.local/bin/dotfiles"
   "aerospace|aerospace/aerospace.toml|$HOME/.aerospace.toml"
   "zshrc|zsh/zshrc|$HOME/.zshrc"
   "zshenv|zsh/zshenv|$HOME/.zshenv"
@@ -29,7 +30,9 @@ LINK_TABLE=(
   "pi-models|pi-agent/models.json|$HOME/.pi/agent/models.json"
   "pi-extensions|pi-agent/extensions|$HOME/.pi/agent/extensions"
   "herdr|herdr/config.toml|$HOME/.config/herdr/config.toml"
-  "kitty|kitty/kitty.conf|$HOME/.config/kitty/kitty.conf"
+  "kitty-main|kitty/kitty.conf|$HOME/.config/kitty/kitty.conf"
+  "kitty-linux|kitty/platform-linux.conf|$HOME/.config/kitty/platform-linux.conf"
+  "kitty-macos|kitty/platform-macos.conf|$HOME/.config/kitty/platform-macos.conf"
 )
 
 # Group aliases: "<alias>|<space-separated names>". Passing the alias to
@@ -37,6 +40,7 @@ LINK_TABLE=(
 GROUP_TABLE=(
   "pi|pi-settings pi-models pi-extensions"
   "zsh|zshrc zshenv zprofile shinit p10k"
+  "kitty|kitty-main kitty-linux kitty-macos"
   "herdr|herdr"
   "wm|niri nbshell"
 )

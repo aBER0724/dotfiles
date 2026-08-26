@@ -28,13 +28,14 @@ Personal configuration files.
 
 ```bash
 git clone https://github.com/aBER0724/dotfiles.git ~/dotfiles
-ln -sf ~/dotfiles/bin/dotfiles ~/.local/bin/dotfiles
+ln -sf ~/dotfiles/bin/dotfiles ~/.local/bin/dotfiles  # one-time bootstrap; CLI manages this link afterwards
 
 dotfiles status    # show link state for every synced entry
 dotfiles link      # create missing links; backup+replace conflicting files
 dotfiles deps      # install zsh/herdr runtime deps (plugins, p10k, ...)
 dotfiles install   # link + install group deps + pi bootstrap hint
 dotfiles install wm  # link niri+nbshell; installs only under ~/.local (never sudo)
+dotfiles link kitty  # link shared + Linux/macOS Kitty configs
 ```
 
 ### Niri + nbshell

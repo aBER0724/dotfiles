@@ -12,6 +12,7 @@ bin/
 ## 安装
 
 ```bash
+# 首次 bootstrap;之后 CLI 会把自身作为 dotfiles-cli 条目管理
 ln -sf ~/dotfiles/bin/dotfiles ~/.local/bin/dotfiles
 ```
 
@@ -37,6 +38,7 @@ dotfiles {list|status|link|install|deps} [name...]
 |------|------|
 | `pi` | pi-settings, pi-models, pi-extensions |
 | `zsh` | zshrc, zshenv, zprofile, shinit, p10k |
+| `kitty` | kitty-main, kitty-linux, kitty-macos |
 | `herdr` | herdr |
 | `wm` | niri, nbshell |
 

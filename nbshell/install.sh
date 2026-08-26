@@ -215,6 +215,7 @@ path.write_text(text)
 PY
 install -m 0755 "$SCRIPT_DIR/scripts/theme-sync.py" "$CONFIG_DIR/theme-sync.py"
 install -m 0755 "$SCRIPT_DIR/scripts/theme-hook.sh" "$CONFIG_DIR/theme-hook.sh"
+ln -sfnT "$SCRIPT_DIR/scripts/theme-next-sync" "$CONFIG_DIR/theme-next-sync"
 "$CONFIG_DIR/theme-sync.py"
 mkdir -p "$CONFIG_HOME/quickshell"
 ln -sfn "$RUNTIME_DIR" "$CONFIG_HOME/quickshell/nbshell"
