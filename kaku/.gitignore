@@ -5,6 +5,9 @@ sk-kaku
 assistant.toml
 state.json
 ai_jobs/
+ai_chat_state.json
+ai_conversations/
+soul/
 session_content/
 ai_inline_capability
 last_closed_window.json
