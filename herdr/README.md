@@ -108,5 +108,5 @@ brew install --cask macintacos/tap/herdr-scratch
 bash ~/dotfiles/herdr/install-plugins.sh
 ```
 
-> 有 Go 构建步骤的插件（token-dashboard、hunkdiff、Linux 上的 scratch）需要 Go 工具链；
-> 脚本会先做 preflight 检查并给出警告，单个插件失败不会阻塞其余安装。
+> 有 Go 构建步骤的插件（token-dashboard、hunkdiff、Linux 上的 scratch）需要 Go；navigator 和 renamer 需要 Rust/Cargo；file-explorer 需要 Yazi。
+> `setup arch` 会安装这些依赖。脚本失败时会保留并显示每个插件的实际安装日志，修复后可安全重跑。

@@ -150,6 +150,22 @@ test_arch_installs_required_packages() {
     assert_not_contains "no supported package mapping for: nvim niri"
 }
 
+test_arch_installs_herdr_plugin_build_deps() {
+  new_case arch-herdr-build-deps
+  arch_fixture
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  assert_status 0 &&
+    grep -F "sudo pacman -S --needed" "$LOG" | grep -F "rust" | grep -F "yazi" >/dev/null
+}
+
+test_macos_installs_herdr_plugin_build_deps() {
+  new_case macos-herdr-build-deps
+  stub_logger brew
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup macos
+  assert_status 0 &&
+    grep -F "brew install" "$LOG" | grep -F "rust" | grep -F "yazi" >/dev/null
+}
+
 test_arch_package_failure_stops_before_links() {
   new_case arch-failure
   arch_fixture
@@ -265,6 +281,21 @@ test_macos_skips_scratch_source_build() {
     ! grep -F "herdr plugin install macintacos/herdr-scratch" "$LOG" >/dev/null
 }
 
+test_plugin_failure_shows_actual_log() {
+  new_case plugin-failure-log
+  mkdir -p "$HOME/dotfiles/herdr"
+  printf '%s\n' 'broken|github|herdr plugin install example/broken' > "$HOME/dotfiles/herdr/plugins.txt"
+  stub_logger go
+  stub_logger tmux
+  stub_command herdr 'printf "herdr %s\n" "$*" >> "$LOG"; echo "cargo: linker cc not found" >&2; exit 1'
+  OUTPUT="$CASE_ROOT/output"
+  STATUS=0
+  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$HOME" DOTFILES_UNAME=Linux bash "$REPO/herdr/install-plugins.sh" >"$OUTPUT" 2>&1 || STATUS=$?
+  assert_status 1 &&
+    assert_contains "cargo: linker cc not found" &&
+    assert_contains "failed to install: broken"
+}
+
 test_zsh_deps_install_oh_my_zsh() {
   new_case zsh-omz
   stub_command git 'printf "git %s\n" "$*" >> "$LOG"; dest=""; for arg in "$@"; do dest="$arg"; done; mkdir -p "$dest/.git"; case "$dest" in */.oh-my-zsh) printf "# stub\n" > "$dest/oh-my-zsh.sh" ;; esac'
@@ -323,10 +354,13 @@ run_test "Arch links primary stack only" test_arch_links_primary_stack_only
 run_test "Arch prints services without enabling" test_arch_prints_but_does_not_enable_services
 run_test "macOS links primary stack only" test_macos_links_primary_stack_only
 run_test "setup is idempotent" test_existing_links_and_commands_are_skipped
+run_test "Arch installs herdr plugin build deps" test_arch_installs_herdr_plugin_build_deps
+run_test "macOS installs herdr plugin build deps" test_macos_installs_herdr_plugin_build_deps
 run_test "Arch bootstraps Linuxbrew without scratch cask" test_arch_bootstraps_linuxbrew_without_scratch_cask
 run_test "Arch installs native packages before Homebrew" test_arch_installs_native_packages_before_homebrew
 run_test "Arch installs scratch through herdr" test_arch_installs_scratch_through_herdr
 run_test "macOS skips scratch source build" test_macos_skips_scratch_source_build
+run_test "Plugin failure shows actual log" test_plugin_failure_shows_actual_log
 run_test "Zsh deps install Oh My Zsh" test_zsh_deps_install_oh_my_zsh
 run_test "zshrc survives missing Oh My Zsh" test_zshrc_survives_missing_oh_my_zsh
 run_test "existing commands smoke" test_existing_commands_smoke

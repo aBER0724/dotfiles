@@ -45,7 +45,7 @@ dotfiles install wm
 ```
 
 
-`setup` installs the primary stack, links its configuration, and runs user-level plugin/install scripts. Both macOS and Arch bootstrap Homebrew when missing; Arch first installs the native bootstrap/runtime packages and `nbshell/packages.arch.txt` through `sudo pacman -S --needed`. Existing conflicting files are backed up before linking. Starting services or GUI apps, changing the login shell, and creating the pi API key remain manual.
+`setup` installs the primary stack, links its configuration, and runs user-level plugin/install scripts. Both macOS and Arch bootstrap Homebrew when missing; Arch first installs the native bootstrap/runtime packages, Rust/Cargo and Yazi required by the managed herdr plugins, plus `nbshell/packages.arch.txt` through `sudo pacman -S --needed`. Existing conflicting files are backed up before linking. Starting services or GUI apps, changing the login shell, and creating the pi API key remain manual.
 ### Niri + nbshell
 
 The `wm` group uses nbshell as the active desktop shell. Its visual language is
