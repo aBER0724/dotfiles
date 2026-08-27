@@ -2,6 +2,9 @@
 // 修改本文件后 niri 会自动热重载,无需重启。
 // 校验:`niri validate`
 
+// 焦点环 / 边框 / 标签指示器颜色 —— nbshell 每次换主题都会重写这个文件
+include "nbshell-colors.kdl"
+
 input {
     keyboard {
         xkb {
@@ -53,9 +56,8 @@ layout {
     }
 
     focus-ring {
+        // 宽度在此设置;颜色来自上方 include 的 nbshell-colors.kdl
         width 2
-        active-color "#cba6f7"
-        inactive-color "#45475a"
     }
 
     preset-column-widths {

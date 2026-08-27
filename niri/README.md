@@ -9,6 +9,7 @@
 ```
 niri/
 ├── config.kdl              # 主配置(输入、输出、启动项、全部按键绑定)
+├── nbshell-colors.kdl      # 焦点环/边框配色 —— nbshell 每次换主题重写,由 config.kdl include
 ├── clavis/cursor.kdl       # 鼠标指针主题 —— Clavis 托管,手动改动会被覆盖
 └── scripts/screenshot.sh   # 截图助手(region / full)
 ```
