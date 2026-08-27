@@ -1,0 +1,55 @@
+diff --git a/shell/Bar/WidgetHost.qml b/shell/Bar/WidgetHost.qml
+index 3e6e18d..bdb0da9 100644
+--- a/shell/Bar/WidgetHost.qml
++++ b/shell/Bar/WidgetHost.qml
+@@ -109,8 +109,6 @@ Item {
+             return musicControlsComponent;
+         case "vis":
+             return visualizerComponent;
+-        case "bongo":
+-            return bongoComponent;
+         case "clipboard":
+             // Compatibility alias for configurations created before the
+             // notification and clipboard panels were combined.
+@@ -227,12 +225,6 @@ Item {
+         MusicControls {}
+     }
+
+-    Component {
+-        id: bongoComponent
+-
+-        Bongo {}
+-    }
+-
+     Component {
+         id: mediaComponent
+         Media {}
+diff --git a/shell/Services/Plugins.qml b/shell/Services/Plugins.qml
+index 2109cc8..00e992c 100644
+--- a/shell/Services/Plugins.qml
++++ b/shell/Services/Plugins.qml
+@@ -81,12 +81,6 @@ Singleton {
+             "description": "meter while media is playing (cava)",
+             "category": "Audio"
+         },
+-        {
+-            "id": "bongo",
+-            "name": "Bongo Cat",
+-            "description": "typing cat using session input",
+-            "category": "Fun"
+-        },
+         {
+             "id": "sys",
+             "name": "System load",
+diff --git a/shell/shell.qml b/shell/shell.qml
+index 45515ad..aa490ce 100644
+--- a/shell/shell.qml
++++ b/shell/shell.qml
+@@ -62,7 +62,6 @@ ShellRoot {
+         void AiUsage.available;
+         void Agents.defaultAgent;
+         void Dictation.state;
+-        void BongoCat.active;
+         void Updates.enabled;
+         void ShellUpdates.current;
+         void PowerService.available;

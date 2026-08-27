@@ -320,6 +320,13 @@ test_plugin_installer_stops_when_required_deps_missing() {
     [ ! -s "$LOG" ]
 }
 
+test_nbshell_installer_removes_bongo_cat() {
+  grep -F "remove-bongo-cat.patch" "$REPO/nbshell/install.sh" >/dev/null &&
+    grep -F -- '-        void BongoCat.active;' "$REPO/nbshell/remove-bongo-cat.patch" >/dev/null &&
+    grep -F -- '-            "id": "bongo",' "$REPO/nbshell/remove-bongo-cat.patch" >/dev/null &&
+    grep -F -- '-        case "bongo":' "$REPO/nbshell/remove-bongo-cat.patch" >/dev/null
+}
+
 test_zsh_deps_install_oh_my_zsh() {
   new_case zsh-omz
   stub_command git 'printf "git %s\n" "$*" >> "$LOG"; dest=""; for arg in "$@"; do dest="$arg"; done; mkdir -p "$dest/.git"; case "$dest" in */.oh-my-zsh) printf "# stub\n" > "$dest/oh-my-zsh.sh" ;; esac'
@@ -386,6 +393,7 @@ run_test "Arch installs scratch through herdr" test_arch_installs_scratch_throug
 run_test "macOS skips scratch source build" test_macos_skips_scratch_source_build
 run_test "Plugin failure shows actual log" test_plugin_failure_shows_actual_log
 run_test "Plugin installer stops when required deps missing" test_plugin_installer_stops_when_required_deps_missing
+run_test "nbshell installer removes Bongo Cat" test_nbshell_installer_removes_bongo_cat
 run_test "Zsh deps install Oh My Zsh" test_zsh_deps_install_oh_my_zsh
 run_test "zshrc survives missing Oh My Zsh" test_zshrc_survives_missing_oh_my_zsh
 run_test "existing commands smoke" test_existing_commands_smoke

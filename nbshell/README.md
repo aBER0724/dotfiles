@@ -98,7 +98,7 @@ nbshell next → 轮询 config.json 直到主题实际变化(最多 1.5s) → th
 - 顶栏 bar 模式、中文本地化(`locale: zh_CN`)、24 小时制 `ddd MM-dd HH:mm`、0.94 不透明度、1px 边框
 - 数字工作区样式 + 块状 meter / visualizer(契合 niri 命名工作区)
 - 配色随主题切换(`Alt+T`),默认基础主题见 `themes/` 与 `~/.local/share/nbshell/themes/`
-- 杂项: `bongoActive: false`(关闭桌面 Bongo Cat)、`trayExpanded` 等 UI 状态
+- 杂项: 通过安装补丁从运行时、组件目录和模块目录中移除桌面 Bongo Cat；`bongoActive: false` 仅作为旧配置兼容保险；`trayExpanded` 等 UI 状态仍由配置保存
 - 屏幕保护使用仓库管理的 `config/screensaver.txt` 显示 OMARCHY 字标，并按全屏终端的实际列数动态选择尺寸；字标过宽时自动回退到内置紧凑版本，避免右侧被裁切
 
 **git 管理**: `config.json` 是运行时状态(`theme`、`bongoActive`、`trayExpanded` 随使用变化),已用 `git update-index --skip-worktree nbshell/config/config.json` 标记,不污染 `git status`,也不会拦截 `git pull`。需要提交快照时:
