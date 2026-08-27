@@ -147,6 +147,10 @@ preset_entries() {
 
 # Defaults used by the /login-free key setup (see README)
 PI_DEFAULT_PROVIDER="new-api"
+HOMEBREW_INSTALL_URL="${DOTFILES_HOMEBREW_INSTALL_URL:-https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh}"
+BOOTSTRAP_BASH="${DOTFILES_BASH_BIN:-/bin/bash}"
+MACOS_BASE_PACKAGES="git zsh node go"
+ARCH_BASE_PACKAGES="git curl zsh nodejs npm go base-devel"
 
 select_entries() {
   # "$*" joins args with spaces; empty when no names given (all entries).
@@ -409,6 +413,44 @@ cmd_install() {
   fi
 }
 
+load_homebrew() {
+  if command -v brew >/dev/null 2>&1; then return 0; fi
+  if [ -x /opt/homebrew/bin/brew ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [ -x /usr/local/bin/brew ]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  else
+    echo "dotfiles: Homebrew installed but brew is not available in this shell" >&2
+    return 1
+  fi
+}
+
+ensure_homebrew() {
+  if [ "${DOTFILES_FORCE_NO_BREW:-0}" != 1 ] && command -v brew >/dev/null 2>&1; then
+    return 0
+  fi
+  command -v curl >/dev/null 2>&1 || {
+    echo "dotfiles: curl is required to install Homebrew" >&2
+    return 1
+  }
+  echo "install Homebrew from $HOMEBREW_INSTALL_URL"
+  NONINTERACTIVE=1 "$BOOTSTRAP_BASH" -c "$(curl -fsSL "$HOMEBREW_INSTALL_URL")" || {
+    echo "dotfiles: Homebrew bootstrap failed; rerun the installer from $HOMEBREW_INSTALL_URL" >&2
+    return 1
+  }
+  if [ "${DOTFILES_FORCE_NO_BREW:-0}" = 1 ] && command -v brew >/dev/null 2>&1; then
+    return 0
+  fi
+  load_homebrew
+}
+
+install_base_packages() {
+  case "$1" in
+    macos) brew install $MACOS_BASE_PACKAGES ;;
+    arch) sudo pacman -S --needed $ARCH_BASE_PACKAGES ;;
+  esac
+}
+
 cmd_setup() {
   local preset="${1:-auto}" wanted
   echo "== detect system =="
@@ -417,6 +459,12 @@ cmd_setup() {
   wanted="$(preset_entries "$preset")"
   echo "preset  $preset"
   printf 'entries %s\n' "$wanted"
+  if [ "$preset" = macos ]; then
+    echo "== bootstrap package manager =="
+    ensure_homebrew
+  fi
+  echo "== install base packages =="
+  install_base_packages "$preset"
 }
 
 case "${1:-}" in

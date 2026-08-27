@@ -18,10 +18,14 @@ new_case() {
 }
 
 stub_command() {
-  name="$1"
-  body="$2"
+  local name="$1" body="$2"
   printf '#!/bin/sh\n%s\n' "$body" > "$STUB_BIN/$name"
   chmod +x "$STUB_BIN/$name"
+}
+
+stub_logger() {
+  local command_name="$1"
+  stub_command "$command_name" 'printf "%s %s\n" "$(basename "$0")" "$*" >> "$LOG"'
 }
 
 run_cli() {
@@ -69,6 +73,7 @@ run_test() {
 
 test_auto_detects_macos() {
   new_case auto-macos
+  stub_logger brew
   DOTFILES_UNAME=Darwin run_cli setup auto
   assert_status 0 && assert_contains "preset  macos"
 }
@@ -79,6 +84,8 @@ test_auto_detects_arch() {
 ID=arch
 NAME="Arch Linux"
 OS
+  stub_logger pacman
+  stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"'
   DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
   assert_status 0 && assert_contains "preset  arch"
 }
@@ -101,6 +108,23 @@ test_unknown_preset_fails() {
   DOTFILES_UNAME=Darwin run_cli setup debian
   assert_status 1 && assert_contains "unknown setup preset 'debian'"
 }
+test_macos_bootstraps_homebrew() {
+  new_case macos-bootstrap
+  stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"; printf "#!/bin/sh\nexit 0\n"'
+  stub_command bootstrap-bash 'printf "bootstrap-bash %s\n" "$*" >> "$LOG"'
+  stub_command brew 'printf "brew %s\n" "$*" >> "$LOG"'
+  DOTFILES_UNAME=Darwin DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" run_cli setup macos
+  assert_status 0 && grep -F "curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh" "$LOG" >/dev/null
+}
+
+test_macos_skips_homebrew_bootstrap() {
+  new_case macos-existing-brew
+  stub_logger brew
+  stub_command curl 'echo unexpected-curl >> "$LOG"; exit 99'
+  DOTFILES_UNAME=Darwin run_cli setup macos
+  assert_status 0 && ! grep -F "unexpected-curl" "$LOG" >/dev/null
+}
+
 
 
 run_test "auto detects macOS" test_auto_detects_macos
@@ -108,6 +132,8 @@ run_test "auto detects Arch" test_auto_detects_arch
 run_test "macOS preset rejects Linux" test_macos_rejects_linux
 run_test "Arch preset rejects macOS" test_arch_rejects_macos
 run_test "unknown preset fails" test_unknown_preset_fails
+run_test "macOS bootstraps Homebrew" test_macos_bootstraps_homebrew
+run_test "macOS skips Homebrew bootstrap" test_macos_skips_homebrew_bootstrap
 
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
