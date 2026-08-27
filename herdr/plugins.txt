@@ -6,4 +6,4 @@ jhochenbaum.hunkdiff|github|herdr plugin install jhochenbaum/herdr-hunk-diff --r
 mirror|github|herdr plugin install nikok6/herdr-mirror --ref f854367b88e79b2692adf9f15d12f9ba8b8b9a72
 ray.file-explorer|github|herdr plugin install speardragon/herdr-yazi --ref 54aa4e6dff480189630fa3593146cdcc2768ade9
 ray.plugin-manager|github|herdr plugin install speardragon/herdr-plugin-manager --ref 3b1f6e1be4ad811e39e4fecb24cd3a976b692241
-user.scratch|local|herdr plugin link <path>
+user.scratch|github-linux|herdr plugin install macintacos/herdr-scratch

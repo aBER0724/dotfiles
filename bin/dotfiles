@@ -50,7 +50,7 @@ SOFTWARE_TABLE=(
   "fastfetch|fastfetch|formula|fastfetch|fastfetch"
   "pi-settings|pi|npm|@earendil-works/pi-coding-agent|-"
   "herdr|herdr|formula|herdr|-"
-  "herdr|herdr-scratch|formula|macintacos/tap/herdr-scratch|-"
+  "herdr|herdr-scratch|cask|macintacos/tap/herdr-scratch|-"
 )
 
 # Group aliases: "<alias>|<space-separated names>". Passing the alias to
@@ -150,7 +150,7 @@ PI_DEFAULT_PROVIDER="new-api"
 HOMEBREW_INSTALL_URL="${DOTFILES_HOMEBREW_INSTALL_URL:-https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh}"
 BOOTSTRAP_BASH="${DOTFILES_BASH_BIN:-/bin/bash}"
 MACOS_BASE_PACKAGES="git zsh node go"
-ARCH_BASE_PACKAGES="git curl file procps-ng zsh nodejs npm go base-devel python-xattr"
+ARCH_BASE_PACKAGES="git curl file procps-ng zsh nodejs npm go base-devel"
 
 select_entries() {
   # "$*" joins args with spaces; empty when no names given (all entries).
@@ -317,7 +317,7 @@ run_software_install() {
     entry="${entry#*|}"; brew_kind="${entry%%|*}"
     entry="${entry#*|}"; brew_package="${entry%%|*}"
     arch_package="${entry#*|}"
-    if [ "$skip_arch" = 1 ] && [ "$arch_package" != "-" ] && [ "$brew_package" = "-" ]; then
+    if [ "$skip_arch" = 1 ] && { [ "$arch_package" != "-" ] && [ "$brew_package" = "-" ] || [ "$brew_kind" = cask ]; }; then
       continue
     fi
     command -v "$command_name" >/dev/null 2>&1 && continue

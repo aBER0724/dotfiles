@@ -6,8 +6,8 @@
 ## 来源
 
 - [herdr](https://herdr.dev) — 本体(official formula `brew install herdr`)
-- [herdr-scratch](https://github.com/macintacos/tap) — 3rd-party tap 提供的 scratch 二进制(见下)
-- 8 个 GitHub 插件 + 1 个本地插件,见「插件清单」
+- [herdr-scratch](https://github.com/macintacos/herdr-scratch) — macOS 使用 cask 二进制，Linux 由 herdr 从源码构建
+- 9 个 GitHub 插件，见「插件清单」
 
 ## 目录结构
 
@@ -16,8 +16,7 @@ herdr/
 ├── config.toml          # 主题 / 键位 / UI(同步)
 ├── plugins.txt          # 插件清单:owner/repo + 固定 ref(同步)
 ├── gen-plugins.sh       # 设备上改动插件后重新生成 plugins.txt
-├── install-plugins.sh   # 新设备按清单重装全部插件
-└── scratch/             # 本地插件 user.scratch 的 manifest
+└── install-plugins.sh   # 新设备按清单重装全部插件
 ```
 
 ## 插件清单(来自 plugins.txt)
@@ -32,9 +31,9 @@ herdr/
 | `mirror` | [nikok6/herdr-mirror](https://github.com/nikok6/herdr-mirror) | 远程镜像/同步面板 |
 | `ray.file-explorer` | [speardragon/herdr-yazi](https://github.com/speardragon/herdr-yazi) | yazi 文件浏览器 |
 | `ray.plugin-manager` | [speardragon/herdr-plugin-manager](https://github.com/speardragon/herdr-plugin-manager) | 插件管理器 UI |
-| `user.scratch` | 本地 `scratch/herdr-plugin.toml` + [macintacos/tap](https://github.com/macintacos/tap) | 弹出式 scratch shell(Go) |
+| `user.scratch` | [macintacos/herdr-scratch](https://github.com/macintacos/herdr-scratch) | 弹出式 scratch shell（Linux 源码构建，macOS cask） |
 
-> 每个 GitHub 插件都固定在 `plugins.txt` 里的指定 ref,保证所有设备装到同一版本。
+> 已固定版本的 GitHub 插件使用 `plugins.txt` 中的 ref；scratch 跟随当前上游版本，以便 Linux 获得受支持的构建。
 
 ## Keybindings(config.toml)
 
@@ -96,17 +95,18 @@ shell 侧兜底(已内置在 zsh/zshrc):每次绘制提示符前自动发送
 ## 新设备安装
 
 ```bash
-# 1. required binaries — Linux and macOS both support Homebrew:
-brew install herdr                       # official core formula
-brew install macintacos/tap/herdr-scratch  # 3rd-party tap: binary for the scratch plugin
-# (no brew? herdr's own installer works on both too: curl -fsSL https://herdr.dev/install.sh | sh)
+# Recommended on a fresh macOS or Arch device:
+bash ~/dotfiles/bin/dotfiles setup auto
 
-# 2. link config
-ln -sf ~/dotfiles/herdr/config.toml ~/.config/herdr/config.toml
+# To repair only herdr and its plugins:
+brew install herdr
 
-# 3. install ALL plugins from the inventory (GitHub at pinned ref + local link)
+# macOS only; Linux casks are unsupported:
+brew install --cask macintacos/tap/herdr-scratch
+
+# Linux builds scratch through herdr; this is also safe to rerun on macOS:
 bash ~/dotfiles/herdr/install-plugins.sh
 ```
 
-> 有 Go 构建步骤的插件(token-dashboard、hunkdiff、scratch)需要机器上有 Go 工具链;
-> 脚本会先做 preflight 检查并给出警告,单个插件失败不会阻塞其余安装。
+> 有 Go 构建步骤的插件（token-dashboard、hunkdiff、Linux 上的 scratch）需要 Go 工具链；
+> 脚本会先做 preflight 检查并给出警告，单个插件失败不会阻塞其余安装。

@@ -1,11 +1,11 @@
 #!/bin/bash
 # Install all herdr plugins listed in plugins.txt on a new device.
-# GitHub plugins are installed at their pinned ref; local plugins are linked.
+# GitHub plugins are installed at their pinned ref when one is specified.
 # Run:  bash ~/dotfiles/herdr/install-plugins.sh
 set -euo pipefail
 
 PLUGINS="$HOME/dotfiles/herdr/plugins.txt"
-SCRATCH="$HOME/dotfiles/herdr/scratch"
+HOST_UNAME="${DOTFILES_UNAME:-$(uname -s)}"
 
 if ! command -v herdr >/dev/null 2>&1; then
   echo "error: herdr not installed. Run: brew install herdr" >&2
@@ -30,7 +30,9 @@ fi
 FAILED=""
 echo "== Installing GitHub plugins =="
 while IFS='|' read -r id kind cmd; do
-  if [ "$kind" = "github" ]; then
+  if [ "$kind" = "github-linux" ] && [ "$HOST_UNAME" = Darwin ]; then
+    echo "  $id (provided by the macOS Homebrew cask)"
+  elif [ "$kind" = "github" ] || [ "$kind" = "github-linux" ]; then
     printf '  %s ... ' "$id"
     # eval is intentional: cmd carries `--ref` args from the inventory.
     if eval "$cmd -y" >/dev/null 2>&1; then
@@ -40,21 +42,10 @@ while IFS='|' read -r id kind cmd; do
       FAILED="$FAILED $id"
     fi
   else
-    echo "  $id (local, linked via scratch)"
+    echo "  $id (unsupported inventory kind: $kind)"
+    FAILED="$FAILED $id"
   fi
 done < "$PLUGINS"
-
-echo "== Linking local plugins =="
-if [ -d "$SCRATCH" ]; then
-  mkdir -p ~/.local/share
-  ln -sfn "$SCRATCH" ~/.local/share/herdr-scratch
-  # `herdr plugin link` runs no [[build]] steps, so the checkout needs its
-  # binary in place. Point it at the brew-installed herdr-scratch.
-  mkdir -p "$SCRATCH/bin"
-  ln -sfn "$(command -v herdr-scratch)" "$SCRATCH/bin/herdr-scratch"
-  herdr plugin link ~/.local/share/herdr-scratch
-fi
-
 if [ -n "$FAILED" ]; then
   echo
   echo "WARNING: failed to install:$FAILED"

@@ -100,4 +100,4 @@ Config in `~/.config/herdr/`, synced from [herdr/](herdr/README.md).
 - **Not synced**: installed plugins, logs, session state
 - **Plugins**: installed by source in `plugins.txt`; on a new device one command installs them all:
 
-  `brew install herdr` + `brew install macintacos/tap/herdr-scratch`(scratch 插件的二进制;Linux 同样支持 brew,或 `curl -fsSL https://herdr.dev/install.sh | sh`),然后 `dotfiles install` 会链接配置并重装所有插件。插件带构建步骤的需要工具链(如 go),装好再跑 `bash ~/dotfiles/herdr/install-plugins.sh`
+  `setup auto` 会安装 herdr 核心；macOS 通过 Homebrew cask 安装 `herdr-scratch`，Linux 则由 `herdr plugin install macintacos/herdr-scratch` 从源码构建。随后运行插件清单。Linux 不使用该 cask，因为 Homebrew cask 的 macOS quarantine hook 与 Linux `xattr` 不兼容。插件构建需要 Go；失败后可重跑 `bash ~/dotfiles/herdr/install-plugins.sh`。

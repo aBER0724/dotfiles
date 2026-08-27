@@ -143,6 +143,7 @@ test_arch_installs_required_packages() {
   assert_status 0 &&
     grep -F "sudo pacman -S --needed" "$LOG" >/dev/null &&
     grep -F "base-devel" "$LOG" >/dev/null &&
+    ! grep -F "python-xattr" "$LOG" >/dev/null &&
     grep -F "niri" "$LOG" >/dev/null &&
     grep -F "quickshell" "$LOG" >/dev/null &&
     grep -F "gpu-screen-recorder" "$LOG" >/dev/null &&
@@ -206,7 +207,7 @@ test_existing_links_and_commands_are_skipped() {
   assert_status 0 && assert_contains "ok      aerospace" && [ -L "$HOME/.aerospace.toml" ]
 }
 
-test_arch_bootstraps_linuxbrew_before_scratch() {
+test_arch_bootstraps_linuxbrew_without_scratch_cask() {
   new_case arch-linuxbrew
   arch_fixture
   stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"; printf "#!/bin/sh\nexit 0\n"'
@@ -214,10 +215,10 @@ test_arch_bootstraps_linuxbrew_before_scratch() {
   stub_logger brew
   DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
   assert_status 0 &&
-    grep -F "python-xattr" "$LOG" >/dev/null &&
+    ! grep -F "python-xattr" "$LOG" >/dev/null &&
     grep -F "curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh" "$LOG" >/dev/null &&
-    grep -F "brew install --cask" "$LOG" >/dev/null &&
-    grep -F "macintacos/tap/herdr-scratch" "$LOG" >/dev/null
+    ! grep -F "brew install --cask" "$LOG" >/dev/null &&
+    ! grep -F "macintacos/tap/herdr-scratch" "$LOG" >/dev/null
 }
 
 test_arch_installs_native_packages_before_homebrew() {
@@ -231,6 +232,37 @@ test_arch_installs_native_packages_before_homebrew() {
   bootstrap_line="$(grep -nF 'bootstrap-bash -c' "$LOG" | head -n 1 | cut -d: -f1)"
   [ -n "$pacman_line" ] && [ -n "$bootstrap_line" ] && [ "$pacman_line" -lt "$bootstrap_line" ] &&
     grep -F "sudo pacman -S --needed" "$LOG" | grep -F "file" | grep -F "procps-ng" >/dev/null
+}
+
+test_arch_installs_scratch_through_herdr() {
+  new_case arch-scratch-plugin
+  mkdir -p "$HOME/dotfiles/herdr"
+  cp "$REPO/herdr/plugins.txt" "$HOME/dotfiles/herdr/plugins.txt"
+  stub_logger go
+  stub_logger tmux
+  stub_logger herdr
+  stub_command git 'exit 0'
+  OUTPUT="$CASE_ROOT/output"
+  STATUS=0
+  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$HOME" DOTFILES_UNAME=Linux bash "$REPO/herdr/install-plugins.sh" >"$OUTPUT" 2>&1 || STATUS=$?
+  assert_status 0 &&
+    grep -F "herdr plugin install macintacos/herdr-scratch -y" "$LOG" >/dev/null &&
+    ! grep -F "herdr plugin link" "$LOG" >/dev/null
+}
+
+test_macos_skips_scratch_source_build() {
+  new_case macos-scratch-cask
+  mkdir -p "$HOME/dotfiles/herdr"
+  cp "$REPO/herdr/plugins.txt" "$HOME/dotfiles/herdr/plugins.txt"
+  stub_logger go
+  stub_logger tmux
+  stub_logger herdr
+  OUTPUT="$CASE_ROOT/output"
+  STATUS=0
+  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$HOME" DOTFILES_UNAME=Darwin bash "$REPO/herdr/install-plugins.sh" >"$OUTPUT" 2>&1 || STATUS=$?
+  assert_status 0 &&
+    assert_contains "user.scratch (provided by the macOS Homebrew cask)" &&
+    ! grep -F "herdr plugin install macintacos/herdr-scratch" "$LOG" >/dev/null
 }
 
 test_zsh_deps_install_oh_my_zsh() {
@@ -291,8 +323,10 @@ run_test "Arch links primary stack only" test_arch_links_primary_stack_only
 run_test "Arch prints services without enabling" test_arch_prints_but_does_not_enable_services
 run_test "macOS links primary stack only" test_macos_links_primary_stack_only
 run_test "setup is idempotent" test_existing_links_and_commands_are_skipped
-run_test "Arch bootstraps Linuxbrew before scratch" test_arch_bootstraps_linuxbrew_before_scratch
+run_test "Arch bootstraps Linuxbrew without scratch cask" test_arch_bootstraps_linuxbrew_without_scratch_cask
 run_test "Arch installs native packages before Homebrew" test_arch_installs_native_packages_before_homebrew
+run_test "Arch installs scratch through herdr" test_arch_installs_scratch_through_herdr
+run_test "macOS skips scratch source build" test_macos_skips_scratch_source_build
 run_test "Zsh deps install Oh My Zsh" test_zsh_deps_install_oh_my_zsh
 run_test "zshrc survives missing Oh My Zsh" test_zshrc_survives_missing_oh_my_zsh
 run_test "existing commands smoke" test_existing_commands_smoke

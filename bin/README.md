@@ -42,6 +42,7 @@ dotfiles setup arch   # 仅允许在 Arch/Arch 衍生系统执行
 - 共享主力配置：dotfiles CLI、Zsh、Neovim、Fastfetch、pi、herdr。
 - macOS 额外安装并链接 AeroSpace 和 Kitty；缺少 Homebrew 时从官方固定 URL 自动安装。
 - Arch 额外安装并链接 Niri、nbshell 和 Kitty；先通过 `sudo pacman -S --needed` 安装 Homebrew 所需的原生依赖、配置软件及 `nbshell/packages.arch.txt`，再按需引导 Linuxbrew 并安装 brew-only 软件。
+- Arch 不安装 `herdr-scratch` cask，也不安装 `python-xattr` 来模拟 macOS `xattr`；Linux 由 herdr 的插件安装器从源码构建 scratch。
 - Waybar、Clavis、Kaku 属于备用/回滚配置，不在系统预设中。
 - 配置冲突仍使用时间戳目录备份，重复运行会跳过正确链接和已安装命令。
 - setup 不启动 AeroSpace、不修改登录 Shell、不写入 pi API key，也不自动启用 systemd 服务。
