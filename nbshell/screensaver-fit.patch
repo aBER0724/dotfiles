@@ -2,7 +2,7 @@ diff --git a/shell/scripts/screensaver.sh b/shell/scripts/screensaver.sh
 index 0a12e48..8c87caf 100755
 --- a/shell/scripts/screensaver.sh
 +++ b/shell/scripts/screensaver.sh
-@@ -31,14 +31,42 @@ HIER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+@@ -31,18 +31,50 @@ HIER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
  EIGEN="$HIER/screensaver.py"
  VORLAGE="${XDG_CONFIG_HOME:-$HOME/.config}/nbshell/screensaver.txt"
 
@@ -45,34 +45,46 @@ index 0a12e48..8c87caf 100755
 +	[ "$breite" -le "$spalten" ] && quelle="$VORLAGE"
  fi
 
- if ! command -v tte >/dev/null 2>&1; then
+-if ! command -v tte >/dev/null 2>&1; then
++if command -v ttfx >/dev/null 2>&1; then
++	effekt=ttfx
++elif command -v tte >/dev/null 2>&1; then
++	effekt=tte
++else
 +	rm -f "$auto_vorlage"
  	exec python3 "$EIGEN"
  fi
 
-@@ -59,6 +87,7 @@ printf '\033[?25l'
+-hilfe="$(tte --help 2>&1 || true)"
++hilfe="$("$effekt" --help 2>&1 || true)"
+ flags=()
+ kennt() { printf '%s' "$hilfe" | grep -q -- "$1"; }
+
+@@ -58,7 +90,9 @@ printf '\033]0;nbshell-screensaver\007'
+ printf '\033[?25l'
 
  aufraeumen() {
++	pkill -x ttfx 2>/dev/null
  	pkill -x tte 2>/dev/null
 +	rm -f "$auto_vorlage"
  	printf '\033[?25h\033[0m\033[2J\033[H'
  	exit 0
  }
-@@ -68,7 +97,7 @@ trap aufraeumen INT TERM HUP
+@@ -68,7 +102,7 @@ trap aufraeumen INT TERM HUP
  # laeuft wird auf eine Taste gehorcht. `read -t 1` ist die Uhr dafuer.
  while true; do
  	if printf '%s' "$hilfe" | grep -q -- '--random-effect'; then
 -		tte "${flags[@]}" --random-effect <"$VORLAGE" &
-+		tte "${flags[@]}" --random-effect <"$quelle" &
++		"$effekt" "${flags[@]}" --random-effect <"$quelle" &
  	else
  		# Aeltere Fassungen kennen keinen Zufall: dann wird selbst gewuerfelt.
  		effekte=(beams binarypath blackhole bouncyballs bubbles burn colorshift
-@@ -76,7 +105,7 @@ while true; do
+@@ -76,7 +110,7 @@ while true; do
  			orbittingvolley overflow pour print rain randomsequence rings
  			scattered slice slide spotlights spray swarm sweep synthgrid
  			unstable vhstape waves wipe)
 -		tte "${flags[@]}" "${effekte[RANDOM % ${#effekte[@]}]}" <"$VORLAGE" &
-+		tte "${flags[@]}" "${effekte[RANDOM % ${#effekte[@]}]}" <"$quelle" &
++		"$effekt" "${flags[@]}" "${effekte[RANDOM % ${#effekte[@]}]}" <"$quelle" &
  	fi
  	kind=$!
 
