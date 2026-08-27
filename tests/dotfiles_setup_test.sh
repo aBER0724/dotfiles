@@ -86,7 +86,7 @@ NAME="Arch Linux"
 OS
   stub_logger pacman
   stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"'
-  DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
   assert_status 0 && assert_contains "preset  arch"
 }
 test_macos_rejects_linux() {
@@ -137,7 +137,7 @@ OS
 test_arch_installs_required_packages() {
   new_case arch-packages
   arch_fixture
-  DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
   assert_status 0 &&
     grep -F "sudo pacman -S --needed" "$LOG" >/dev/null &&
     grep -F "base-devel" "$LOG" >/dev/null &&
@@ -154,6 +154,55 @@ test_arch_package_failure_stops_before_links() {
 }
 
 
+test_arch_links_primary_stack_only() {
+  new_case arch-links
+  arch_fixture
+  stub_logger npm
+  stub_logger git
+  stub_logger herdr
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  assert_status 0 &&
+    [ -L "$HOME/.config/niri" ] &&
+    [ -L "$HOME/.config/nbshell/config.json" ] &&
+    [ -L "$HOME/.config/kitty/kitty.conf" ] &&
+    [ ! -e "$HOME/.config/waybar" ] &&
+    [ ! -e "$HOME/.config/clavis" ] &&
+    [ ! -e "$HOME/.config/kaku" ]
+}
+
+test_arch_prints_but_does_not_enable_services() {
+  new_case arch-manual
+  arch_fixture
+  stub_command systemctl 'echo systemctl-executed >> "$LOG"; exit 99'
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  assert_status 0 &&
+    assert_contains "systemctl --user enable --now nbshell.service" &&
+    assert_contains "sudo systemctl enable --now tuned.service" &&
+    ! grep -F "systemctl-executed" "$LOG" >/dev/null
+}
+
+test_macos_links_primary_stack_only() {
+  new_case macos-links
+  stub_logger brew
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup macos
+  assert_status 0 &&
+    [ -L "$HOME/.aerospace.toml" ] &&
+    [ -L "$HOME/.config/nvim" ] &&
+    [ -L "$HOME/.config/kitty/kitty.conf" ] &&
+    [ ! -e "$HOME/.config/niri" ] &&
+    [ ! -e "$HOME/.config/waybar" ]
+}
+
+test_existing_links_and_commands_are_skipped() {
+  new_case idempotent
+  stub_logger brew
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup macos
+  assert_status 0 || return 1
+  : > "$LOG"
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup macos
+  assert_status 0 && assert_contains "ok      aerospace" && [ -L "$HOME/.aerospace.toml" ]
+}
+
 
 run_test "auto detects macOS" test_auto_detects_macos
 run_test "auto detects Arch" test_auto_detects_arch
@@ -164,6 +213,10 @@ run_test "macOS bootstraps Homebrew" test_macos_bootstraps_homebrew
 run_test "macOS skips Homebrew bootstrap" test_macos_skips_homebrew_bootstrap
 run_test "Arch installs required packages" test_arch_installs_required_packages
 run_test "Arch package failure stops before links" test_arch_package_failure_stops_before_links
+run_test "Arch links primary stack only" test_arch_links_primary_stack_only
+run_test "Arch prints services without enabling" test_arch_prints_but_does_not_enable_services
+run_test "macOS links primary stack only" test_macos_links_primary_stack_only
+run_test "setup is idempotent" test_existing_links_and_commands_are_skipped
 
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

@@ -151,6 +151,7 @@ HOMEBREW_INSTALL_URL="${DOTFILES_HOMEBREW_INSTALL_URL:-https://raw.githubusercon
 BOOTSTRAP_BASH="${DOTFILES_BASH_BIN:-/bin/bash}"
 MACOS_BASE_PACKAGES="git zsh node go"
 ARCH_BASE_PACKAGES="git curl zsh nodejs npm go base-devel"
+HERDR_INSTALL_URL="${DOTFILES_HERDR_INSTALL_URL:-https://herdr.dev/install.sh}"
 
 select_entries() {
   # "$*" joins args with spaces; empty when no names given (all entries).
@@ -381,6 +382,34 @@ setup_pi_theme() {
   fi
 }
 
+run_config_runtimes() {
+  local wanted="$1"
+  if [ "${DOTFILES_SKIP_RUNTIME_INSTALLERS:-0}" = 1 ]; then
+    echo "skip    config runtime installers (test mode)"
+    return 0
+  fi
+  if software_selected herdr "$wanted"; then run_herdr_plugins; fi
+  if software_selected zshrc "$wanted"; then run_zsh_deps; fi
+  if software_selected clavis "$wanted"; then
+    echo "== clavis (user-local, never sudo) =="
+    bash "$DOTFILES/clavis/install.sh"
+  fi
+  if software_selected nbshell "$wanted"; then
+    echo "== nbshell (user-local, never sudo) =="
+    bash "$DOTFILES/nbshell/install.sh"
+  fi
+  if software_selected pi-settings "$wanted"; then
+    echo "== pi =="
+    setup_pi_theme
+    if [ ! -f "$HOME/.pi/agent/auth.json" ]; then
+      echo "No pi API key yet. Create it (no login, providers are key-based):"
+      echo "  printf '{\"$PI_DEFAULT_PROVIDER\": {\"type\": \"api_key\", \"key\": \"sk-...\"}}' > $HOME/.pi/agent/auth.json"
+      echo "  chmod 600 $HOME/.pi/agent/auth.json"
+    fi
+  fi
+}
+
+
 
 cmd_deps() {
   # Install runtime software/deps without touching links (already-linked machines).
@@ -396,52 +425,17 @@ cmd_deps() {
 }
 
 cmd_install() {
-  # herdr plugins are a whole-package install: only re-run them when the
-  # user asked for the herdr entry/group (or nothing, i.e. everything).
-  # `dotfiles install pi` or `install nvim` just links, no plugin churn.
-  local want_herdr=0 want_pi=0 want_zsh=0 want_clavis=0 want_nbshell=0 wanted="$1" w
+  local wanted="$1"
   if [ -z "$wanted" ]; then
     wanted="$(for entry in "${LINK_TABLE[@]}"; do printf '%s ' "${entry%%|*}"; done)"
   fi
-  for w in $1; do
-    case "$w" in
-      herdr|herdr/*) want_herdr=1 ;;
-      pi-settings|pi-models|pi-extensions) want_pi=1 ;;
-      zshrc|zshenv|zprofile|shinit|p10k) want_zsh=1 ;;
-      clavis) want_clavis=1 ;;
-      nbshell) want_nbshell=1 ;;
-    esac
-  done
-  if [ -z "$1" ]; then want_herdr=1; want_pi=1; want_zsh=1; want_clavis=1; want_nbshell=1; fi
 
   cmd_link
   echo
   run_software_install "$wanted"
-  if [ "$want_herdr" = 1 ]; then
-    run_herdr_plugins
-  fi
-  if [ "$want_zsh" = 1 ]; then
-    run_zsh_deps
-  fi
-  if [ "$want_clavis" = 1 ]; then
-    echo "== clavis (user-local, never sudo) =="
-    bash "$DOTFILES/clavis/install.sh"
-  fi
-  if [ "$want_nbshell" = 1 ]; then
-    echo "== nbshell (user-local, never sudo) =="
-    bash "$DOTFILES/nbshell/install.sh"
-  fi
+  run_config_runtimes "$wanted"
   echo
-  if [ "$want_pi" = 1 ]; then
-    echo "== pi =="
-    setup_pi_theme
-    if [ ! -f "$HOME/.pi/agent/auth.json" ]; then
-      echo "No pi API key yet. Create it (no login, providers are key-based):"
-      echo "  printf '{\"$PI_DEFAULT_PROVIDER\": {\"type\": \"api_key\", \"key\": \"sk-...\"}}' > $HOME/.pi/agent/auth.json"
-      echo "  chmod 600 $HOME/.pi/agent/auth.json"
-    fi
-  fi
-  if [ "$want_pi" = 1 ]; then
+  if software_selected pi-settings "$wanted"; then
     echo "Done. Start pi with: pi"
   else
     echo "Done."
@@ -486,6 +480,16 @@ install_base_packages() {
   esac
 }
 
+ensure_arch_herdr() {
+  command -v herdr >/dev/null 2>&1 && return 0
+  command -v curl >/dev/null 2>&1 || {
+    echo "dotfiles: curl is required to install herdr" >&2
+    return 1
+  }
+  echo "install herdr from $HERDR_INSTALL_URL"
+  "$BOOTSTRAP_BASH" -c "$(curl -fsSL "$HERDR_INSTALL_URL")"
+}
+
 cmd_setup() {
   local preset="${1:-auto}" wanted
   echo "== detect system =="
@@ -504,6 +508,35 @@ cmd_setup() {
   else
     install_base_packages "$preset"
   fi
+  echo "== install config software =="
+  if [ "$preset" = arch ]; then
+    run_software_install "$wanted" 1
+    if software_selected herdr "$wanted" && [ "${DOTFILES_SKIP_RUNTIME_INSTALLERS:-0}" != 1 ]; then
+      ensure_arch_herdr
+    fi
+  else
+    run_software_install "$wanted"
+  fi
+
+  echo "== link configs =="
+  select_entries $wanted
+  cmd_link
+
+  echo "== install config runtimes =="
+  run_config_runtimes "$wanted"
+
+  echo "== manual follow-up =="
+  case "$preset" in
+    macos)
+      echo "Start AeroSpace and grant Accessibility permission when prompted."
+      echo "Optional: change the login shell manually with chsh."
+      ;;
+    arch)
+      echo "  systemctl --user enable --now nbshell.service"
+      echo "  sudo systemctl enable --now tuned.service"
+      echo "Optional: install herdr-scratch manually when an Arch-compatible package is available."
+      ;;
+  esac
 }
 
 case "${1:-}" in
