@@ -76,7 +76,7 @@ clone_at() {
 
 mkdir -p "$CACHE" "$BIN_DIR" "$UNIT_DIR" "$THEME_DIR" "$WALLPAPER_DIR"
 clone_at "$NBSHELL_REPO" "$NBSHELL_REV" "$CACHE/source"
-for patch_file in niri-named-workspaces.patch bar-visibility.patch screensaver-fit.patch screensaver-preview.patch kitty-screensaver-fullscreen.patch remove-bongo-cat.patch tray-polish.patch popout-gap.patch; do
+for patch_file in niri-named-workspaces.patch bar-visibility.patch screensaver-fit.patch screensaver-preview.patch kitty-screensaver-fullscreen.patch remove-bongo-cat.patch tray-polish.patch popout-gap.patch tailscale-official-icon.patch; do
     git -C "$CACHE/source" apply --check "$SCRIPT_DIR/$patch_file"
     git -C "$CACHE/source" apply "$SCRIPT_DIR/$patch_file"
 done

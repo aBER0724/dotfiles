@@ -1,0 +1,37 @@
+diff --git a/shell/Bar/Widgets/Tailscale.qml b/shell/Bar/Widgets/Tailscale.qml
+index 1d83283..235c7c2 100644
+--- a/shell/Bar/Widgets/Tailscale.qml
++++ b/shell/Bar/Widgets/Tailscale.qml
+@@ -1,5 +1,6 @@
+ import QtQuick
+ import Quickshell
++import Quickshell.Widgets
+ import qs.Common
+ import qs.Services
+ import qs.Widgets
+@@ -12,8 +13,23 @@ Cell {
+     slotChars: 3
+     interactive: true
+     label: "VPN"
+-    icon: "󰖂"
+-    text: Tailnet.onlinePeers
++    custom: true
++
++    Row {
++        spacing: Theme.cellW / 2
++
++        IconImage {
++            width: Theme.cellH
++            height: Theme.cellH
++            source: Quickshell.iconPath("tailscale")
++        }
++
++        Line {
++            anchors.verticalCenter: parent.verticalCenter
++            text: Tailnet.onlinePeers
++            color: root.color
++        }
++    }
+     color: Tailnet.state === "Running" ? Theme.green : Theme.yellow
+ 
+     onPopoutVisibleChanged: if (popoutVisible) Tailnet.refresh()
