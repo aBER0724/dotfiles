@@ -220,6 +220,19 @@ test_arch_bootstraps_linuxbrew_before_scratch() {
     grep -F "macintacos/tap/herdr-scratch" "$LOG" >/dev/null
 }
 
+test_arch_installs_native_packages_before_homebrew() {
+  new_case arch-native-first
+  arch_fixture
+  stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"; printf "#!/bin/sh\nexit 0\n"'
+  stub_command bootstrap-bash 'printf "bootstrap-bash %s\n" "$*" >> "$LOG"'
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  assert_status 0 || return 1
+  pacman_line="$(grep -nF 'sudo pacman -S --needed' "$LOG" | head -n 1 | cut -d: -f1)"
+  bootstrap_line="$(grep -nF 'bootstrap-bash -c' "$LOG" | head -n 1 | cut -d: -f1)"
+  [ -n "$pacman_line" ] && [ -n "$bootstrap_line" ] && [ "$pacman_line" -lt "$bootstrap_line" ] &&
+    grep -F "sudo pacman -S --needed" "$LOG" | grep -F "file" | grep -F "procps-ng" >/dev/null
+}
+
 test_zsh_deps_install_oh_my_zsh() {
   new_case zsh-omz
   stub_command git 'printf "git %s\n" "$*" >> "$LOG"; dest=""; for arg in "$@"; do dest="$arg"; done; mkdir -p "$dest/.git"; case "$dest" in */.oh-my-zsh) printf "# stub\n" > "$dest/oh-my-zsh.sh" ;; esac'
@@ -279,6 +292,7 @@ run_test "Arch prints services without enabling" test_arch_prints_but_does_not_e
 run_test "macOS links primary stack only" test_macos_links_primary_stack_only
 run_test "setup is idempotent" test_existing_links_and_commands_are_skipped
 run_test "Arch bootstraps Linuxbrew before scratch" test_arch_bootstraps_linuxbrew_before_scratch
+run_test "Arch installs native packages before Homebrew" test_arch_installs_native_packages_before_homebrew
 run_test "Zsh deps install Oh My Zsh" test_zsh_deps_install_oh_my_zsh
 run_test "zshrc survives missing Oh My Zsh" test_zshrc_survives_missing_oh_my_zsh
 run_test "existing commands smoke" test_existing_commands_smoke

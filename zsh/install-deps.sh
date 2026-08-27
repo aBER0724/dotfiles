@@ -13,9 +13,7 @@
 # Usage: bash ~/dotfiles/zsh/install-deps.sh
 set -euo pipefail
 
-DOTFILES="${DOTFILES_DIR:-$HOME/dotfiles}"
-ZSH_CUSTOM="${ZSH_CUSTOM:-${ZSH:-$HOME/.oh-my-zsh}/custom}"
-
+ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
 
 if [ ! -r "$HOME/.oh-my-zsh/oh-my-zsh.sh" ]; then
   echo "== oh-my-zsh =="

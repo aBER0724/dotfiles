@@ -42,17 +42,11 @@ zsh/
 ## 新设备安装
 
 ```bash
-# 1. 装 oh-my-zsh(若还没有)
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+git clone https://github.com/aBER0724/dotfiles.git ~/dotfiles
+bash ~/dotfiles/bin/dotfiles setup auto
 
-# 2. 装插件/p10k 依赖(幂等,已装跳过)
-bash ~/dotfiles/zsh/install-deps.sh
-
-# 3. 链接配置(或 dotfiles link zsh)
-dotfiles link zsh
-
-# 4. 重开 shell
+# 重开 shell
 exec zsh
 ```
 
-> 在 macOS 上只链接、不重装插件:p10k/plugins 已在,`install-deps.sh` 会显示 `ok` 跳过。
+> `setup` 会幂等安装 Oh My Zsh、p10k 和插件，已有依赖会显示 `ok` 并跳过。只需修复 Zsh 依赖时可单独运行 `bash ~/dotfiles/zsh/install-deps.sh`。
