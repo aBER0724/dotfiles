@@ -50,6 +50,8 @@ SOFTWARE_TABLE=(
   "fastfetch|fastfetch|formula|fastfetch|fastfetch"
   "pi-settings|pi|npm|@earendil-works/pi-coding-agent|-"
   "herdr|herdr|formula|herdr|-"
+  "herdr|go|formula|go|go"
+  "herdr|tmux|formula|tmux|tmux"
   "herdr|cargo|formula|rust|rust"
   "herdr|yazi|formula|yazi|yazi"
   "herdr|herdr-scratch|cask|macintacos/tap/herdr-scratch|-"

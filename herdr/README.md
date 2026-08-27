@@ -109,4 +109,4 @@ bash ~/dotfiles/herdr/install-plugins.sh
 ```
 
 > 有 Go 构建步骤的插件（token-dashboard、hunkdiff、Linux 上的 scratch）需要 Go；navigator 和 renamer 需要 Rust/Cargo；file-explorer 需要 Yazi。
-> `setup arch` 会安装这些依赖。脚本失败时会保留并显示每个插件的实际安装日志，修复后可安全重跑。
+> `setup` / `deps herdr` 会安装这些依赖。若直接运行本脚本且依赖缺失，它会在尝试插件前停止并给出恢复命令；其他安装错误仍会显示每个插件的实际日志。

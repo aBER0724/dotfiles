@@ -16,23 +16,17 @@ if [ ! -f "$PLUGINS" ]; then
   exit 1
 fi
 
-# Some GitHub plugins have a build step (Go/Rust/...). Warn up front so a
-# missing toolchain fails clearly instead of as a confusing per-plugin error.
-if ! command -v go >/dev/null 2>&1; then
-  echo "warning: 'go' not found — plugins with a Go build step will fail."
-  echo "         install it first, e.g. 'brew install go' / 'apt install golang-go'"
-fi
-if ! command -v cargo >/dev/null 2>&1; then
-  echo "warning: 'cargo' not found — Rust plugins will fail to build."
-  echo "         install it first, e.g. 'brew install rust' / 'pacman -S rust'"
-fi
-if ! command -v yazi >/dev/null 2>&1; then
-  echo "warning: 'yazi' not found — the ray.file-explorer plugin will fail."
-  echo "         install it first, e.g. 'brew install yazi' / 'pacman -S yazi'"
-fi
-if ! command -v tmux >/dev/null 2>&1; then
-  echo "warning: 'tmux' not found — herdr requires tmux to keep sessions alive."
-  echo "         install it first, e.g. 'brew install tmux' / 'apt install tmux'"
+# These are required by entries in plugins.txt. Stop before attempting known
+# failures and route through the platform-aware dotfiles dependency installer.
+MISSING_DEPS=""
+for dep in go cargo yazi tmux; do
+  command -v "$dep" >/dev/null 2>&1 || MISSING_DEPS="$MISSING_DEPS $dep"
+done
+if [ -n "$MISSING_DEPS" ]; then
+  echo "error: missing required herdr plugin dependencies:$MISSING_DEPS" >&2
+  echo "Install them and retry with:" >&2
+  echo "  bash ~/dotfiles/bin/dotfiles deps herdr" >&2
+  exit 1
 fi
 
 FAILED=""

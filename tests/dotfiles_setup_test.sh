@@ -255,6 +255,8 @@ test_arch_installs_scratch_through_herdr() {
   mkdir -p "$HOME/dotfiles/herdr"
   cp "$REPO/herdr/plugins.txt" "$HOME/dotfiles/herdr/plugins.txt"
   stub_logger go
+  stub_logger cargo
+  stub_logger yazi
   stub_logger tmux
   stub_logger herdr
   stub_command git 'exit 0'
@@ -271,6 +273,8 @@ test_macos_skips_scratch_source_build() {
   mkdir -p "$HOME/dotfiles/herdr"
   cp "$REPO/herdr/plugins.txt" "$HOME/dotfiles/herdr/plugins.txt"
   stub_logger go
+  stub_logger cargo
+  stub_logger yazi
   stub_logger tmux
   stub_logger herdr
   OUTPUT="$CASE_ROOT/output"
@@ -286,6 +290,8 @@ test_plugin_failure_shows_actual_log() {
   mkdir -p "$HOME/dotfiles/herdr"
   printf '%s\n' 'broken|github|herdr plugin install example/broken' > "$HOME/dotfiles/herdr/plugins.txt"
   stub_logger go
+  stub_logger cargo
+  stub_logger yazi
   stub_logger tmux
   stub_command herdr 'printf "herdr %s\n" "$*" >> "$LOG"; echo "cargo: linker cc not found" >&2; exit 1'
   OUTPUT="$CASE_ROOT/output"
@@ -294,6 +300,21 @@ test_plugin_failure_shows_actual_log() {
   assert_status 1 &&
     assert_contains "cargo: linker cc not found" &&
     assert_contains "failed to install: broken"
+}
+
+test_plugin_installer_stops_when_required_deps_missing() {
+  new_case plugin-missing-deps
+  mkdir -p "$HOME/dotfiles/herdr"
+  cp "$REPO/herdr/plugins.txt" "$HOME/dotfiles/herdr/plugins.txt"
+  stub_logger herdr
+  stub_logger go
+  stub_logger tmux
+  OUTPUT="$CASE_ROOT/output"
+  STATUS=0
+  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$HOME" DOTFILES_UNAME=Linux bash "$REPO/herdr/install-plugins.sh" >"$OUTPUT" 2>&1 || STATUS=$?
+  assert_status 1 &&
+    assert_contains "bash ~/dotfiles/bin/dotfiles deps herdr" &&
+    [ ! -s "$LOG" ]
 }
 
 test_zsh_deps_install_oh_my_zsh() {
@@ -361,6 +382,7 @@ run_test "Arch installs native packages before Homebrew" test_arch_installs_nati
 run_test "Arch installs scratch through herdr" test_arch_installs_scratch_through_herdr
 run_test "macOS skips scratch source build" test_macos_skips_scratch_source_build
 run_test "Plugin failure shows actual log" test_plugin_failure_shows_actual_log
+run_test "Plugin installer stops when required deps missing" test_plugin_installer_stops_when_required_deps_missing
 run_test "Zsh deps install Oh My Zsh" test_zsh_deps_install_oh_my_zsh
 run_test "zshrc survives missing Oh My Zsh" test_zshrc_survives_missing_oh_my_zsh
 run_test "existing commands smoke" test_existing_commands_smoke
