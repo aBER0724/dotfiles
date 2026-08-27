@@ -63,6 +63,12 @@ GROUP_TABLE=(
   "wm|niri nbshell"
 )
 
+# System setup presets contain primary configs only; rollback configs stay manual.
+PRESET_TABLE=(
+  "macos|dotfiles-cli zsh nvim fastfetch pi herdr aerospace kitty"
+  "arch|dotfiles-cli zsh nvim fastfetch pi herdr niri nbshell kitty"
+)
+
 # Expand aliases in "$*" to concrete names (set -u + empty string is fine here).
 expand_groups() {
   local w a members out
@@ -75,6 +81,68 @@ expand_groups() {
     if [ -n "$members" ]; then out="$out $members"; else out="$out $w"; fi
   done
   echo "$out"
+}
+
+host_uname() {
+  if [ -n "${DOTFILES_UNAME:-}" ]; then
+    printf '%s\n' "$DOTFILES_UNAME"
+  else
+    uname -s
+  fi
+}
+
+is_arch_host() {
+  local os_release="${DOTFILES_OS_RELEASE:-/etc/os-release}" id="" id_like=""
+  [ "$(host_uname)" = "Linux" ] || return 1
+  [ -r "$os_release" ] || return 1
+  id="$(sed -n 's/^ID=//p' "$os_release" | head -n 1 | tr -d '\"')"
+  id_like="$(sed -n 's/^ID_LIKE=//p' "$os_release" | head -n 1 | tr -d '\"')"
+  [ "$id" = "arch" ] && return 0
+  case " $id_like " in *" arch "*) return 0 ;; esac
+  return 1
+}
+
+detect_system() {
+  if [ "$(host_uname)" = "Darwin" ]; then
+    echo macos
+  elif is_arch_host; then
+    echo arch
+  else
+    echo "dotfiles: unsupported system; supported presets: macos arch" >&2
+    return 1
+  fi
+}
+
+validate_system() {
+  case "$1" in
+    macos)
+      [ "$(host_uname)" = "Darwin" ] || {
+        echo "dotfiles: setup macos requires macOS" >&2
+        return 1
+      }
+      ;;
+    arch)
+      is_arch_host || {
+        echo "dotfiles: setup arch requires Arch Linux" >&2
+        return 1
+      }
+      ;;
+    *)
+      echo "dotfiles: unknown setup preset '$1' (supported: auto macos arch)" >&2
+      return 1
+      ;;
+  esac
+}
+
+preset_entries() {
+  local preset="$1" row
+  for row in "${PRESET_TABLE[@]}"; do
+    if [ "${row%%|*}" = "$preset" ]; then
+      expand_groups "${row#*|}"
+      return 0
+    fi
+  done
+  return 1
 }
 
 # Defaults used by the /login-free key setup (see README)
@@ -341,19 +409,31 @@ cmd_install() {
   fi
 }
 
+cmd_setup() {
+  local preset="${1:-auto}" wanted
+  echo "== detect system =="
+  [ "$preset" = auto ] && preset="$(detect_system)"
+  validate_system "$preset"
+  wanted="$(preset_entries "$preset")"
+  echo "preset  $preset"
+  printf 'entries %s\n' "$wanted"
+}
+
 case "${1:-}" in
   list)   cmd_list ;;
   status) shift; select_entries "$@"; cmd_status ;;
   link)   shift; select_entries "$@"; cmd_link ;;
   install) shift; select_entries "$@"; cmd_install "$(expand_groups "$*")" ;;
   deps) shift; cmd_deps "$@" ;;
+  setup) shift; cmd_setup "${1:-auto}" ;;
   *)
-    echo "Usage: dotfiles {list|status|link|install|deps} [name...]"
+    echo "Usage: dotfiles {list|status|link|install|deps|setup} [name...]"
     echo "  list                show every managed entry and its target"
     echo "  status [name...]    show link state (all entries by default)"
     echo "  link [name...]      create links; backup+replace conflicts"
     echo "  install [name...]   link + install selected config software/deps"
     echo "  deps [name...]      install selected config software/deps (no linking)"
+    echo "  setup [auto|macos|arch]  install and configure the primary system preset"
     echo
     echo "names: $(for e in "${LINK_TABLE[@]}"; do printf '%s ' "${e%%|*}"; done)"
     echo "groups: $(for g in "${GROUP_TABLE[@]}"; do printf '%s ' "${g%%|*}"; done)"

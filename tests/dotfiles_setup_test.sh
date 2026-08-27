@@ -82,9 +82,32 @@ OS
   DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
   assert_status 0 && assert_contains "preset  arch"
 }
+test_macos_rejects_linux() {
+  new_case reject-macos
+  DOTFILES_UNAME=Linux run_cli setup macos
+  assert_status 1 && assert_contains "setup macos requires macOS"
+  [ ! -s "$LOG" ]
+}
+
+test_arch_rejects_macos() {
+  new_case reject-arch
+  DOTFILES_UNAME=Darwin run_cli setup arch
+  assert_status 1 && assert_contains "setup arch requires Arch Linux"
+  [ ! -s "$LOG" ]
+}
+
+test_unknown_preset_fails() {
+  new_case unknown
+  DOTFILES_UNAME=Darwin run_cli setup debian
+  assert_status 1 && assert_contains "unknown setup preset 'debian'"
+}
+
 
 run_test "auto detects macOS" test_auto_detects_macos
 run_test "auto detects Arch" test_auto_detects_arch
+run_test "macOS preset rejects Linux" test_macos_rejects_linux
+run_test "Arch preset rejects macOS" test_arch_rejects_macos
+run_test "unknown preset fails" test_unknown_preset_fails
 
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
