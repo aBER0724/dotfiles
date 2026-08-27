@@ -32,6 +32,7 @@
   "wallpaperOverride": "",
   "wallpaperPickerScope": "theme",
   "enabledPlugins": [],
+  "bongoActive": false,
   "collapsedWidgets": [
     "clock"
   ],

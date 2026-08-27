@@ -184,6 +184,9 @@ test_arch_links_primary_stack_only() {
   assert_status 0 &&
     [ -L "$HOME/.config/niri" ] &&
     [ -L "$HOME/.config/nbshell/config.json" ] &&
+    [ -L "$HOME/.config/nbshell/screensaver.txt" ] &&
+    grep -F "▄██████▄" "$HOME/.config/nbshell/screensaver.txt" >/dev/null &&
+    grep -F '"bongoActive": false' "$HOME/.config/nbshell/config.json" >/dev/null &&
     [ -L "$HOME/.config/kitty/kitty.conf" ] &&
     [ ! -e "$HOME/.config/waybar" ] &&
     [ ! -e "$HOME/.config/clavis" ] &&

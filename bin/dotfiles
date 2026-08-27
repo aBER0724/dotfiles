@@ -24,7 +24,8 @@ LINK_TABLE=(
   "niri|niri|$HOME/.config/niri"
   "waybar|waybar|$HOME/.config/waybar"
   "clavis|clavis/config|$HOME/.config/clavis"
-  "nbshell|nbshell/config/config.json|$HOME/.config/nbshell/config.json"
+  "nbshell-config|nbshell/config/config.json|$HOME/.config/nbshell/config.json"
+  "nbshell-screensaver|nbshell/config/screensaver.txt|$HOME/.config/nbshell/screensaver.txt"
   "fastfetch|fastfetch|$HOME/.config/fastfetch"
   "pi-settings|pi-agent/settings.json|$HOME/.pi/agent/settings.json"
   "pi-models|pi-agent/models.json|$HOME/.pi/agent/models.json"
@@ -44,9 +45,9 @@ SOFTWARE_TABLE=(
   "nvim|nvim|formula|neovim|neovim"
   "niri|niri|-|-|niri"
   "waybar|waybar|-|-|waybar"
-  "nbshell|qs|-|-|quickshell"
-  "nbshell|fcitx5|-|-|fcitx5-im"
-  "nbshell|kitty|cask|kitty|kitty"
+  "nbshell-config|qs|-|-|quickshell"
+  "nbshell-config|fcitx5|-|-|fcitx5-im"
+  "nbshell-config|kitty|cask|kitty|kitty"
   "fastfetch|fastfetch|formula|fastfetch|fastfetch"
   "pi-settings|pi|npm|@earendil-works/pi-coding-agent|-"
   "herdr|herdr|formula|herdr|-"
@@ -64,7 +65,8 @@ GROUP_TABLE=(
   "zsh|zshrc zshenv zprofile shinit p10k"
   "kitty|kitty-main kitty-linux kitty-macos"
   "herdr|herdr"
-  "wm|niri nbshell"
+  "nbshell|nbshell-config nbshell-screensaver"
+  "wm|niri nbshell-config nbshell-screensaver"
 )
 
 # System setup presets contain primary configs only; rollback configs stay manual.
@@ -288,7 +290,7 @@ arch_packages_for() {
     arch_package="${entry#*|}"
     [ "$arch_package" = "-" ] || packages="$packages $arch_package"
   done
-  if software_selected nbshell "$wanted"; then
+  if software_selected nbshell-config "$wanted"; then
     packages="$packages $(read_package_file "$DOTFILES/nbshell/packages.arch.txt")"
   fi
   printf '%s\n' "$packages"
@@ -400,7 +402,7 @@ run_config_runtimes() {
     echo "== clavis (user-local, never sudo) =="
     bash "$DOTFILES/clavis/install.sh"
   fi
-  if software_selected nbshell "$wanted"; then
+  if software_selected nbshell-config "$wanted"; then
     echo "== nbshell (user-local, never sudo) =="
     bash "$DOTFILES/nbshell/install.sh"
   fi

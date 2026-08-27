@@ -99,7 +99,7 @@ nbshell next → 轮询 config.json 直到主题实际变化(最多 1.5s) → th
 - 数字工作区样式 + 块状 meter / visualizer(契合 niri 命名工作区)
 - 配色随主题切换(`Alt+T`),默认基础主题见 `themes/` 与 `~/.local/share/nbshell/themes/`
 - 杂项: `bongoActive: false`(关闭桌面 Bongo Cat)、`trayExpanded` 等 UI 状态
-- 屏幕保护会按全屏终端的实际列数动态选择字标尺寸；过宽的自定义 `screensaver.txt` 自动回退到内置紧凑字标，避免右侧被裁切
+- 屏幕保护使用仓库管理的 `config/screensaver.txt` 显示 OMARCHY 字标，并按全屏终端的实际列数动态选择尺寸；字标过宽时自动回退到内置紧凑版本，避免右侧被裁切
 
 **git 管理**: `config.json` 是运行时状态(`theme`、`bongoActive`、`trayExpanded` 随使用变化),已用 `git update-index --skip-worktree nbshell/config/config.json` 标记,不污染 `git status`,也不会拦截 `git pull`。需要提交快照时:
 
