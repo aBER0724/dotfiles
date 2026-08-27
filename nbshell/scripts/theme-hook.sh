@@ -569,6 +569,37 @@ atomic_write(
 )
 PY
 
+
+# Chromium's managed BrowserThemeColor policy is the reliable live path on
+# this system: policy blocks the unpacked theme extension, but the policy file
+# is user-writable and Chromium can refresh it without restarting.
+chromium_policy=/etc/chromium/policies/managed/color.json
+if [ -e "$chromium_policy" ] && [ -w "$chromium_policy" ]; then
+  browser_color="${NB_BG:-#1c2027}"
+  [ "${NB_MODE:-dark}" = light ] && browser_color="${NB_BG_LIGHT:-$browser_color}"
+  python3 - "$chromium_policy" "$browser_color" "${NB_MODE:-dark}" <<'PY'
+import json
+import os
+import sys
+import tempfile
+
+path, color, mode = sys.argv[1:]
+directory = os.path.dirname(path)
+fd, temporary = tempfile.mkstemp(prefix=".nbshell.", dir=directory, text=True)
+try:
+    with os.fdopen(fd, "w") as handle:
+        json.dump({
+            "BrowserThemeColor": color,
+            "BrowserColorScheme": "light" if mode == "light" else "dark",
+        }, handle)
+        handle.write("\n")
+    os.chmod(temporary, 0o644)
+    os.replace(temporary, path)
+finally:
+    if os.path.exists(temporary):
+        os.unlink(temporary)
+PY
+fi
 # Publish the light/dark preference through gsettings. The running
 # xdg-desktop-portal (gnome backend) forwards color-scheme to Chromium,
 # Electron and GTK4; switching gtk-theme makes running GTK apps reload their
@@ -613,6 +644,12 @@ if [ -n "$chromium_bin" ] && grep -aqs chromium-flags.conf "$chromium_bin"; then
     printf '%s\n' "$theme_flag" >> "$flags_conf"
     echo "nbshell theme-hook: added '$theme_flag' to $flags_conf — restart Chromium to apply"
   fi
+fi
+
+# Reload Chromium's managed policy after updating BrowserThemeColor. This
+# immediately recolors running browser chrome when policy refresh is supported.
+if [ -n "$chromium_bin" ] && [ -w /etc/chromium/policies/managed/color.json ]; then
+  "$chromium_bin" --refresh-platform-policy --no-startup-window >/dev/null 2>&1 || true
 fi
 
 # Route the chromium desktop entries through the controller so the RUNNING
