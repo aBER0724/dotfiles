@@ -269,8 +269,43 @@ software_selected() {
   return 1
 }
 
+read_package_file() {
+  sed -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$1" | tr '\n' ' '
+}
+
+arch_packages_for() {
+  local wanted="$1" entry owner command_name brew_kind brew_package arch_package packages="$ARCH_BASE_PACKAGES"
+  for entry in "${SOFTWARE_TABLE[@]}"; do
+    owner="${entry%%|*}"
+    software_selected "$owner" "$wanted" || continue
+    entry="${entry#*|}"; command_name="${entry%%|*}"
+    entry="${entry#*|}"; brew_kind="${entry%%|*}"
+    entry="${entry#*|}"; brew_package="${entry%%|*}"
+    arch_package="${entry#*|}"
+    [ "$arch_package" = "-" ] || packages="$packages $arch_package"
+  done
+  if software_selected nbshell "$wanted"; then
+    packages="$packages $(read_package_file "$DOTFILES/nbshell/packages.arch.txt")"
+  fi
+  printf '%s\n' "$packages"
+}
+
+install_arch_setup_packages() {
+  local wanted="$1" packages
+  command -v pacman >/dev/null 2>&1 || {
+    echo "dotfiles: pacman is required for setup arch" >&2
+    return 1
+  }
+  command -v sudo >/dev/null 2>&1 || {
+    echo "dotfiles: sudo is required for setup arch" >&2
+    return 1
+  }
+  packages="$(arch_packages_for "$wanted")"
+  sudo pacman -S --needed $packages
+}
+
 run_software_install() {
-  local wanted="$1" entry owner command_name brew_kind brew_package arch_package
+  local wanted="$1" skip_arch="${2:-0}" entry owner command_name brew_kind brew_package arch_package
   local brew_formulae="" brew_casks="" npm_packages="" arch_packages=""
   local missing_manual="" oldifs
   oldifs="$IFS"; IFS=$'\n'
@@ -294,7 +329,7 @@ run_software_install() {
         formula) brew_formulae="$brew_formulae $brew_package" ;;
         cask) brew_casks="$brew_casks $brew_package" ;;
       esac
-    elif command -v pacman >/dev/null 2>&1 && [ "$arch_package" != "-" ]; then
+    elif [ "$skip_arch" != 1 ] && command -v pacman >/dev/null 2>&1 && [ "$arch_package" != "-" ]; then
       arch_packages="$arch_packages $arch_package"
     else
       missing_manual="$missing_manual $command_name"
@@ -464,7 +499,11 @@ cmd_setup() {
     ensure_homebrew
   fi
   echo "== install base packages =="
-  install_base_packages "$preset"
+  if [ "$preset" = arch ]; then
+    install_arch_setup_packages "$wanted"
+  else
+    install_base_packages "$preset"
+  fi
 }
 
 case "${1:-}" in

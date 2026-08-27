@@ -125,6 +125,34 @@ test_macos_skips_homebrew_bootstrap() {
   assert_status 0 && ! grep -F "unexpected-curl" "$LOG" >/dev/null
 }
 
+arch_fixture() {
+  cat > "$CASE_ROOT/os-release" <<'OS'
+ID=arch
+NAME="Arch Linux"
+OS
+  stub_logger pacman
+  stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"; if [ "${STUB_SUDO_FAIL:-0}" = 1 ]; then exit 42; fi'
+}
+
+test_arch_installs_required_packages() {
+  new_case arch-packages
+  arch_fixture
+  DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  assert_status 0 &&
+    grep -F "sudo pacman -S --needed" "$LOG" >/dev/null &&
+    grep -F "base-devel" "$LOG" >/dev/null &&
+    grep -F "niri" "$LOG" >/dev/null &&
+    grep -F "quickshell" "$LOG" >/dev/null &&
+    grep -F "gpu-screen-recorder" "$LOG" >/dev/null
+}
+
+test_arch_package_failure_stops_before_links() {
+  new_case arch-failure
+  arch_fixture
+  STUB_SUDO_FAIL=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  assert_status 42 && [ ! -e "$HOME/.config/niri" ]
+}
+
 
 
 run_test "auto detects macOS" test_auto_detects_macos
@@ -134,6 +162,8 @@ run_test "Arch preset rejects macOS" test_arch_rejects_macos
 run_test "unknown preset fails" test_unknown_preset_fails
 run_test "macOS bootstraps Homebrew" test_macos_bootstraps_homebrew
 run_test "macOS skips Homebrew bootstrap" test_macos_skips_homebrew_bootstrap
+run_test "Arch installs required packages" test_arch_installs_required_packages
+run_test "Arch package failure stops before links" test_arch_package_failure_stops_before_links
 
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
