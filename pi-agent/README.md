@@ -56,7 +56,6 @@ pi-agent/
 |------|------|
 | `pi-autoresearch.json` | autoresearch 白名单配置 |
 | `herdr-agent-state.ts` | herdr 插件状态同步工具 |
-| `nbshell-theme-watch.ts` | 监听原子替换的主题文件并显式重载运行中 Pi |
 
 ## Provider(models.json)
 

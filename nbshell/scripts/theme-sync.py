@@ -226,10 +226,15 @@ pi_theme = {
     "name": "nbshell",
     "colors": pi_colors,
 }
-atomic_write(
-    Path(os.environ.get("PI_AGENT_DIR", home / ".pi/agent")) / "themes" / "nbshell.json",
-    json.dumps(pi_theme, indent=2) + "\n",
-)
+pi_theme_path = Path(os.environ.get("PI_AGENT_DIR", home / ".pi/agent")) / "themes" / "nbshell.json"
+pi_theme_content = json.dumps(pi_theme, indent=2) + "\n"
+# Pi watches the custom theme file for in-place changes. Most generated configs
+# use atomic replacement, but writing this file through os.replace can race with
+# Pi's watcher and has proved unreliable on btrfs. Truncate/write keeps the same
+# inode and emits an unambiguous IN_MODIFY event for true runtime hot reload.
+pi_theme_path.parent.mkdir(parents=True, exist_ok=True)
+with pi_theme_path.open("w") as handle:
+    handle.write(pi_theme_content)
 
 # ── lazygit ──────────────────────────────────────────────────────────────
 # lazygit 0.64+ 没有 customTheme 字段，主题必须内联在 config.yml 的 gui.theme 里。
