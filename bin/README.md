@@ -12,14 +12,14 @@ bin/
 ## 安装
 
 ```bash
-# 首次 bootstrap;之后 CLI 会把自身作为 dotfiles-cli 条目管理
-ln -sf ~/dotfiles/bin/dotfiles ~/.local/bin/dotfiles
+git clone https://github.com/aBER0724/dotfiles.git ~/dotfiles
+bash ~/dotfiles/bin/dotfiles setup auto
 ```
 
 ## 用法
 
 ```
-dotfiles {list|status|link|install|deps} [name...]
+dotfiles {list|status|link|install|deps|setup} [name...]
 ```
 
 | 命令 | 说明 |
@@ -29,6 +29,29 @@ dotfiles {list|status|link|install|deps} [name...]
 | `link [name...]` | 创建缺失链接;目标已有真实文件时备份到 `~/.dotfiles-backup-<时间戳>` 再替换 |
 | `install [name...]` | `link` + 自动安装该配置的软件本体与分组运行时依赖 |
 | `deps [name...]` | 只装软件/依赖而不碰链接；默认处理全部配置 |
+| `setup [auto\|macos\|arch]` | 检测或指定系统，一键安装并配置主力栈 |
+
+## 系统一键安装
+
+```bash
+dotfiles setup auto   # 自动识别 macOS 或 Arch
+dotfiles setup macos  # 仅允许在 macOS 执行
+dotfiles setup arch   # 仅允许在 Arch/Arch 衍生系统执行
+```
+
+- 共享主力配置：dotfiles CLI、Zsh、Neovim、Fastfetch、pi、herdr。
+- macOS 额外安装并链接 AeroSpace 和 Kitty；缺少 Homebrew 时从官方固定 URL 自动安装。
+- Arch 额外安装并链接 Niri、nbshell 和 Kitty；通过 `sudo pacman -S --needed` 安装基础包、配置软件及 `nbshell/packages.arch.txt`。
+- Waybar、Clavis、Kaku 属于备用/回滚配置，不在系统预设中。
+- 配置冲突仍使用时间戳目录备份，重复运行会跳过正确链接和已安装命令。
+- setup 不启动 AeroSpace、不修改登录 Shell、不写入 pi API key，也不自动启用 systemd 服务。
+
+Arch 完成后按需手动执行：
+
+```bash
+systemctl --user enable --now nbshell.service
+sudo systemctl enable --now tuned.service
+```
 
 ### 分组
 

@@ -31,16 +31,21 @@ Palette is owned by [nbshell](/nbshell)(`Alt+T` 切换主题):`theme-sync.py` �
 
 ```bash
 git clone https://github.com/aBER0724/dotfiles.git ~/dotfiles
-ln -sf ~/dotfiles/bin/dotfiles ~/.local/bin/dotfiles  # one-time bootstrap; CLI manages this link afterwards
+bash ~/dotfiles/bin/dotfiles setup auto
 
-dotfiles status    # show link state for every synced entry
-dotfiles link      # create missing links; backup+replace conflicting files
-dotfiles deps      # install software/runtime deps for all configs, without linking
-dotfiles install   # link + install config software/group deps + pi bootstrap hint
-dotfiles install wm  # Arch: install niri/nbshell system packages, then link + install nbshell
-dotfiles link kitty  # link shared + Linux/macOS Kitty configs
+# Or require an explicit matching host:
+bash ~/dotfiles/bin/dotfiles setup macos
+bash ~/dotfiles/bin/dotfiles setup arch
+
+# Fine-grained management after setup:
+dotfiles status
+dotfiles link
+dotfiles deps fastfetch pi
+dotfiles install wm
 ```
 
+
+`setup` installs the primary stack, links its configuration, and runs user-level plugin/install scripts. macOS bootstraps Homebrew when missing; Arch requires working `sudo` and `pacman` and installs `nbshell/packages.arch.txt`. Existing conflicting files are backed up before linking. Starting services or GUI apps, changing the login shell, and creating the pi API key remain manual.
 ### Niri + nbshell
 
 The `wm` group uses nbshell as the active desktop shell. Its visual language is
