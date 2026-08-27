@@ -143,7 +143,8 @@ test_arch_installs_required_packages() {
     grep -F "base-devel" "$LOG" >/dev/null &&
     grep -F "niri" "$LOG" >/dev/null &&
     grep -F "quickshell" "$LOG" >/dev/null &&
-    grep -F "gpu-screen-recorder" "$LOG" >/dev/null
+    grep -F "gpu-screen-recorder" "$LOG" >/dev/null &&
+    assert_not_contains "no supported package mapping for: nvim niri"
 }
 
 test_arch_package_failure_stops_before_links() {

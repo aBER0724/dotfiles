@@ -318,6 +318,9 @@ run_software_install() {
     entry="${entry#*|}"; brew_kind="${entry%%|*}"
     entry="${entry#*|}"; brew_package="${entry%%|*}"
     arch_package="${entry#*|}"
+    if [ "$skip_arch" = 1 ] && [ "$arch_package" != "-" ]; then
+      continue
+    fi
     command -v "$command_name" >/dev/null 2>&1 && continue
     if [ "$brew_kind" = "npm" ]; then
       if command -v npm >/dev/null 2>&1; then
