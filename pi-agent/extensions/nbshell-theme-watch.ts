@@ -20,9 +20,10 @@ export default function (pi: ExtensionAPI) {
 		const themeFile = "nbshell.json";
 
 		const applyTheme = () => {
-			const theme = ctx.ui.getTheme("nbshell");
-			if (!theme) return;
-			ctx.ui.setTheme(theme);
+			// Selecting by Theme instance uses Pi's registered object, which can be
+			// stale after an atomic file replacement. Selecting by name forces the
+			// core loader to read nbshell.json and restarts its built-in watcher.
+			ctx.ui.setTheme("nbshell");
 		};
 
 		applyTheme();
