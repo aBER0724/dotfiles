@@ -1,0 +1,15 @@
+diff --git a/shell/Bar/Widgets/TrayEntry.qml b/shell/Bar/Widgets/TrayEntry.qml
+index 091deab..1a63b24 100644
+--- a/shell/Bar/Widgets/TrayEntry.qml
++++ b/shell/Bar/Widgets/TrayEntry.qml
+@@ -18,7 +18,9 @@ Item {
+ 
+     IconImage {
+         anchors.fill: parent
+-        source: entry.trayItem.icon
++        source: entry.trayItem.id === "Fcitx"
++            ? Quickshell.iconPath("org.fcitx.Fcitx5.fcitx-rime")
++            : entry.trayItem.icon
+         opacity: entry.trayItem.status === Status.Passive ? 0.5 : 1
+     }
+ 
