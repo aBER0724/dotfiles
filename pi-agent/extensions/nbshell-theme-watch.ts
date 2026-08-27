@@ -1,4 +1,4 @@
-import { watch, type FSWatcher } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, unlinkSync, watch, writeFileSync, type FSWatcher } from "node:fs";
 import { dirname, join } from "node:path";
 import { homedir } from "node:os";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -18,21 +18,46 @@ export default function (pi: ExtensionAPI) {
 		const agentDir = process.env.PI_AGENT_DIR || join(homedir(), ".pi", "agent");
 		const themePath = join(agentDir, "themes", "nbshell.json");
 		const themeFile = "nbshell.json";
+		const stateDir = join(agentDir, "state");
+		const logPath = join(stateDir, "nbshell-theme-watch.log");
+		const markerPath = join(stateDir, "nbshell-theme-watch.active");
+		mkdirSync(stateDir, { recursive: true });
+		writeFileSync(markerPath, `${process.pid}\n`);
 
+		const log = (message: string) => {
+			appendFileSync(logPath, `${new Date().toISOString()} pid=${process.pid} ${message}\n`);
+		};
+
+		let lastContent = "";
 		const applyTheme = () => {
-			// Selecting by Theme instance uses Pi's registered object, which can be
-			// stale after an atomic file replacement. Selecting by name forces the
-			// core loader to read nbshell.json and restarts its built-in watcher.
-			ctx.ui.setTheme("nbshell");
+			try {
+				const content = readFileSync(themePath, "utf8");
+				if (content === lastContent) return;
+				const parsed = JSON.parse(content) as { colors?: { accent?: string } };
+				// Switch away first: Pi caches registered custom Theme objects by name.
+				// Re-selecting nbshell alone can therefore keep the previous colors.
+				ctx.ui.setTheme("dark");
+				const result = ctx.ui.setTheme("nbshell");
+				if (!result.success) {
+					log(`apply failed: ${result.error}`);
+					return;
+				}
+				lastContent = content;
+				log(`applied accent=${parsed.colors?.accent ?? "unknown"}`);
+			} catch (error) {
+				log(`apply exception: ${error instanceof Error ? error.message : String(error)}`);
+			}
 		};
 
 		applyTheme();
-		watcher = watch(dirname(themePath), (_eventType, filename) => {
+		watcher = watch(dirname(themePath), (eventType, filename) => {
 			if (filename?.toString() !== themeFile) return;
+			log(`event=${eventType} file=${filename.toString()}`);
 			if (timer) clearTimeout(timer);
 			// Atomic replace can emit several events before the destination settles.
-			timer = setTimeout(applyTheme, 75);
+			timer = setTimeout(applyTheme, 150);
 		});
+		log(`started path=${themePath}`);
 	});
 
 	pi.on("session_shutdown", () => {
@@ -40,5 +65,9 @@ export default function (pi: ExtensionAPI) {
 		timer = null;
 		watcher?.close();
 		watcher = null;
+		const agentDir = process.env.PI_AGENT_DIR || join(homedir(), ".pi", "agent");
+		try {
+			unlinkSync(join(agentDir, "state", "nbshell-theme-watch.active"));
+		} catch {}
 	});
 }
