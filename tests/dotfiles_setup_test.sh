@@ -203,6 +203,31 @@ test_existing_links_and_commands_are_skipped() {
   assert_status 0 && assert_contains "ok      aerospace" && [ -L "$HOME/.aerospace.toml" ]
 }
 
+test_existing_commands_smoke() {
+  new_case existing-smoke
+  run_cli list
+  assert_status 0 && assert_contains "dotfiles-cli" || return 1
+
+  run_cli status fastfetch
+  assert_status 0 && assert_contains "fastfetch" || return 1
+
+  run_cli link fastfetch
+  assert_status 0 && [ -L "$HOME/.config/fastfetch" ] || return 1
+
+  stub_logger brew
+  run_cli deps fastfetch
+  assert_status 0 || return 1
+
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 run_cli install fastfetch
+  assert_status 0 && [ -L "$HOME/.config/fastfetch" ]
+}
+
+test_usage_lists_setup() {
+  new_case usage
+  run_cli
+  assert_status 1 && assert_contains "setup [auto|macos|arch]"
+}
+
 
 run_test "auto detects macOS" test_auto_detects_macos
 run_test "auto detects Arch" test_auto_detects_arch
@@ -217,6 +242,8 @@ run_test "Arch links primary stack only" test_arch_links_primary_stack_only
 run_test "Arch prints services without enabling" test_arch_prints_but_does_not_enable_services
 run_test "macOS links primary stack only" test_macos_links_primary_stack_only
 run_test "setup is idempotent" test_existing_links_and_commands_are_skipped
+run_test "existing commands smoke" test_existing_commands_smoke
+run_test "usage lists setup" test_usage_lists_setup
 
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
