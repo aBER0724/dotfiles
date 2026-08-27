@@ -35,6 +35,24 @@ LINK_TABLE=(
   "kitty-macos|kitty/platform-macos.conf|$HOME/.config/kitty/platform-macos.conf"
 )
 
+# Runtime software used by managed configs.
+# Each entry: "<managed-name>|<command>|<brew-kind>|<brew-package>|<arch-package>".
+# brew-kind is formula/cask/npm; "-" means unavailable on that platform.
+SOFTWARE_TABLE=(
+  "aerospace|aerospace|cask|nikitabobko/tap/aerospace|-"
+  "zshrc|zsh|formula|zsh|zsh"
+  "nvim|nvim|formula|neovim|neovim"
+  "niri|niri|-|-|niri"
+  "waybar|waybar|-|-|waybar"
+  "nbshell|qs|-|-|quickshell"
+  "nbshell|fcitx5|-|-|fcitx5-im"
+  "nbshell|kitty|cask|kitty|kitty"
+  "fastfetch|fastfetch|formula|fastfetch|fastfetch"
+  "pi-settings|pi|npm|@earendil-works/pi-coding-agent|-"
+  "herdr|herdr|formula|herdr|-"
+  "herdr|herdr-scratch|formula|macintacos/tap/herdr-scratch|-"
+)
+
 # Group aliases: "<alias>|<space-separated names>". Passing the alias to
 # status/link/install expands to all members, e.g. `dotfiles link pi`.
 GROUP_TABLE=(
@@ -171,6 +189,72 @@ run_zsh_deps() {
   fi
 }
 
+software_selected() {
+  local owner="$1" wanted="$2" w
+  for w in $wanted; do
+    [ "$w" = "$owner" ] && return 0
+  done
+  return 1
+}
+
+run_software_install() {
+  local wanted="$1" entry owner command_name brew_kind brew_package arch_package
+  local brew_formulae="" brew_casks="" npm_packages="" arch_packages=""
+  local missing_manual="" oldifs
+  oldifs="$IFS"; IFS=$'\n'
+  for entry in "${SOFTWARE_TABLE[@]}"; do
+    IFS="$oldifs"
+    owner="${entry%%|*}"
+    software_selected "$owner" "$wanted" || continue
+    entry="${entry#*|}"; command_name="${entry%%|*}"
+    entry="${entry#*|}"; brew_kind="${entry%%|*}"
+    entry="${entry#*|}"; brew_package="${entry%%|*}"
+    arch_package="${entry#*|}"
+    command -v "$command_name" >/dev/null 2>&1 && continue
+    if [ "$brew_kind" = "npm" ]; then
+      if command -v npm >/dev/null 2>&1; then
+        npm_packages="$npm_packages $brew_package"
+      else
+        missing_manual="$missing_manual npm"
+      fi
+    elif command -v brew >/dev/null 2>&1 && [ "$brew_package" != "-" ]; then
+      case "$brew_kind" in
+        formula) brew_formulae="$brew_formulae $brew_package" ;;
+        cask) brew_casks="$brew_casks $brew_package" ;;
+      esac
+    elif command -v pacman >/dev/null 2>&1 && [ "$arch_package" != "-" ]; then
+      arch_packages="$arch_packages $arch_package"
+    else
+      missing_manual="$missing_manual $command_name"
+    fi
+  done
+  IFS="$oldifs"
+
+  echo "== config software =="
+  if [ -n "$brew_formulae" ]; then
+    echo "install brew formulae:$brew_formulae"
+    brew install $brew_formulae
+  fi
+  if [ -n "$brew_casks" ]; then
+    echo "install brew casks:$brew_casks"
+    brew install --cask $brew_casks
+  fi
+  if [ -n "$npm_packages" ]; then
+    echo "install npm packages:$npm_packages"
+    npm install -g $npm_packages
+  fi
+  if [ -n "$arch_packages" ]; then
+    echo "install Arch packages:$arch_packages"
+    sudo pacman -S --needed $arch_packages
+  fi
+  if [ -n "$missing_manual" ]; then
+    echo "manual  no supported package mapping for:$missing_manual"
+  fi
+  if [ -z "$brew_formulae$brew_casks$npm_packages$arch_packages$missing_manual" ]; then
+    echo "ok      selected software already installed"
+  fi
+}
+
 run_herdr_plugins() {
   echo "== herdr plugins =="
   if command -v herdr >/dev/null 2>&1; then
@@ -192,9 +276,15 @@ setup_pi_theme() {
 
 
 cmd_deps() {
-  # Install runtime deps without touching links (already-linked machines).
-  run_zsh_deps
-  run_herdr_plugins
+  # Install runtime software/deps without touching links (already-linked machines).
+  local wanted
+  wanted="$(expand_groups "$*")"
+  if [ -z "$wanted" ]; then
+    wanted="$(for e in "${LINK_TABLE[@]}"; do printf '%s ' "${e%%|*}"; done)"
+  fi
+  run_software_install "$wanted"
+  if software_selected zshrc "$wanted"; then run_zsh_deps; fi
+  if software_selected herdr "$wanted"; then run_herdr_plugins; fi
   echo "Done."
 }
 
@@ -202,7 +292,10 @@ cmd_install() {
   # herdr plugins are a whole-package install: only re-run them when the
   # user asked for the herdr entry/group (or nothing, i.e. everything).
   # `dotfiles install pi` or `install nvim` just links, no plugin churn.
-  local want_herdr=0 want_pi=0 want_zsh=0 want_clavis=0 want_nbshell=0 w
+  local want_herdr=0 want_pi=0 want_zsh=0 want_clavis=0 want_nbshell=0 wanted="$1" w
+  if [ -z "$wanted" ]; then
+    wanted="$(for entry in "${LINK_TABLE[@]}"; do printf '%s ' "${entry%%|*}"; done)"
+  fi
   for w in $1; do
     case "$w" in
       herdr|herdr/*) want_herdr=1 ;;
@@ -212,10 +305,11 @@ cmd_install() {
       nbshell) want_nbshell=1 ;;
     esac
   done
-  if [ -z "$1" ]; then want_herdr=1; want_pi=1; want_zsh=1; want_nbshell=1; fi
+  if [ -z "$1" ]; then want_herdr=1; want_pi=1; want_zsh=1; want_clavis=1; want_nbshell=1; fi
 
   cmd_link
   echo
+  run_software_install "$wanted"
   if [ "$want_herdr" = 1 ]; then
     run_herdr_plugins
   fi
@@ -252,14 +346,14 @@ case "${1:-}" in
   status) shift; select_entries "$@"; cmd_status ;;
   link)   shift; select_entries "$@"; cmd_link ;;
   install) shift; select_entries "$@"; cmd_install "$(expand_groups "$*")" ;;
-  deps)   cmd_deps ;;
+  deps) shift; cmd_deps "$@" ;;
   *)
     echo "Usage: dotfiles {list|status|link|install|deps} [name...]"
     echo "  list                show every managed entry and its target"
     echo "  status [name...]    show link state (all entries by default)"
     echo "  link [name...]      create links; backup+replace conflicts"
-    echo "  install [name...]   link named entries (+ its group's deps)"
-    echo "  deps                install zsh/herdr runtime deps (no linking)"
+    echo "  install [name...]   link + install selected config software/deps"
+    echo "  deps [name...]      install selected config software/deps (no linking)"
     echo
     echo "names: $(for e in "${LINK_TABLE[@]}"; do printf '%s ' "${e%%|*}"; done)"
     echo "groups: $(for g in "${GROUP_TABLE[@]}"; do printf '%s ' "${g%%|*}"; done)"

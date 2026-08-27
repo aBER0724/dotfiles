@@ -27,8 +27,8 @@ dotfiles {list|status|link|install|deps} [name...]
 | `list` | 列出所有受管条目(name → 源 → 目标) |
 | `status [name...]` | 显示链接状态:`ok` / `STALE` / `CONFLICT` / `missing`(默认全部) |
 | `link [name...]` | 创建缺失链接;目标已有真实文件时备份到 `~/.dotfiles-backup-<时间戳>` 再替换 |
-| `install [name...]` | `link` + 该条目所属分组的运行时依赖(herdr 插件、zsh 依赖等) |
-| `deps` | 只装依赖不碰链接(已链接的机器用) |
+| `install [name...]` | `link` + 自动安装该配置的软件本体与分组运行时依赖 |
+| `deps [name...]` | 只装软件/依赖而不碰链接；默认处理全部配置 |
 
 ### 分组
 
@@ -42,10 +42,14 @@ dotfiles {list|status|link|install|deps} [name...]
 | `herdr` | herdr |
 | `wm` | niri, nbshell |
 
-`install` 的依赖安装策略:
+`install` / `deps` 的安装策略:
 
-- herdr / zsh / clavis / nbshell 只在显式指定(或未指定 = 全部)时才跑其安装脚本,避免无谓的安装抖动
-- pi 无安装脚本,只提示缺少 `~/.pi/agent/auth.json` 时的创建方法
+- macOS / 已安装 Homebrew 的 Linux 使用 Homebrew；Arch Linux 使用 `sudo pacman -S --needed`
+- 只安装所选配置的软件；不传名称时处理全部配置
+- 已存在的命令会跳过，保持幂等
+- 当前自动覆盖 AeroSpace、Zsh、Neovim、Niri、Waybar、Quickshell/Fcitx5/Kitty、Fastfetch、pi、herdr 与 herdr-scratch
+- Kaku 等没有稳定包管理器映射的软件会提示手动安装
+- herdr / zsh / clavis / nbshell 仍按选择运行各自的插件或用户级安装脚本
 
 ## 环境变量
 

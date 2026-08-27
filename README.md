@@ -35,9 +35,9 @@ ln -sf ~/dotfiles/bin/dotfiles ~/.local/bin/dotfiles  # one-time bootstrap; CLI 
 
 dotfiles status    # show link state for every synced entry
 dotfiles link      # create missing links; backup+replace conflicting files
-dotfiles deps      # install zsh/herdr runtime deps (plugins, p10k, ...)
-dotfiles install   # link + install group deps + pi bootstrap hint
-dotfiles install wm  # link niri+nbshell; installs only under ~/.local (never sudo)
+dotfiles deps      # install software/runtime deps for all configs, without linking
+dotfiles install   # link + install config software/group deps + pi bootstrap hint
+dotfiles install wm  # Arch: install niri/nbshell system packages, then link + install nbshell
 dotfiles link kitty  # link shared + Linux/macOS Kitty configs
 ```
 
