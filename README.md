@@ -22,7 +22,10 @@ Personal configuration files.
 
 ## Theme
 
-[Aura Dark](https://github.com/daltonmenezes/aura-theme) across terminal and editor.
+Palette is owned by [nbshell](/nbshell)(`Alt+T` 切换主题):`theme-sync.py` 导出 `palette.sh`,
+`theme-hook.sh` 同步 Kitty / btop / fcitx5 / herdr / nvim / GTK3+GTK4 / XDG portal / niri 焦点环,
+并生成 Chromium theme extension(工具栏/omnibox/新标签页配色)—— 经 chromium-controller 在运行中热重载,
+终端冷启动时由 `--load-extension` 兜底;网页明暗(`prefers-color-scheme`)经 portal 即时跟随。
 
 ## Setup
 

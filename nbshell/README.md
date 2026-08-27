@@ -11,9 +11,10 @@ nbshell/
 ├── install.sh                  # 固定上游 revision 的用户级安装器(绝不 sudo)
 ├── config/config.json          # 运行时配置(链接到 ~/.config/nbshell/, skip-worktree 管理)
 ├── scripts/
-│   ├── theme-sync.py           # 主题同步生成器: palette.sh / Kitty / herdr / pi / lazygit / yazi / niri
+│   ├── theme-sync.py           # 主题同步生成器: palette.sh / Kitty / pi / lazygit / yazi
 │   ├── theme-next-sync         # Alt+T 入口: nbshell next → 轮询 config.json → theme-sync.py
-│   └── theme-hook.sh           # 写 herdr managed 主题块并 reload
+│   ├── theme-hook.sh           # herdr / btop / fcitx5 / Kitty / GTK css / XDG portal / niri 同步
+│   └── chromium-controller.mjs # Chromium 启动器+DevTools pipe 控制器(运行中热重载主题)
 ├── themes/futurism/colors.toml # Futurism 调色板(适配自本地 Omarchy 主题)
 ├── niri-named-workspaces.patch # niri 命名工作区补丁
 └── packages.arch.txt           # 可选 Arch 依赖清单(安装器只检查,不执行 pacman)
@@ -72,8 +73,12 @@ nbshell next → 轮询 config.json 直到主题实际变化(最多 1.5s) → th
 | `~/.pi/agent/themes/nbshell.json`(51+ tokens) | pi 激活 nbshell 主题后,编辑文件即热重载,**运行中即时生效** |
 | `~/.config/lazygit/config.yml`(`gui.theme`) | 重启 lazygit 生效 |
 | `~/.config/yazi/flavors/<theme>.yazi/` + `theme.toml` | 重启 yazi 生效 |
-| `niri/nbshell-colors.kdl`(焦点/边框配色) | `niri msg action load-config-file` 生效 |
+| `niri/nbshell-colors.kdl`(焦点/边框配色) | config.kdl `include` 引用;niri 监听该文件,自动热重载,**运行中即时生效** |
 | `theme-hook.sh` → `herdr/config.toml` managed 块 | `herdr server reload-config`,**运行中即时生效** |
+| `~/.config/gtk-3.0/gtk.css` + `gtk-4.0/gtk.css` | 命名色覆盖内建 Adwaita/Default 主题;切换 `gtk-theme` 触发运行中 GTK 应用重载 css |
+| `~/.config/gtk-{3,4}.0/settings.ini` | `gtk-application-prefer-dark-theme` 随明暗翻转;新启动的 GTK 应用读取 |
+| `~/.config/nbshell/chromium-theme/`(theme extension) | 工具栏/omnibox/新标签页配色;经 controller(`Extensions.loadUnpacked`)**运行中即时生效**,冷启动经 `--load-extension` 兜底 |
+| gsettings `org.gnome.desktop.interface` | `color-scheme` 经 xdg-desktop-portal 转发 → Chromium/Electron 的 `prefers-color-scheme`;GTK4 原生跟随 |
 
 对应应用侧集成:
 
@@ -83,6 +88,8 @@ nbshell next → 轮询 config.json 直到主题实际变化(最多 1.5s) → th
 - **btop**: 不把完整的 `~/.config/btop/btop.conf` 链接进仓库。该文件包含排序、布局、磁盘/网络设备、GPU 与传感器等运行时及机器相关设置,btop 也会主动改写它。安装器保留这些用户设置,只将 `color_theme` 更新为 `current`;主题同步生成 `~/.config/btop/themes/current.theme`,然后向当前用户的 btop 进程发送 `SIGUSR2` 热重载。`btop.conf` 与自动生成的 `current.theme` 均不提交。
 - **lazygit**: 0.64+ 无 `customTheme` 字段,主题内联在 `config.yml` 的 `gui.theme`(hex 需加引号,否则 YAML 注释吞色)。
 - **yazi**: flavor 按主题名生成目录;切换主题时写新目录,旧目录保留。
+- **Chromium(热重载)**: M121 起 Chromium 不再用 GTK 主题色画自己的 UI,只从 GTK/portal 取明暗,因此工具栏/标签条/omnibox/书签栏/新标签页的配色走 theme extension(`~/.config/nbshell/chromium-theme/manifest.json`,MV3)。两条生效路径: ① 冷启动 —— `chromium-flags.conf` 的 `--load-extension`(hook 自动追加,Omarchy 启动器逐行拼到命令行); ② 运行中 —— `chromium-controller.mjs` 作为浏览器父进程,以 `--remote-debugging-pipe` + `--enable-unsafe-extension-debugging` 启动,hook 经 `$XDG_RUNTIME_DIR/nbshell-chromium.sock` 让它调 CDP `Extensions.loadUnpacked` 重装主题,**无需重启**。该 CDP 域只在 pipe 传输下开放(pipe 私有于父进程,不对本地其他进程暴露;Chrome 136 起 TCP 调试在默认 profile 被禁用),故控制器必须常驻。hook 自动生成 `~/.local/share/applications/chromium.desktop` 覆盖(package 更新时重新生成,手写的覆盖不动,controller/node 消失时自动删除),Exec 指向控制器;终端直接敲 `chromium` 不经过控制器,主题仍由 ① 兜底。浏览器退出时控制器一并退出并清理 socket;日志在 `~/.local/state/nbshell/chromium-controller.log`。网页明暗走 gsettings `color-scheme` → portal(`prefers-color-scheme` 即时跟随);Electron 应用靠 portal 取明暗。chrome://settings/appearance 保持默认(装主题后该页显示 nbshell 主题;若之前手动固定过 Light/Dark,点 Reset to default)。
+- **GTK 应用**: GTK3/GTK4 通过 `~/.config/gtk-{3,4}.0/gtk.css` 的命名色(`theme_bg_color`、`accent_color` 等)重着色内建 Adwaita/Default 主题 —— 与 Gradience 同一机制,无需安装主题包,运行中经 `gtk-theme` hop 热重载;明暗同时写入 settings.ini(`gtk-application-prefer-dark-theme`)。手写的 gtk.css(无 nbshell 头注释)不会被覆盖。
 
 日志: `~/.local/state/nbshell/theme-sync.log`。
 

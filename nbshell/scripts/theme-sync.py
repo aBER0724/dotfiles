@@ -2,7 +2,11 @@
 """Export the selected nbshell theme for external applications.
 
 Generates palette.sh plus dynamic configs for Kitty, btop, pi, lazygit, yazi,
-and herdr (via theme-hook.sh). Run after every theme switch.
+and herdr. theme-hook.sh (called at the end) additionally syncs btop, fcitx5,
+Neovim, the GTK3/GTK4 user css, the XDG portal color-scheme (Chromium/Electron
+dark mode), the Chromium theme extension (toolbar/omnibox colors, live-reloaded in
+a running browser via chromium-controller.mjs) and the niri focus ring via niri/nbshell-colors.kdl.
+Run after every theme switch.
 """
 from __future__ import annotations
 
