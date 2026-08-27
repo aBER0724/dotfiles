@@ -150,7 +150,7 @@ PI_DEFAULT_PROVIDER="new-api"
 HOMEBREW_INSTALL_URL="${DOTFILES_HOMEBREW_INSTALL_URL:-https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh}"
 BOOTSTRAP_BASH="${DOTFILES_BASH_BIN:-/bin/bash}"
 MACOS_BASE_PACKAGES="git zsh node go"
-ARCH_BASE_PACKAGES="git curl zsh nodejs npm go base-devel"
+ARCH_BASE_PACKAGES="git curl zsh nodejs npm go base-devel python-xattr"
 HERDR_INSTALL_URL="${DOTFILES_HERDR_INSTALL_URL:-https://herdr.dev/install.sh}"
 
 select_entries() {
@@ -318,7 +318,7 @@ run_software_install() {
     entry="${entry#*|}"; brew_kind="${entry%%|*}"
     entry="${entry#*|}"; brew_package="${entry%%|*}"
     arch_package="${entry#*|}"
-    if [ "$skip_arch" = 1 ] && [ "$arch_package" != "-" ]; then
+    if [ "$skip_arch" = 1 ] && [ "$arch_package" != "-" ] && [ "$brew_package" = "-" ]; then
       continue
     fi
     command -v "$command_name" >/dev/null 2>&1 && continue
@@ -451,6 +451,10 @@ load_homebrew() {
     eval "$(/opt/homebrew/bin/brew shellenv)"
   elif [ -x /usr/local/bin/brew ]; then
     eval "$(/usr/local/bin/brew shellenv)"
+  elif [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  elif [ -x "$HOME/.linuxbrew/bin/brew" ]; then
+    eval "$("$HOME/.linuxbrew/bin/brew" shellenv)"
   else
     echo "dotfiles: Homebrew installed but brew is not available in this shell" >&2
     return 1
@@ -501,10 +505,8 @@ cmd_setup() {
   wanted="$(preset_entries "$preset")"
   echo "preset  $preset"
   printf 'entries %s\n' "$wanted"
-  if [ "$preset" = macos ]; then
-    echo "== bootstrap package manager =="
-    ensure_homebrew
-  fi
+  echo "== bootstrap package manager =="
+  ensure_homebrew
   echo "== install base packages =="
   if [ "$preset" = arch ]; then
     install_arch_setup_packages "$wanted"
@@ -514,9 +516,6 @@ cmd_setup() {
   echo "== install config software =="
   if [ "$preset" = arch ]; then
     run_software_install "$wanted" 1
-    if software_selected herdr "$wanted" && [ "${DOTFILES_SKIP_RUNTIME_INSTALLERS:-0}" != 1 ]; then
-      ensure_arch_herdr
-    fi
   else
     run_software_install "$wanted"
   fi
@@ -537,7 +536,7 @@ cmd_setup() {
     arch)
       echo "  systemctl --user enable --now nbshell.service"
       echo "  sudo systemctl enable --now tuned.service"
-      echo "Optional: install herdr-scratch manually when an Arch-compatible package is available."
+      echo "If scratch registration failed, run: herdr-scratch link"
       ;;
   esac
 }

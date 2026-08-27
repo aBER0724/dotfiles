@@ -85,6 +85,7 @@ ID=arch
 NAME="Arch Linux"
 OS
   stub_logger pacman
+  stub_logger brew
   stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"'
   DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
   assert_status 0 && assert_contains "preset  arch"
@@ -131,6 +132,7 @@ ID=arch
 NAME="Arch Linux"
 OS
   stub_logger pacman
+  stub_logger brew
   stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"; if [ "${STUB_SUDO_FAIL:-0}" = 1 ]; then exit 42; fi'
 }
 
@@ -204,6 +206,39 @@ test_existing_links_and_commands_are_skipped() {
   assert_status 0 && assert_contains "ok      aerospace" && [ -L "$HOME/.aerospace.toml" ]
 }
 
+test_arch_bootstraps_linuxbrew_before_scratch() {
+  new_case arch-linuxbrew
+  arch_fixture
+  stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"; printf "#!/bin/sh\nexit 0\n"'
+  stub_command bootstrap-bash 'printf "bootstrap-bash %s\n" "$*" >> "$LOG"'
+  stub_logger brew
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  assert_status 0 &&
+    grep -F "python-xattr" "$LOG" >/dev/null &&
+    grep -F "curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh" "$LOG" >/dev/null &&
+    grep -F "brew install --cask" "$LOG" >/dev/null &&
+    grep -F "macintacos/tap/herdr-scratch" "$LOG" >/dev/null
+}
+
+test_zsh_deps_install_oh_my_zsh() {
+  new_case zsh-omz
+  stub_command git 'printf "git %s\n" "$*" >> "$LOG"; dest=""; for arg in "$@"; do dest="$arg"; done; mkdir -p "$dest/.git"; case "$dest" in */.oh-my-zsh) printf "# stub\n" > "$dest/oh-my-zsh.sh" ;; esac'
+  OUTPUT="$CASE_ROOT/output"
+  STATUS=0
+  PATH="$STUB_BIN:/usr/bin:/bin" DOTFILES_DIR="$REPO" bash "$REPO/zsh/install-deps.sh" >"$OUTPUT" 2>&1 || STATUS=$?
+  assert_status 0 &&
+    [ -f "$HOME/.oh-my-zsh/oh-my-zsh.sh" ] &&
+    grep -F "ohmyzsh/ohmyzsh.git $HOME/.oh-my-zsh" "$LOG" >/dev/null
+}
+
+test_zshrc_survives_missing_oh_my_zsh() {
+  new_case zshrc-missing-omz
+  OUTPUT="$CASE_ROOT/output"
+  STATUS=0
+  HOME="$HOME" USER=tester zsh -f -c "source '$REPO/zsh/zshrc'" >"$OUTPUT" 2>&1 || STATUS=$?
+  assert_not_contains "no such file or directory"
+}
+
 test_existing_commands_smoke() {
   new_case existing-smoke
   run_cli list
@@ -243,6 +278,9 @@ run_test "Arch links primary stack only" test_arch_links_primary_stack_only
 run_test "Arch prints services without enabling" test_arch_prints_but_does_not_enable_services
 run_test "macOS links primary stack only" test_macos_links_primary_stack_only
 run_test "setup is idempotent" test_existing_links_and_commands_are_skipped
+run_test "Arch bootstraps Linuxbrew before scratch" test_arch_bootstraps_linuxbrew_before_scratch
+run_test "Zsh deps install Oh My Zsh" test_zsh_deps_install_oh_my_zsh
+run_test "zshrc survives missing Oh My Zsh" test_zshrc_survives_missing_oh_my_zsh
 run_test "existing commands smoke" test_existing_commands_smoke
 run_test "usage lists setup" test_usage_lists_setup
 

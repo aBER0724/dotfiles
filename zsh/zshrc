@@ -61,7 +61,11 @@ do
 done
 unset _zsh_cmp
 
-source $ZSH/oh-my-zsh.sh
+if [[ -r "$ZSH/oh-my-zsh.sh" ]]; then
+  source "$ZSH/oh-my-zsh.sh"
+else
+  print -u2 "dotfiles: Oh My Zsh is missing; run: bash ~/dotfiles/zsh/install-deps.sh"
+fi
 
 # zsh-autosuggestions — load from whichever platform location exists.
 for _zsh_auto in \

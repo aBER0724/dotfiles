@@ -16,6 +16,17 @@ set -euo pipefail
 DOTFILES="${DOTFILES_DIR:-$HOME/dotfiles}"
 ZSH_CUSTOM="${ZSH_CUSTOM:-${ZSH:-$HOME/.oh-my-zsh}/custom}"
 
+
+if [ ! -r "$HOME/.oh-my-zsh/oh-my-zsh.sh" ]; then
+  echo "== oh-my-zsh =="
+  if [ -e "$HOME/.oh-my-zsh" ]; then
+    echo "error   $HOME/.oh-my-zsh exists but oh-my-zsh.sh is missing" >&2
+    echo "Move or remove that incomplete directory, then rerun this installer." >&2
+    exit 1
+  fi
+  echo "install ohmyzsh/ohmyzsh -> $HOME/.oh-my-zsh"
+  git clone --depth 1 https://github.com/ohmyzsh/ohmyzsh.git "$HOME/.oh-my-zsh"
+fi
 mkdir -p "$ZSH_CUSTOM/plugins" "$ZSH_CUSTOM/themes"
 
 install_plugin() { # $1=owner/repo, $2=dest dir name
