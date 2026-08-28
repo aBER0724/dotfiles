@@ -16,7 +16,13 @@ fi
 # Restore Zsh's core function directories after all /etc/profile snippets.
 if [[ "$(uname -s)" == "Linux" ]]; then
   typeset -ga fpath
-  fpath=(/usr/local/share/zsh/site-functions /usr/share/zsh/site-functions /usr/share/zsh/functions/*(N-/) ${fpath:#/usr/share/zsh/functions/*})
+  fpath=(
+    /usr/local/share/zsh/site-functions
+    /usr/share/zsh/site-functions
+    /usr/share/zsh/functions/*(N-/)
+    /usr/share/zsh/functions/Completion/*(N-/)
+    ${fpath:#/usr/share/zsh/functions/*}
+  )
   typeset -gaU fpath
   export FPATH
 fi

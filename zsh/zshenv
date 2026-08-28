@@ -1,9 +1,16 @@
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"  # rustup (absent when cargo comes from system packages)
 
-# Linux 专用: 父 shell 导出的 FPATH 可能被 Linuxbrew 污染, 重建标准路径。
-# macOS 上有版本化目录 (/usr/share/zsh/5.9/functions), 用原生 fpath 即可。
+# Linux 专用:父 shell 导出的 FPATH 可能被 Linuxbrew 污染,重建标准路径。
+# Zsh 的补全函数位于 Completion/Base 等二级目录;只加入一级目录会让
+# compinit 注册补全 widget,却无法 autoload _main_complete。
 if [[ "$(uname -s)" == "Linux" ]]; then
   typeset -ga fpath
-  fpath=(/usr/local/share/zsh/site-functions /usr/share/zsh/site-functions /usr/share/zsh/functions/*(N-/))
+  fpath=(
+    /usr/local/share/zsh/site-functions
+    /usr/share/zsh/site-functions
+    /usr/share/zsh/functions/*(N-/)
+    /usr/share/zsh/functions/Completion/*(N-/)
+  )
+  typeset -gaU fpath
   export FPATH
 fi
