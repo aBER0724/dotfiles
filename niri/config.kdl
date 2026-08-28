@@ -78,7 +78,7 @@ spawn-at-startup "cc-switch"
 
 binds {
     // ── 终端 & 启动器 ─────────────────────────────
-    Alt+Return { spawn "bash" "-c" "exec $HOME/.local/bin/kitty"; }
+    Alt+Return { spawn "kitty"; }
     Alt+Space  { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell launcher"; }  // nbshell 启动器
 
     // ── 窗口 ──────────────────────────────────────
