@@ -5,15 +5,23 @@ Zsh 配置(配合 oh-my-zsh + Powerlevel10k),跨设备同步(macOS / Linux 均�
 
 ## 目录结构
 
-```
+```text
 zsh/
-├── zshrc            # 主配置(交互 shell)
-├── zshenv           # 每个 zsh 进程都会读(cargo env)
-├── zprofile         # 登录 shell(macOS brew shellenv、Linux PATH 等)
+├── zshrc            # 交互 shell 主配置，内部按职责分区
+├── zshenv           # 每个 zsh 进程都会读（cargo env）
+├── zprofile         # 登录 shell（Homebrew shellenv、Linux PATH 等）
 ├── shinit           # x-cmd 启动
-├── p10k.zsh         # Powerlevel10k 主题配置(由配置向导生成)
-└── install-deps.sh  # 一键安装运行时依赖(插件/p10k/zsh 可选件)
+├── p10k.zsh         # Powerlevel10k 主题配置（由配置向导生成）
+└── install-deps.sh  # 一键安装运行时依赖（插件/p10k/zsh 可选件）
 ```
+
+`zshrc` 按以下顺序组织：Startup、Oh My Zsh、Zsh plugins、Prompt、PATH and toolchains、Optional command integrations、Aliases、Functions、Hooks。
+
+新增或修改命令时：
+
+- 简单命令缩写放入 `zshrc` 的 `Aliases` 区域，并归入对应用途。
+- 带参数、判断或多步逻辑的命令放入 `Functions` 区域，并按职责归类。
+- 插件、PATH 与 shell integration 保持在各自区域，不与 alias/function 混放。
 
 ## 依赖运行时(install-deps.sh 帮你装)
 

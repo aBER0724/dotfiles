@@ -1,47 +1,46 @@
+# Interactive Zsh configuration
+# vim:fileencoding=utf-8:foldmethod=marker
+
+# Startup ---------------------------------------------------------------------
+
+# Disable iTerm2 prompt marks when its shell integration is present.
 iterm2_prompt_mark() {
-  # Do nothing
+  :
 }
 
 MAILCHECK=0
 
-# Terminal greeting — must be before p10k instant prompt to appear immediately
+# Greeting must run before the Powerlevel10k instant prompt.
 () {
   local hour=$(date +%H)
   local greeting
-  if   (( hour >= 5  && hour < 12 )); then greeting="Good morning"
-  elif (( hour >= 12 && hour < 18 )); then greeting="Good afternoon"
-  elif (( hour >= 18 && hour < 22 )); then greeting="Good evening"
-  else                                     greeting="Burning midnight oil"
+
+  if (( hour >= 5 && hour < 12 )); then
+    greeting='Good morning'
+  elif (( hour >= 12 && hour < 18 )); then
+    greeting='Good afternoon'
+  elif (( hour >= 18 && hour < 22 )); then
+    greeting='Good evening'
+  else
+    greeting='Burning midnight oil'
   fi
-  print ""
+
+  print
   print "  $greeting, $USER. $(date '+%A, %B %-d')"
-  print ""
+  print
 }
 
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
+# Keep this close to the top. Anything requiring user input must run above it.
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-# If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
+# Oh My Zsh -------------------------------------------------------------------
 
-# Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
+export ZSH_CUSTOM="${ZSH_CUSTOM:-$ZSH/custom}"
+ZSH_THEME='' # Powerlevel10k is loaded explicitly below.
 
-# Set name of the theme to load --- if set to "random", it will
-# load a random theme each time Oh My Zsh is loaded, in which case,
-# to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME=""  # theme loaded manually below via powerlevel10k
-
-# Which plugins would you like to load?
-# Standard plugins can be found in $ZSH/plugins/
-# Custom plugins may be added to $ZSH_CUSTOM/plugins/
-# Example format: plugins=(rails git textmate ruby lighthouse)
-# Add wisely, as too many plugins slow down shell startup.
 plugins=(
   git
   docker
@@ -49,8 +48,7 @@ plugins=(
   npm
 )
 
-# zsh-completions — add to fpath BEFORE oh-my-zsh runs compinit
-# (same plugin Kaku bundles; loaded here so any terminal gets it).
+# Add zsh-completions to fpath before Oh My Zsh runs compinit.
 for _zsh_cmp in \
   "$ZSH_CUSTOM/plugins/zsh-completions/src" \
   /opt/homebrew/share/zsh-completions \
@@ -64,10 +62,12 @@ unset _zsh_cmp
 if [[ -r "$ZSH/oh-my-zsh.sh" ]]; then
   source "$ZSH/oh-my-zsh.sh"
 else
-  print -u2 "dotfiles: Oh My Zsh is missing; run: bash ~/dotfiles/zsh/install-deps.sh"
+  print -u2 'dotfiles: Oh My Zsh is missing; run: bash ~/dotfiles/zsh/install-deps.sh'
 fi
 
-# zsh-autosuggestions — load from whichever platform location exists.
+# Zsh plugins -----------------------------------------------------------------
+
+# Load optional plugins from the first available platform-specific location.
 for _zsh_auto in \
   "$ZSH_CUSTOM/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh" \
   /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh \
@@ -78,7 +78,6 @@ do
 done
 unset _zsh_auto
 
-# zsh-syntax-highlighting — load from whichever platform location exists.
 for _zsh_hl in \
   "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" \
   /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh \
@@ -89,7 +88,6 @@ do
 done
 unset _zsh_hl
 
-# zsh-z (smart directory jumping) — same plugin Kaku bundles.
 for _zsh_z in \
   "$ZSH_CUSTOM/plugins/zsh-z/zsh-z.plugin.zsh" \
   /opt/homebrew/share/zsh-z/zsh-z.plugin.zsh \
@@ -100,139 +98,136 @@ do
 done
 unset _zsh_z
 
+# Prompt ----------------------------------------------------------------------
 
-# Powerlevel10k — $ZSH_CUSTOM themes, ~/powerlevel10k clone, or Homebrew.
 for _p10k in \
   "$ZSH_CUSTOM/themes/powerlevel10k/powerlevel10k.zsh-theme" \
-  ~/powerlevel10k/powerlevel10k.zsh-theme \
+  "$HOME/powerlevel10k/powerlevel10k.zsh-theme" \
   /opt/homebrew/opt/powerlevel10k/powerlevel10k.zsh-theme
 do
   [[ -r "$_p10k" ]] && { source "$_p10k"; break; }
 done
 unset _p10k
 
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+# Run `p10k configure` to regenerate this file.
+[[ -r "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
 
-[ -d /usr/local/opt/curl/bin ] && export PATH="/usr/local/opt/curl/bin:$PATH"
+# PATH and toolchains ---------------------------------------------------------
 
-alias v=nvim
+# Keep the original ordering here: several installers prepend their own paths,
+# so moving a block can change which version of a command wins.
+[[ -d /usr/local/opt/curl/bin ]] && export PATH="/usr/local/opt/curl/bin:$PATH"
 
-
-proxy_on() {
-    export https_proxy=socks5://127.0.0.1:9870
-    export http_proxy=socks5://127.0.0.1:9870
-    export all_proxy=socks5://127.0.0.1:9870
-#    export https_proxy=http://127.0.0.1:54826
-#    export http_proxy=http://127.0.0.1:54826
-#    export all_proxy=socks5://127.0.0.1:54826
-    echo "Proxy Enabled!"
-}
-
-proxy_off() {
-    unset http_proxy
-    unset https_proxy
-    unset ftp_proxy
-    echo "Proxy Disabled!"
-}
-
-alias rime-install='bash ~/plum/rime-install'
-
+# nvm: standalone installation first, then Homebrew.
 export NVM_DIR="$HOME/.nvm"
-# nvm — Homebrew (macOS) or the ~/.nvm standalone install.
-[ -s "$HOME/.nvm/nvm.sh" ] && \. "$HOME/.nvm/nvm.sh"
-[ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # Homebrew nvm
-[ -s "$HOME/.nvm/etc/bash_completion.d/nvm" ] && \. "$HOME/.nvm/etc/bash_completion.d/nvm"
-[ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+[[ -s "$HOME/.nvm/nvm.sh" ]] && source "$HOME/.nvm/nvm.sh"
+[[ -s /opt/homebrew/opt/nvm/nvm.sh ]] && source /opt/homebrew/opt/nvm/nvm.sh
+[[ -s "$HOME/.nvm/etc/bash_completion.d/nvm" ]] && source "$HOME/.nvm/etc/bash_completion.d/nvm"
+[[ -s /opt/homebrew/opt/nvm/etc/bash_completion.d/nvm ]] && source /opt/homebrew/opt/nvm/etc/bash_completion.d/nvm
 
-# Homebrew (macOS, /opt/homebrew) — only prepend when the dir exists.
-[ -d /opt/homebrew/bin ] && export PATH="/opt/homebrew/bin:$PATH"
-
-# pipx-installed tools (platform-agnostic home).
+[[ -d /opt/homebrew/bin ]] && export PATH="/opt/homebrew/bin:$PATH"
 export PATH="$PATH:$HOME/.local/bin"
 
-[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
+# Optional macOS and user toolchains.
+[[ -d /opt/homebrew/opt/libpq/bin ]] && export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+[[ -d "$HOME/.antigravity/antigravity/bin" ]] && export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
+[[ -d "$HOME/.platformio/penv/bin" ]] && export PATH="$HOME/.platformio/penv/bin:$PATH"
 
-# thefuck — only when actually installed (not on every new machine by default).
-if command -v thefuck >/dev/null 2>&1; then
-  eval $(thefuck --alias)
-  # You can use whatever you want as an alias, like for Mondays:
-  eval $(thefuck --alias FUCK)
-fi
-
-# macOS-specific toolchains — only prepended when actually present.
-[ -d /opt/homebrew/opt/libpq/bin ] && export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
-
-# Added by Antigravity
-[ -d "$HOME/.antigravity/antigravity/bin" ] && export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
-
-# PIO
-[ -d "$HOME/.platformio/penv/bin" ] && export PATH="$HOME/.platformio/penv/bin:$PATH"
-
-# pnpm — macOS stores it under ~/Library; Linux may set its own.
-if [ -d "$HOME/Library/pnpm" ]; then
+# pnpm uses this location on macOS; Linux installations can provide their own.
+if [[ -d "$HOME/Library/pnpm" ]]; then
   export PNPM_HOME="$HOME/Library/pnpm"
   case ":$PATH:" in
     *":$PNPM_HOME:"*) ;;
     *) export PATH="$PNPM_HOME:$PATH" ;;
   esac
 fi
-# pnpm end
 
-surge_activate() {
-  bash ~/Documents/Tool/Qurge-v6/StartQurge.command
-}
+# Optional command integrations -----------------------------------------------
 
-[[ -f "$HOME/.config/kaku/zsh/kaku.zsh" ]] && source "$HOME/.config/kaku/zsh/kaku.zsh" # Kaku Shell Integration
+[[ ! -f "$HOME/.x-cmd.root/X" ]] || source "$HOME/.x-cmd.root/X"
 
-[[ ":$PATH:" != *":$HOME/.config/kaku/zsh/bin:"* ]] && export PATH="$HOME/.config/kaku/zsh/bin:$PATH" # Kaku PATH Integration
+if command -v thefuck >/dev/null 2>&1; then
+  eval "$(thefuck --alias)"
+  eval "$(thefuck --alias FUCK)"
+fi
 
+# Kaku shell and PATH integration.
+[[ -r "$HOME/.config/kaku/zsh/kaku.zsh" ]] && source "$HOME/.config/kaku/zsh/kaku.zsh"
+if [[ ":$PATH:" != *":$HOME/.config/kaku/zsh/bin:"* ]]; then
+  export PATH="$HOME/.config/kaku/zsh/bin:$PATH"
+fi
 
-pdf() {
-    open -a Skim "$@"
-}
-
-alias browser="terminal-browser"
-
-export MYX_CLIENT_ID=283ceaa1df6b4ca28553bca235e1ed6e
-
-# >>> deepseek-harness dsh >>>
+# Keep locally installed harness commands ahead of Kaku and system binaries.
 export PATH="$HOME/.local/bin:$PATH"
-# <<< deepseek-harness dsh <<<
 
-# Homebrew (Linux: /home/linuxbrew 或 ~/.linuxbrew) — 仅在实际安装时加载，macOS 上静默跳过。
-if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
+# Linuxbrew fallback paths are intentionally loaded after the user paths above.
+if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
   eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
-elif [ -x "$HOME/.linuxbrew/bin/brew" ]; then
+elif [[ -x "$HOME/.linuxbrew/bin/brew" ]]; then
   eval "$("$HOME/.linuxbrew/bin/brew" shellenv zsh)"
 fi
 
-# >>> otty shell integration >>>
-# Added by Otty — toggle in Settings > Shell > Shell Integration.
-# Inert unless launched by Otty (it sets $OTTY_SHELL_INTEGRATION).
-if [ -n "$OTTY_SHELL_INTEGRATION" ] && [ -r "$OTTY_SHELL_INTEGRATION/otty-integration.zsh" ]; then
-  . "$OTTY_SHELL_INTEGRATION/otty-integration.zsh"
+# Otty enables this only for shells launched inside Otty.
+if [[ -n "$OTTY_SHELL_INTEGRATION" && -r "$OTTY_SHELL_INTEGRATION/otty-integration.zsh" ]]; then
+  source "$OTTY_SHELL_INTEGRATION/otty-integration.zsh"
 fi
-# <<< otty shell integration <<<
 
-# >>> 鼠标模式泄漏清理 >>>
-# TUI(Herdr / Claude Code / tmux 等)异常退出后可能残留 SGR mouse reporting
-# (DECSET 1003/1006/1000/1002),回到 zsh 后滚轮/鼠标移动序列泄漏进输入行。
-# 每次绘制提示符前自动关闭这些模式,根源上避免泄漏;
-# 手动清理函数 fixmouse 供异常时应急(生成正确序列后也会自动被上面的 hook 兜底)。
-autoload -Uz add-zsh-hook
-add-zsh-hook precmd _clear_mouse_mode
+# Aliases ---------------------------------------------------------------------
+
+# Editors
+alias v='nvim'
+
+# Terminal utilities
+alias browser='terminal-browser'
+alias ff='fastfetch'
+
+# Input methods
+alias rime-install='bash ~/plum/rime-install'
+
+# Functions -------------------------------------------------------------------
+
+# Network
+proxy_on() {
+  export https_proxy='socks5://127.0.0.1:9870'
+  export http_proxy='socks5://127.0.0.1:9870'
+  export all_proxy='socks5://127.0.0.1:9870'
+  print 'Proxy Enabled!'
+}
+
+proxy_off() {
+  unset http_proxy https_proxy ftp_proxy
+  print 'Proxy Disabled!'
+}
+
+# macOS applications
+pdf() {
+  open -a Skim "$@"
+}
+
+surge_activate() {
+  bash "$HOME/Documents/Tool/Qurge-v6/StartQurge.command"
+}
+
+# Terminal recovery
+# TUI programs can leave mouse reporting enabled after an abnormal exit.
 _clear_mouse_mode() {
   printf '\033[?1000l\033[?1002l\033[?1003l\033[?1006l'
 }
-fixmouse() { _clear_mouse_mode }
-# <<< 鼠标修复泄漏清理 <<<
 
-# ssh 会话后清理——远程 TUI 可能经 SSH 通道把鼠标/键盘模式开在本地终端上,
-# 会话结束立刻清空(herdr 上游同款 7 模式关闭序列),不等下一个提示符。
+fixmouse() {
+  _clear_mouse_mode
+}
+
+# Remote TUIs can leave additional mouse modes enabled in the local terminal.
 ssh() {
   command ssh "$@"
   local rc=$?
   printf '\033[?1006l\033[?1016l\033[?1015l\033[?1005l\033[?1003l\033[?1002l\033[?1000l'
   return $rc
 }
+
+# Hooks -----------------------------------------------------------------------
+
+# Clear mouse-reporting modes before each prompt after a TUI exits abnormally.
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd _clear_mouse_mode
