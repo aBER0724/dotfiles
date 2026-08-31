@@ -179,12 +179,29 @@ alias v='nvim'
 
 # Terminal utilities
 alias browser='terminal-browser'
-alias ff='fastfetch'
+unalias ff 2>/dev/null
+ff() {
+  if [[ -n "${SSH_CONNECTION:-}${SSH_CLIENT:-}${SSH_TTY:-}" ]]; then
+    fastfetch --kitty "$HOME/.config/fastfetch/rx.png" --logo-width 30 --logo-padding-top 0 --logo-padding-left 1 --logo-padding-right 2 "$@"
+  else
+    fastfetch "$@"
+  fi
+}
 
 # Input methods
 alias rime-install='bash ~/plum/rime-install'
 
 # Functions -------------------------------------------------------------------
+
+# Use regular TUI mode over SSH to avoid fragmented mouse-reporting sequences
+# leaking into Pi's editor. Local sessions keep the configured fullscreen mode.
+pi() {
+  if [[ -n "$SSH_CONNECTION" || -n "$SSH_TTY" ]]; then
+    command pi --tui-mode regular "$@"
+  else
+    command pi "$@"
+  fi
+}
 
 # Network
 proxy_on() {

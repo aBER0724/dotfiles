@@ -30,9 +30,9 @@ fastfetch/
 }
 ```
 
-- `kitty-direct` 使用 kitty graphics protocol 直接显示图片，不转换成字符画。
-- 只固定宽度并启用 `preserveAspectRatio`，避免在非正方形终端单元格中拉伸图片。
-- `padding.top: 4` 将图片向下移动，使其与右侧信息列表大致垂直居中。
+- 默认使用 `kitty-direct` 和 `padding.top: 4`，保留物理机上原本的垂直居中效果。
+- `ff` 在 SSH 会话中会通过 `--kitty ~/.config/fastfetch/rx.png` 同时显式覆盖图片类型和来源，再使用 `--logo-padding-top 0`。只传 `--logo-type kitty` 会丢失配置中的 `kitty-direct` 图片源并回退到系统 ASCII Logo。
+- 因此物理机与 SSH 使用各自的渲染方式和偏移量，不再让同一组参数互相影响。
 - 如果使用不支持 kitty 图像协议的终端，可将 `type` 改为 `chafa`。
 
 ## 展示内容
