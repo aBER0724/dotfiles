@@ -25,7 +25,8 @@
     "npm:@victor-software-house/pi-curated-themes",
     "npm:pi-autoresearch"
   ],
-  "lastChangelogVersion": "0.84.3",
+  "lastChangelogVersion": "0.84.4",
   "theme": "nbshell",
-  "tuiMode": "fullscreen"
+  "tuiMode": "fullscreen",
+  "defaultThinkingLevel": "high"
 }
