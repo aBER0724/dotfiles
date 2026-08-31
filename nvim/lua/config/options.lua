@@ -4,6 +4,17 @@
 
 vim.opt.rtp:prepend(vim.fn.stdpath("data") .. "/lazy/aura/packages/neovim")
 
+vim.opt.scrolloff = 8 -- more context above/below cursor
+vim.opt.sidescrolloff = 12
+vim.opt.pumheight = 15 -- taller completion menu
+vim.opt.swapfile = false -- undo history is enough; avoids swap prompts
+vim.opt.hlsearch = false -- don't keep the last search highlighted
+vim.opt.signcolumn = "yes"
+vim.opt.cursorlineopt = "line"
+vim.opt.smoothscroll = true
+vim.opt.showtabline = 0 -- bufferline handles tabs
+vim.opt.diffopt:append("vertical")
+
 vim.api.nvim_create_autocmd("ColorScheme", {
   callback = function()
     -- Clear background for specific highlight groups
