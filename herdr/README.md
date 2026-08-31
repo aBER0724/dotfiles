@@ -27,7 +27,7 @@ herdr/
 | `herdr-lazygit` | [crokily/herdr-lazygit](https://github.com/crokily/herdr-lazygit) | lazygit 集成 |
 | `herdr-navigator` | [thanhdat77/herdr-navigator](https://github.com/thanhdat77/herdr-navigator) | 跳转面板 |
 | `herdr-plugin-renamer` | [wenhanweime/herdr-plugin-renamer](https://github.com/wenhanweime/herdr-plugin-renamer) | 插件重命名 |
-| `jhochenbaum.hunkdiff` | [jhochenbaum/herdr-hunk-diff](https://github.com/jhochenbaum/herdr-hunk-diff) | diff 高亮(Go 构建) |
+| `herdr-workspacer` | [mcuste/herdr-workspacer](https://github.com/mcuste/herdr-workspacer) | workspace 切换面板 |
 | `mirror` | [nikok6/herdr-mirror](https://github.com/nikok6/herdr-mirror) | 远程镜像/同步面板 |
 | `ray.file-explorer` | [speardragon/herdr-yazi](https://github.com/speardragon/herdr-yazi) | yazi 文件浏览器 |
 | `ray.plugin-manager` | [speardragon/herdr-plugin-manager](https://github.com/speardragon/herdr-plugin-manager) | 插件管理器 UI |
@@ -56,6 +56,28 @@ prefix 按 herdr 默认(通常 `Ctrl+b` 系)。以下为绑定的插件命令:
 | `prefix+alt+minus` | `mirror.remote-split-down` | 远端下分屏 |
 | `prefix+p` | `ray.plugin-manager.open` | 打开插件管理器 |
 | `prefix+t` | `herdr-navigator.open` | 跳转面板 |
+| `prefix+alt+s` | `herdr-navigator.open-side` | 跳转面板:常驻侧边面板 |
+| `prefix+alt+j` | `herdr-navigator.jump-back` | 跳转面板:跳回上一位置 |
+| `prefix+alt+o` | `mirror.once` | 一次性同步(不启动 daemon) |
+| `prefix+shift+i` | `mirror.status` | 查看 daemon/主机/镜像状态 |
+| `prefix+$` | `dave.token-dashboard.open-dashboard` | 打开 token 用量面板 |
+
+> herdr 不解析插件 manifest 里的 `[[keys.command]]`(manifest 字段只有 id/name/version/description/
+> platforms/build/startup/actions/events/panes/link_handlers),插件自带的键位声明是死代码,必须在本表显式绑定。
+
+### 原生 pane/tab 移动(`[keys]`段,herdr 默认不绑)
+
+| 按键 | 动作 | 说明 |
+|------|------|------|
+| `prefix+shift+h` | `swap_pane_left` | 当前 pane 与左侧 pane 交换位置 |
+| `prefix+shift+j` | `swap_pane_down` | 与下方 pane 交换 |
+| `prefix+shift+k` | `swap_pane_up` | 与上方 pane 交换 |
+| `prefix+shift+l` | `swap_pane_right` | 与右侧 pane 交换 |
+| `alt+shift+left` | `move_tab_previous` | 当前 tab 向左移动(直接键,无需 prefix) |
+| `alt+shift+right` | `move_tab_next` | 当前 tab 向右移动 |
+
+> shift+h/j/k/l 与原生 focus h/j/k/l 同方向,`swap` 即 `focus 键位 + shift`。
+> review:branch 常被 `review` 覆盖(分支领先时 review 即显示分支 diff)。
 
 ## 为什么 plugins.json 不同步
 
@@ -108,5 +130,5 @@ brew install --cask macintacos/tap/herdr-scratch
 bash ~/dotfiles/herdr/install-plugins.sh
 ```
 
-> 有 Go 构建步骤的插件（token-dashboard、hunkdiff、Linux 上的 scratch）需要 Go；navigator 和 renamer 需要 Rust/Cargo；file-explorer 需要 Yazi。
+> 有 Go 构建步骤的插件（token-dashboard、Linux 上的 scratch）需要 Go；navigator 和 renamer 需要 Rust/Cargo；file-explorer 需要 Yazi。
 > `setup` / `deps herdr` 会安装这些依赖。若直接运行本脚本且依赖缺失，它会在尝试插件前停止并给出恢复命令；其他安装错误仍会显示每个插件的实际日志。

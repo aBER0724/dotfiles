@@ -22,6 +22,7 @@ kitty_graphics = true
 status_indicators = "symbols"
 
 show_agent_labels_on_pane_borders = true
+agent_panel_sort = "spaces"
 [ui.toast]
 delivery = "terminal"
 
@@ -64,6 +65,18 @@ key = "prefix+shift+m"
 type = "plugin_action"
 command = "mirror.start"       # start / resume the daemon
 description = "remote-start"
+
+[[keys.command]]              # one-shot sync pass; no daemon needed
+key = "prefix+alt+o"
+type = "plugin_action"
+command = "mirror.once"
+description = "remote-once"
+
+[[keys.command]]              # log daemon / host / mirror-object status
+key = "prefix+shift+i"
+type = "plugin_action"
+command = "mirror.status"
+description = "remote-status"
 
 [[keys.command]]
 key = "prefix+shift+s"
@@ -123,3 +136,52 @@ key = "prefix+t"
 type = "plugin_action"
 command = "herdr-navigator.open"
 description = "jump to anything"
+
+# navigator: side pane + jump back
+[[keys.command]]
+key = "prefix+alt+s"          # side panel (prefix+t = popup)
+type = "plugin_action"
+command = "herdr-navigator.open-side"
+description = "open navigator side pane"
+
+[[keys.command]]
+key = "prefix+alt+g"          # alt+j freed for pane resize (prefix+alt+h/j/k/l)
+type = "plugin_action"
+command = "herdr-navigator.jump-back"
+description = "jump back to previous location"
+
+# Native pane/tab moves (unset by default; herdr swaps/moves in place).
+# swap = focus chord + shift: same direction muscle memory as focus h/j/k/l.
+[keys]
+swap_pane_left = "prefix+shift+h"
+swap_pane_down = "prefix+shift+j"
+swap_pane_up = "prefix+shift+k"
+swap_pane_right = "prefix+shift+l"
+move_tab_previous = "alt+shift+left"
+move_tab_next = "alt+shift+right"
+
+# pane resize: direct shortcuts (no prefix). alt+hjkl is taken system-wide by
+# AeroSpace, so plain Option combos never reach the terminal.
+# ctrl+alt+hjkl first (vim muscle memory); ctrl+alt+arrows as reliable fallback
+# (standard CSI sequences ESC[1;3D). Ctrl+h/j/k/l are BS/LF/VT/FF control
+# chars, so if hjkl never fires on your setup, just use the arrows.
+resize_pane_left  = ["ctrl+alt+h", "ctrl+alt+left"]
+resize_pane_down  = ["ctrl+alt+j", "ctrl+alt+down"]
+resize_pane_up    = ["ctrl+alt+k", "ctrl+alt+up"]
+resize_pane_right = ["ctrl+alt+l", "ctrl+alt+right"]
+
+# token-dashboard
+# herdr ignores [[keys.command]] inside plugin manifests, so the plugin's own
+# 'prefix+$' binding is dead; bind the action explicitly here.
+[[keys.command]]
+key = "prefix+$"
+type = "plugin_action"
+command = "dave.token-dashboard.open-dashboard"
+description = "open token dashboard"
+
+# navigator
+[[keys.command]]
+key = "prefix+s"
+type = "plugin_action"
+command = "herdr-workspacer.open"
+description = "open workspace picker"

@@ -251,8 +251,8 @@ config.show_new_tab_button_in_tab_bar = false
 config.default_prog = { '/bin/zsh', '-l' }
 
 -- ===== macOS Specific =====
-config.send_composed_key_when_left_alt_is_pressed = true
-config.send_composed_key_when_right_alt_is_pressed = true
+config.send_composed_key_when_left_alt_is_pressed = false -- Alt 发修饰键序列(ESC 前缀),herdr 的 prefix+alt+* 才能生效
+config.send_composed_key_when_right_alt_is_pressed = false
 config.native_macos_fullscreen_mode = true
 config.quit_when_all_windows_are_closed = false
 
