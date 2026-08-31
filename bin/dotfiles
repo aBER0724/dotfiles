@@ -34,6 +34,8 @@ LINK_TABLE=(
   "kitty-main|kitty/kitty.conf|$HOME/.config/kitty/kitty.conf"
   "kitty-linux|kitty/platform-linux.conf|$HOME/.config/kitty/platform-linux.conf"
   "kitty-macos|kitty/platform-macos.conf|$HOME/.config/kitty/platform-macos.conf"
+  "kitty-tab-bar|kitty/tab_bar.py|$HOME/.config/kitty/tab_bar.py"
+  "kitty-watcher|kitty/watcher.py|$HOME/.config/kitty/watcher.py"
 )
 
 # Runtime software used by managed configs.
@@ -63,7 +65,7 @@ SOFTWARE_TABLE=(
 GROUP_TABLE=(
   "pi|pi-settings pi-models pi-extensions"
   "zsh|zshrc zshenv zprofile shinit p10k"
-  "kitty|kitty-main kitty-linux kitty-macos"
+  "kitty|kitty-main kitty-linux kitty-macos kitty-tab-bar kitty-watcher"
   "herdr|herdr"
   "nbshell|nbshell-config nbshell-screensaver"
   "wm|niri nbshell-config nbshell-screensaver"

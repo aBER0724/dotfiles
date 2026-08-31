@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from kitty.fast_data_types import get_options
 from kitty.tab_bar import (
     DrawData,
     ExtraData,
@@ -21,14 +22,9 @@ if TYPE_CHECKING:
 
 STATUS_CACHE_FILE = os.path.expanduser('~/.cache/kitty-status.txt')
 
-# Kaku Dark palette
-BAR_BG = 0x15141B
-CPU_BG = 0x1F1D28
-MEM_BG = 0x29263C
-TIME_BG = 0x8E6AD9
-TEXT_FG = 0xD5D4D6
-TIME_FG = 0x15141B
 
+# System status colors are derived from Kitty's live options. nbshell updates those
+# options through load-config, so the custom status area follows every theme change.
 REVERSE_SEPARATORS = {
     'angled': '',
     'round': '',
@@ -72,6 +68,17 @@ def draw_title(data: dict) -> str:
         title = exe
     return _shorten(title)
 
+
+def _theme_colors(draw_data: DrawData) -> tuple[int, int, int, int, int, int]:
+    """Return status colors from the currently loaded Kitty/nbshell theme."""
+    opts = get_options()
+    bar_bg = int(draw_data.default_bg)
+    cpu_bg = int(draw_data.inactive_bg)
+    mem_bg = int(draw_data.active_bg)
+    time_bg = int(opts.cursor or opts.active_border_color)
+    text_fg = int(opts.foreground)
+    time_fg = int(opts.cursor_text_color or opts.background)
+    return bar_bg, cpu_bg, mem_bg, time_bg, text_fg, time_fg
 
 def _draw_segment(
     screen: 'Screen',
@@ -124,17 +131,18 @@ def draw_tab(
     # Clear everything after the last tab before jumping to the right edge.
     # Without this, a previously longer title can remain visible between the
     # truncated tab and the status segments.
+    bar_bg, cpu_bg, mem_bg, time_bg, text_fg, time_fg = _theme_colors(draw_data)
     screen.cursor.x = end
-    screen.cursor.bg = as_rgb(BAR_BG)
-    screen.cursor.fg = as_rgb(TEXT_FG)
+    screen.cursor.bg = as_rgb(bar_bg)
+    screen.cursor.fg = as_rgb(text_fg)
     screen.erase_in_line(0, False)
 
     # The cursor inherits the last tab's font style; reset it for system data.
     screen.cursor.bold = False
     screen.cursor.italic = False
     screen.cursor.x = screen.columns - status_width
-    _draw_segment(screen, separator, BAR_BG, CPU_BG, TEXT_FG, cpu_text)
-    _draw_segment(screen, separator, CPU_BG, MEM_BG, TEXT_FG, mem_text)
-    _draw_segment(screen, separator, MEM_BG, TIME_BG, TIME_FG, time_text)
+    _draw_segment(screen, separator, bar_bg, cpu_bg, text_fg, cpu_text)
+    _draw_segment(screen, separator, cpu_bg, mem_bg, text_fg, mem_text)
+    _draw_segment(screen, separator, mem_bg, time_bg, time_fg, time_text)
 
     return end
