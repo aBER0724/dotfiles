@@ -46,7 +46,8 @@ nvim/
 | `lua/plugins/bufferline.lua` | [akinsho/bufferline.nvim](https://github.com/akinsho/bufferline.nvim) | 顶部标签栏美化 |
 | `lua/plugins/colorscheme.lua` | LazyVim 默认 + `colors/nbshell.lua` | 主题(动态跟随 nbshell;`autocmds.lua` 轮询 palette.sh) |
 | `lua/plugins/dashboard.lua` | [folke/snacks.nvim](https://github.com/folke/snacks.nvim) | Dashboard(带 kuuga.txt ASCII art) |
-| `lua/plugins/neo-tree.lua` | [nvim-neo-tree/neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) | 文件树 |
+| `lua/plugins/snacks.lua` | [folke/snacks.nvim](https://github.com/folke/snacks.nvim) | 唯一文件树；`<leader>e` 切换根目录 Explorer |
+| `lua/plugins/neo-tree.lua` | [nvim-neo-tree/neo-tree.nvim](https://github.com/nvim-neo-tree/neo-tree.nvim) | 禁用，避免与 Snacks Explorer 重复 |
 | `lua/plugins/smart-splits.lua` | [mrjones2014/smart-splits.nvim](https://github.com/mrjones2014/smart-splits.nvim) | 分屏移动/缩放 |
 | `lua/plugins/example.lua` | 示例模板(含 gruvbox/trouble 注释参考) | 新插件配置的样板 |
 

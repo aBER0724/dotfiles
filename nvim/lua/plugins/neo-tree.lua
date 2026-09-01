@@ -1,14 +1,8 @@
+-- LazyVim now uses Snacks Explorer by default. Keep Neo-tree disabled so directory
+-- startup and restored sessions cannot create a second, independently toggled tree.
 return {
   {
     "nvim-neo-tree/neo-tree.nvim",
-    opts = {
-      filesystem = {
-        filtered_items = {
-          visible = true,
-          hide_dotfiles = false,
-          hide_gitignored = false,
-        },
-      },
-    },
+    enabled = false,
   },
 }
