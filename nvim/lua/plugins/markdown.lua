@@ -27,6 +27,33 @@ return {
     },
   },
   {
+    "obsidian-nvim/obsidian.nvim",
+    version = "*",
+    ft = "markdown",
+    dependencies = { "nvim-lua/plenary.nvim" },
+    opts = {
+      legacy_commands = false,
+      workspaces = {
+        {
+          name = "OB",
+          path = vim.fn.expand("~/Documents/Obsidian/Openlist/OB"),
+        },
+      },
+      picker = {
+        name = "snacks.picker",
+      },
+      ui = {
+        enable = false,
+      },
+    },
+    keys = {
+      { "<leader>on", "<cmd>Obsidian new<cr>", desc = "New Obsidian Note" },
+      { "<leader>oo", "<cmd>Obsidian quick_switch<cr>", desc = "Open Obsidian Note" },
+      { "<leader>os", "<cmd>Obsidian search<cr>", desc = "Search Obsidian Vault" },
+      { "<leader>ob", "<cmd>Obsidian backlinks<cr>", desc = "Obsidian Backlinks" },
+    },
+  },
+  {
     "iamcco/markdown-preview.nvim",
     enabled = false,
   },
