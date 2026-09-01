@@ -226,25 +226,28 @@ surge_activate() {
 }
 
 # Terminal recovery
-# TUI programs can leave mouse reporting enabled after an abnormal exit.
-_clear_mouse_mode() {
-  printf '\033[?1000l\033[?1002l\033[?1003l\033[?1006l'
+# TUI programs can leave mouse reporting or the Kitty keyboard protocol enabled
+# after an abnormal exit. Restore both before every prompt.
+_reset_terminal_modes() {
+  # Disable common mouse-reporting modes.
+  printf '\033[?1000l\033[?1002l\033[?1003l\033[?1005l\033[?1006l\033[?1015l\033[?1016l'
+  # Pop the Kitty keyboard protocol mode stack; an empty stack resets all flags.
+  printf '\033[<u'
 }
 
 fixmouse() {
-  _clear_mouse_mode
+  _reset_terminal_modes
 }
 
-# Remote TUIs can leave additional mouse modes enabled in the local terminal.
+# Reset terminal modes immediately after every SSH session, including disconnects.
 ssh() {
   command ssh "$@"
   local rc=$?
-  printf '\033[?1006l\033[?1016l\033[?1015l\033[?1005l\033[?1003l\033[?1002l\033[?1000l'
+  _reset_terminal_modes
   return $rc
 }
 
 # Hooks -----------------------------------------------------------------------
 
-# Clear mouse-reporting modes before each prompt after a TUI exits abnormally.
 autoload -Uz add-zsh-hook
-add-zsh-hook precmd _clear_mouse_mode
+add-zsh-hook precmd _reset_terminal_modes
