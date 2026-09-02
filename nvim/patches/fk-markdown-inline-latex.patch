@@ -1,0 +1,302 @@
+diff --git a/lua/fk_markdown/handler/latex.lua b/lua/fk_markdown/handler/latex.lua
+index 80d33ea..f97ebb5 100644
+--- a/lua/fk_markdown/handler/latex.lua
++++ b/lua/fk_markdown/handler/latex.lua
+@@ -158,7 +158,9 @@ function Handler:render_images(nodes)
+     end
+ 
+     for _, node in ipairs(nodes) do
+-        local node_id = tostring(node.start_row) .. '_' .. tostring(node.start_col)
++        local node_id = table.concat({ self.context.buf, node.start_row, node.start_col }, '_')
++        local is_inline = not vim.trim(node.text):match('^%$%$')
++        local is_block = not is_inline
+         local input = Handler.input(node)
+         local source_cols = math.max(1, vim.fn.strdisplaywidth(node.text))
+ 
+@@ -166,50 +168,59 @@ function Handler:render_images(nodes)
+             local err = state.errors[node_id]
+             local active = state.active_images[node_id]
+ 
+-            if err and err.equation == input then
++            if err and err.equation == input and is_block then
+                 local text, hl = invalid_banner(source_cols)
+-                local line = vim.api.nvim_buf_get_lines(
+-                    self.context.buf,
+-                    node.start_row,
+-                    node.start_row + 1,
+-                    false
+-                )[1] or ''
+                 self.marks:add(self.config, 'latex', node.start_row, node.start_col, {
+                     virt_text = { { text, hl } },
+                     virt_text_pos = 'overlay',
+                     virt_text_hide = true,
+                     conceal = '',
+                     end_row = node.start_row,
+-                    end_col = math.max(#line, node.start_col + 1),
++                    end_col = node.end_col,
+                 })
+                 self:hide_source_tail(node)
+             elseif not active or active.equation ~= input then
+-                state.request_render(input, self.config, node_id, source_cols, function()
+-                    refresh()
+-                end)
++                state.request_render(
++                    input,
++                    self.config,
++                    node_id,
++                    source_cols,
++                    is_inline,
++                    function()
++                        refresh()
++                    end
++                )
+             else
+-                -- Draw the full image on the first source line; hide the rest of
+-                -- the $$ block so multiline TeX is not left sitting under the PNG.
++                -- Draw the full image on the first source line; only suppress the
++                -- remainder of multiline $$ blocks so single-line formulas keep
++                -- their neighboring text intact.
+                 local img_cols = active.cols
+                 local img_rows = active.rows
+                 local hl = kitty.get_highlight(active.id)
+-                local line = vim.api.nvim_buf_get_lines(
+-                    self.context.buf,
+-                    node.start_row,
+-                    node.start_row + 1,
+-                    false
+-                )[1] or ''
++                local is_multiline = is_block and node:height() > 1
++                local range_end_col
++                if is_block then
++                    local line = vim.api.nvim_buf_get_lines(
++                        self.context.buf,
++                        node.start_row,
++                        node.start_row + 1,
++                        false
++                    )[1] or ''
++                    range_end_col = math.max(#line, node.start_col + 1)
++                else
++                    range_end_col = node.end_col
++                end
+ 
+                 self.marks:add(self.config, 'latex', node.start_row, node.start_col, {
+                     virt_text = { { kitty.build_placeholder_row(1, img_cols), hl } },
+-                    virt_text_pos = 'overlay',
+-                    virt_text_hide = true,
++                    virt_text_pos = is_block and 'overlay' or 'inline',
++                    virt_text_hide = is_block,
+                     conceal = '',
+                     end_row = node.start_row,
+-                    end_col = math.max(#line, node.start_col + 1),
++                    end_col = range_end_col,
+                 })
+ 
+-                if img_rows > 1 then
++                if is_block and img_rows > 1 then
+                     local extra = {}
+                     for r = 2, img_rows do
+                         extra[#extra + 1] = { { kitty.build_placeholder_row(r, img_cols), hl } }
+@@ -220,7 +231,11 @@ function Handler:render_images(nodes)
+                     })
+                 end
+ 
+-                self:hide_source_tail(node)
++                if is_block then
++                    -- Draw the full image on the first source line; hide the rest of
++                    -- the $$ block so multiline TeX is not left sitting under the PNG.
++                    self:hide_source_tail(node)
++                end
+             end
+         end
+     end
+diff --git a/lua/fk_markdown/latex/state.lua b/lua/fk_markdown/latex/state.lua
+index 2c26242..13f4890 100644
+--- a/lua/fk_markdown/latex/state.lua
++++ b/lua/fk_markdown/latex/state.lua
+@@ -27,13 +27,88 @@ M.pending = {}
+ ---@type table<string, {equation: string, reason: string}>
+ M.errors = {}
+ 
++
++local body_scale_cache = {}
++
++local function kitty_font_family()
++    local config = vim.fn.expand('~/.config/kitty/kitty.conf')
++    local file = io.open(config, 'r')
++    if not file then
++        return 'monospace'
++    end
++    for line in file:lines() do
++        local family = line:match('^%s*font_family%s+(.+)%s*$')
++        if family then
++            file:close()
++            return family
++        end
++    end
++    file:close()
++    return 'monospace'
++end
++
++local function body_visual_scale(cell_h)
++    local family = kitty_font_family()
++    local key = ('%s:%d'):format(family, math.floor(cell_h + 0.5))
++    if body_scale_cache[key] then
++        return body_scale_cache[key]
++    end
++    local fallback = 0.45
++    if vim.fn.executable('fc-match') ~= 1 or vim.fn.executable('magick') ~= 1 then
++        body_scale_cache[key] = fallback
++        return fallback
++    end
++    local font = vim.system({ 'fc-match', '-f', '%{file}', family }, { text = true }):wait()
++    local font_path = font.stdout and vim.trim(font.stdout) or ''
++    if font.code ~= 0 or font_path == '' then
++        body_scale_cache[key] = fallback
++        return fallback
++    end
++    local sample_path = vim.fn.stdpath('cache')
++        .. '/fk_markdown/body-font-'
++        .. vim.fn.sha256(key):sub(1, 16)
++        .. '.png'
++    vim.fn.mkdir(vim.fn.fnamemodify(sample_path, ':h'), 'p')
++    local rendered = vim.system({
++        'magick',
++        '-background',
++        'none',
++        '-font',
++        font_path,
++        '-pointsize',
++        '100',
++        'label:nuv',
++        sample_path,
++    }):wait()
++    if rendered.code ~= 0 then
++        body_scale_cache[key] = fallback
++        return fallback
++    end
++    local canvas = vim.system({ 'magick', sample_path, '-format', '%h', 'info:' }, { text = true }):wait()
++    local ink = vim.system({
++        'magick',
++        sample_path,
++        '-trim',
++        '+repage',
++        '-format',
++        '%h',
++        'info:',
++    }, { text = true }):wait()
++    local canvas_h = tonumber(canvas.stdout)
++    local ink_h = tonumber(ink.stdout)
++    local scale = canvas_h and ink_h and canvas_h > 0 and (ink_h / canvas_h) or fallback
++    scale = math.max(0.35, math.min(0.75, scale))
++    body_scale_cache[key] = scale
++    return scale
++end
+ ---Request an async render for an equation. Debounced by node_id.
+ ---@param equation string
+ ---@param config render.md.latex.Config
+ ---@param node_id string
+ ---@param min_cols integer
++---@param inline boolean
+ ---@param callback fun(img: fk_markdown.latex.ActiveImage|nil)
+-function M.request_render(equation, config, node_id, min_cols, callback)
++function M.request_render(equation, config, node_id, min_cols, inline, callback)
+     local existing = M.active_images[node_id]
+     if existing and existing.equation == equation then
+         M.errors[node_id] = nil
+@@ -102,9 +177,75 @@ function M.request_render(equation, config, node_id, min_cols, callback)
+             end
+ 
+             local cell_w, cell_h = kitty.get_cell_size()
+-            local img_cols = math.max(min_cols, math.ceil(w / cell_w))
+-            local img_rows = math.max(1, math.ceil(h / cell_h))
+-            img_cols = math.min(img_cols, math.max(min_cols, vim.o.columns - 4))
++            local img_cols
++            local img_rows
++            local transmit_path = path
++            if inline then
++                local body_scale = body_visual_scale(cell_h)
++                local is_tall = equation:find('\\frac', 1, true)
++                    or equation:find('\\binom', 1, true)
++                    or equation:find('\\sum', 1, true)
++                    or equation:find('\\int', 1, true)
++                    or equation:find('\\sqrt', 1, true)
++                    or equation:find('^', 1, true)
++                    or equation:find('_', 1, true)
++                local scale = is_tall
++                    and math.min(0.75, body_scale * 1.6)
++                    or body_scale
++                img_rows = 1
++                if vim.fn.executable('magick') == 1 then
++                    local dimensions = vim.system({
++                        'magick',
++                        path,
++                        '-trim',
++                        '+repage',
++                        '-format',
++                        '%w %h',
++                        'info:',
++                    }, { text = true }):wait()
++                    local trim_w, trim_h = dimensions.stdout:match('(%d+)%s+(%d+)')
++                    trim_w, trim_h = tonumber(trim_w), tonumber(trim_h)
++                    if dimensions.code == 0 and trim_w and trim_h and trim_h > 0 then
++                        local canvas_h = math.max(1, math.floor(cell_h + 0.5))
++                        local target_h = math.max(1, math.floor(canvas_h * scale + 0.5))
++                        local target_w = math.max(1, math.floor(trim_w * target_h / trim_h + 0.5))
++                        img_cols = math.max(1, math.ceil(target_w / cell_w))
++                        local canvas_w = math.max(1, math.floor(img_cols * cell_w + 0.5))
++                        local normalized_path = path:gsub('%.png$', '')
++                            .. ('-inline-%d-%dx%d.png'):format(
++                                math.floor(scale * 100 + 0.5),
++                                canvas_w,
++                                canvas_h
++                            )
++                        local result = vim.system({
++                            'magick',
++                            path,
++                            '-trim',
++                            '+repage',
++                            '-resize',
++                            ('x%d'):format(target_h),
++                            '-background',
++                            'none',
++                            '-gravity',
++                            'center',
++                            '-extent',
++                            ('%dx%d'):format(canvas_w, canvas_h),
++                            normalized_path,
++                        }):wait()
++                        if result.code == 0 then
++                            transmit_path = normalized_path
++                            w, h = canvas_w, canvas_h
++                        end
++                    end
++                end
++                if not img_cols then
++                    img_cols = math.max(1, math.ceil((w / h) * (cell_h / cell_w)))
++                end
++            else
++                img_cols = math.max(min_cols, math.ceil(w / cell_w))
++                img_rows = math.max(1, math.ceil(h / cell_h))
++            end
++            img_cols = math.min(img_cols, math.max(1, vim.o.columns - 4))
+             img_rows = math.min(img_rows, math.max(1, vim.o.lines - 4))
+ 
+             if M.active_images[node_id] then
+@@ -112,7 +253,7 @@ function M.request_render(equation, config, node_id, min_cols, callback)
+                 M.active_images[node_id] = nil
+             end
+ 
+-            local id = kitty.transmit_image(path, img_rows, img_cols)
++            local id = kitty.transmit_image(transmit_path, img_rows, img_cols)
+             if not id then
+                 callback(nil)
+                 return
+@@ -122,7 +263,7 @@ function M.request_render(equation, config, node_id, min_cols, callback)
+                 id = id,
+                 width = w,
+                 height = h,
+-                path = path,
++                path = transmit_path,
+                 equation = equation,
+                 cols = img_cols,
+                 rows = img_rows,
