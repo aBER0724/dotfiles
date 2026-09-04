@@ -61,6 +61,33 @@ return {
       bullet = {
         enabled = false,
       },
+      code = {
+        enabled = true,
+        style = "wide",
+        background = {
+          enabled = false,
+          color = "#181825",
+        },
+        padding = {
+          top = 1,
+          bottom = 1,
+          left = 1,
+          right = 2,
+        },
+        border = {
+          enabled = true,
+          type = "dynamic",
+          color = "#f38ba8",
+        },
+        title = {
+          enabled = true,
+          type = "dynamic",
+          color = "#a6e3a1",
+        },
+        icon = {
+          enabled = true,
+        },
+      },
       latex = {
         enabled = true,
         render_method = "image",

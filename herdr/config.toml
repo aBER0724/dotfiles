@@ -2,17 +2,17 @@ onboarding = false
 
 # BEGIN nbshell managed theme
 [theme]
-name = "tokyo-night"
+name = "catppuccin-mocha"
 auto_switch = false
 
 [theme.custom]
-sidebar_bg = "#13141c"
-active_row_bg = "#24283b"
-selection_bg = "#292e42"
-panel_bg = "#1a1b26"
-accent = "#7aa2f7"
-red = "#f7768e"
-green = "#9ece6a"
+sidebar_bg = "#181825"
+active_row_bg = "#313244"
+selection_bg = "#45475a"
+panel_bg = "#1e1e2e"
+accent = "#89b4fa"
+red = "#f38ba8"
+green = "#a6e3a1"
 # END nbshell managed theme
 
 [experimental]
