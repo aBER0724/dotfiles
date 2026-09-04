@@ -58,6 +58,9 @@ return {
         icon = true,
         icons = { "󰉫 ", "󰉬 ", "󰉭 ", "󰉮 ", "󰉯 ", "󰉰 " },
       },
+      bullet = {
+        enabled = false,
+      },
       latex = {
         enabled = true,
         render_method = "image",

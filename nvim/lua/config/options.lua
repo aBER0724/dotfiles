@@ -14,6 +14,12 @@ vim.opt.cursorlineopt = "line"
 vim.opt.smoothscroll = true
 vim.opt.showtabline = 0 -- bufferline handles tabs
 vim.opt.diffopt:append("vertical")
+vim.opt.guicursor = {
+  "n-v-c-sm:block-blinkwait500-blinkon500-blinkoff500",
+  "i-ci-ve:ver25-blinkwait500-blinkon500-blinkoff500",
+  "r-cr-o:hor20-blinkwait500-blinkon500-blinkoff500",
+  "t:block-blinkwait500-blinkon500-blinkoff500-TermCursor",
+}
 
 vim.api.nvim_create_autocmd("ColorScheme", {
   callback = function()

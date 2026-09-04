@@ -19,6 +19,7 @@ green = "#9ece6a"
 kitty_graphics = true
 
 [ui]
+host_cursor = "native"
 status_indicators = "symbols"
 
 show_agent_labels_on_pane_borders = true
