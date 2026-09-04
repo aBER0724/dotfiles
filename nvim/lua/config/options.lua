@@ -8,6 +8,7 @@ vim.opt.scrolloff = 8 -- more context above/below cursor
 vim.opt.sidescrolloff = 12
 vim.opt.pumheight = 15 -- taller completion menu
 vim.opt.swapfile = false -- undo history is enough; avoids swap prompts
+vim.opt.clipboard = "unnamedplus" -- use the system clipboard for yank, delete, change, and put
 vim.opt.hlsearch = false -- don't keep the last search highlighted
 vim.opt.signcolumn = "yes"
 vim.opt.cursorlineopt = "line"
@@ -28,11 +29,15 @@ vim.api.nvim_create_autocmd("ColorScheme", {
     for _, g in ipairs(groups) do
       vim.api.nvim_set_hl(0, g, { bg = "NONE", ctermbg = "NONE" })
     end
-    -- Remove bg from ALL other highlight groups to enforce full transparency
+    -- Remove bg from other highlight groups while preserving selection visibility
+    local preserve_bg = {
+      Visual = true,
+      VisualNOS = true,
+    }
     local hl = vim.api.nvim_get_hl(0, {})
     for name, _ in pairs(hl) do
       local opts = vim.api.nvim_get_hl(0, { name = name, link = false })
-      if opts.bg then
+      if opts.bg and not preserve_bg[name] then
         vim.api.nvim_set_hl(0, name, { bg = "NONE" })
       end
     end

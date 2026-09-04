@@ -9,6 +9,9 @@ map({ "n", "i", "v", "s" }, "<C-s>", "<cmd>write<cr><esc>", { desc = "Save file"
 map("n", "<leader>w", "<cmd>write<cr>", { desc = "Save file" })
 
 -- Yank to end of line instead of whole line (consistent with D and C)
+-- macOS copy: Kitty encodes Cmd-C as CSI 99;9u
+map("x", "<D-c>", '"+y', { desc = "Copy Selection to System Clipboard" })
+
 map("n", "Y", "y$", { desc = "Yank to End of Line" })
 
 -- Redo with capital U (mirrors undo)
