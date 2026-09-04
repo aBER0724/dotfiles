@@ -53,6 +53,11 @@ return {
       end
     end,
     opts = {
+      heading = {
+        enabled = true,
+        icon = true,
+        icons = { "󰉫 ", "󰉬 ", "󰉭 ", "󰉮 ", "󰉯 ", "󰉰 " },
+      },
       latex = {
         enabled = true,
         render_method = "image",
