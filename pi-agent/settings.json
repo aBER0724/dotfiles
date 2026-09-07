@@ -17,7 +17,7 @@
     "npm:pi-rtk-optimizer",
     "npm:pi-cache-optimizer",
     "npm:@narumitw/pi-lsp",
-    "npm:pi-agent-browser-native",
+    "npm:pi-agent-browser-native@0.2.10",
     "npm:pi-add-dir",
     "npm:pi-workspace-history",
     "npm:@narumitw/pi-caffeinate",
