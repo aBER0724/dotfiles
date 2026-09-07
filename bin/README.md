@@ -29,7 +29,7 @@ dotfiles {list|status|link|install|deps|setup} [name...]
 | `link [name...]` | 创建缺失链接;目标已有真实文件时备份到 `~/.dotfiles-backup-<时间戳>` 再替换 |
 | `install [name...]` | `link` + 自动安装该配置的软件本体与分组运行时依赖 |
 | `deps [name...]` | 只装软件/依赖而不碰链接；默认处理全部配置 |
-| `setup [auto\|macos\|linux] [auto\|server\|omarchy]` | 检测或指定系统；Linux 可进一步选择无桌面服务器或 Omarchy 桌面环境 |
+| `setup [auto\|macos\|linux\|server] [auto\|server\|omarchy]` | 检测或指定系统；`setup server` 是支持 root 的无桌面快捷方式 |
 
 ## 系统一键安装
 
@@ -37,14 +37,14 @@ dotfiles {list|status|link|install|deps|setup} [name...]
 dotfiles setup auto           # macOS；Arch→omarchy；Ubuntu/Debian→server
 dotfiles setup macos          # macOS 主力配置
 dotfiles setup linux omarchy  # Arch/Omarchy + Niri/nbshell/Kitty
-dotfiles setup linux server   # 无桌面的 Ubuntu/Debian 服务器
+dotfiles setup server         # 无桌面的 Ubuntu/Debian；允许 root
 ```
 
 - 共享主力配置：dotfiles CLI、Zsh、Neovim、Fastfetch、pi、herdr。
 - macOS 额外安装并链接 AeroSpace 和 Kitty；缺少 Homebrew 时从官方固定 URL 自动安装。
 - `linux omarchy`：面向 Arch/Omarchy 桌面，安装并链接 Niri、nbshell 和 Kitty；通过 `pacman` 安装原生依赖和 `nbshell/packages.arch.txt`。
-- `linux server`：面向偏生产环境的无桌面 Ubuntu/Debian，只安装共享终端栈；通过 `apt-get` 安装 Git、Curl、Zsh、Node、Go、构建工具与 tmux，不链接或运行 Niri、nbshell、Kitty、输入法和桌面服务。
-- Linux 在原生包安装后按需引导 Linuxbrew，用于 herdr、Neovim、Fastfetch、Yazi、Rust 等跨发行版工具；不会尝试安装 macOS cask。
+- `server`（或 `linux server`）：面向偏生产环境的无桌面 Ubuntu/Debian，允许直接以 root 运行；只安装共享终端栈，通过 `apt-get` 和官方 Linux release 安装依赖、Herdr、Yazi、Fastfetch，不使用 Homebrew，也不链接或运行 Niri、nbshell、Kitty、输入法和桌面服务。
+- `linux omarchy` 在原生包安装后按需引导 Linuxbrew，用于跨发行版工具；server profile 明确跳过 Linuxbrew。
 - Linux 由 herdr 插件安装器从源码构建 scratch，不安装 `herdr-scratch` cask，也不安装 `python-xattr`。
 - `setup arch` 暂时保留为 `setup linux omarchy` 的兼容别名，并打印弃用提示。
 - Waybar、Clavis、Kaku 属于备用/回滚配置，不在系统预设中。

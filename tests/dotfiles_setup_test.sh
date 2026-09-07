@@ -87,7 +87,7 @@ OS
   stub_logger pacman
   stub_logger brew
   stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"'
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
   assert_status 0 && assert_contains "preset   linux-omarchy"
 }
 
@@ -105,16 +105,36 @@ OS
 test_auto_detects_ubuntu_server() {
   new_case auto-ubuntu
   debian_fixture
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
   assert_status 0 &&
     assert_contains "profile  server" &&
     assert_contains "preset   linux-server"
 }
 
+test_server_shortcut_runs_as_root() {
+  new_case server-root-shortcut
+  debian_fixture
+  stub_command id 'if [ "$1" = "-u" ]; then echo 0; else /usr/bin/id "$@"; fi'
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup server
+  assert_status 0 &&
+    assert_contains "preset   linux-server" &&
+    grep -F "apt-get update" "$LOG" >/dev/null &&
+    ! grep -F "sudo apt-get" "$LOG" >/dev/null &&
+    ! grep -F "brew" "$LOG" >/dev/null
+}
+
+test_root_rejected_for_omarchy() {
+  new_case root-omarchy
+  arch_fixture
+  stub_command id 'if [ "$1" = "-u" ]; then echo 0; else /usr/bin/id "$@"; fi'
+  DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
+  assert_status 1 && assert_contains "root setup is supported only" && [ ! -s "$LOG" ]
+}
+
 test_server_installs_apt_packages() {
   new_case server-packages
   debian_fixture
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
   assert_status 0 &&
     grep -F "sudo apt-get update" "$LOG" >/dev/null &&
     grep -F "sudo apt-get install -y" "$LOG" | grep -F "build-essential" | grep -F "golang-go" | grep -F "tmux" >/dev/null &&
@@ -127,7 +147,7 @@ test_server_excludes_desktop_stack() {
   stub_logger npm
   stub_logger git
   stub_logger herdr
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
   assert_status 0 &&
     [ -L "$HOME/.config/nvim" ] &&
     [ -L "$HOME/.config/herdr/config.toml" ] &&
@@ -230,7 +250,7 @@ OS
 test_arch_alias_is_compatible() {
   new_case arch-alias
   arch_fixture
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
   assert_status 0 &&
     assert_contains "deprecated: 'setup arch' is now 'setup linux omarchy'" &&
     assert_contains "preset   linux-omarchy"
@@ -239,7 +259,7 @@ test_arch_alias_is_compatible() {
 test_arch_installs_required_packages() {
   new_case arch-packages
   arch_fixture
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     grep -F "sudo pacman -S --needed" "$LOG" >/dev/null &&
     grep -F "base-devel" "$LOG" >/dev/null &&
@@ -253,7 +273,7 @@ test_arch_installs_required_packages() {
 test_arch_installs_herdr_plugin_build_deps() {
   new_case arch-herdr-build-deps
   arch_fixture
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     grep -F "sudo pacman -S --needed" "$LOG" | grep -F "rust" | grep -F "yazi" >/dev/null
 }
@@ -280,7 +300,7 @@ test_arch_links_primary_stack_only() {
   stub_logger npm
   stub_logger git
   stub_logger herdr
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     [ -L "$HOME/.config/niri" ] &&
     [ -L "$HOME/.config/nbshell/config.json" ] &&
@@ -297,7 +317,7 @@ test_arch_prints_but_does_not_enable_services() {
   new_case arch-manual
   arch_fixture
   stub_command systemctl 'echo systemctl-executed >> "$LOG"; exit 99'
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     assert_contains "systemctl --user enable --now nbshell.service" &&
     assert_contains "sudo systemctl enable --now tuned.service" &&
@@ -468,13 +488,15 @@ test_existing_commands_smoke() {
 test_usage_lists_setup() {
   new_case usage
   run_cli
-  assert_status 1 && assert_contains "setup [auto|macos|linux] [auto|server|omarchy]"
+  assert_status 1 && assert_contains "setup [auto|macos|linux|server] [auto|server|omarchy]"
 }
 
 
 run_test "auto detects macOS" test_auto_detects_macos
 run_test "auto detects Arch" test_auto_detects_arch
 run_test "auto detects Ubuntu server" test_auto_detects_ubuntu_server
+run_test "server shortcut runs as root" test_server_shortcut_runs_as_root
+run_test "root is rejected for Omarchy" test_root_rejected_for_omarchy
 run_test "server installs apt packages" test_server_installs_apt_packages
 run_test "server excludes desktop stack" test_server_excludes_desktop_stack
 run_test "Linux profile rejects wrong distro" test_linux_profile_rejects_wrong_distro

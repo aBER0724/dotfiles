@@ -36,7 +36,7 @@ bash ~/dotfiles/bin/dotfiles setup auto
 # Or select the operating system and Linux environment explicitly:
 bash ~/dotfiles/bin/dotfiles setup macos
 bash ~/dotfiles/bin/dotfiles setup linux omarchy  # Arch/Omarchy desktop
-bash ~/dotfiles/bin/dotfiles setup linux server   # headless Ubuntu/Debian
+bash ~/dotfiles/bin/dotfiles setup server         # headless Ubuntu/Debian, root supported
 
 # Fine-grained management after setup:
 dotfiles status
@@ -48,10 +48,10 @@ dotfiles install wm
 `setup` installs the primary stack, links its configuration, and runs user-level plugin/install scripts. Linux is divided into environment profiles:
 
 - `linux omarchy`: the complete Arch desktop stack with Niri, nbshell, Kitty, native pacman packages, and `nbshell/packages.arch.txt`.
-- `linux server`: a headless Ubuntu/Debian stack containing only the shared terminal tools (Zsh, Neovim, Fastfetch, pi, and herdr). It uses `apt-get` for bootstrap/build dependencies and deliberately excludes Niri, nbshell, Kitty, input methods, and desktop services.
+- `server` (or `linux server`): a headless Ubuntu/Debian stack containing only the shared terminal tools (Zsh, Neovim, Fastfetch, pi, and herdr). It supports root-owned server environments, uses `apt-get` plus official Linux release binaries, and deliberately excludes Homebrew, Niri, nbshell, Kitty, input methods, and desktop services.
 - `linux auto` (or plain `setup auto`): selects `omarchy` on Arch derivatives and `server` on Ubuntu/Debian.
 
-macOS and Linux bootstrap Homebrew when missing for cross-platform tools that do not have a suitable native mapping. Existing conflicting files are backed up before linking. Starting services or GUI apps, changing the login shell, and creating the pi API key remain manual. The old `setup arch` command remains as a compatibility alias for `setup linux omarchy`.
+macOS and the Omarchy profile bootstrap Homebrew when missing. The server profile avoids Homebrew so it can run directly under root and installs Herdr, Yazi, and Fastfetch from their official Linux releases. Existing conflicting files are backed up before linking. Starting services or GUI apps, changing the login shell, and creating the pi API key remain manual. The old `setup arch` command remains as a compatibility alias for `setup linux omarchy`.
 ### Niri + nbshell
 
 The `wm` group uses nbshell as the active desktop shell. Its visual language is
