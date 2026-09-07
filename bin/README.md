@@ -29,24 +29,27 @@ dotfiles {list|status|link|install|deps|setup} [name...]
 | `link [name...]` | 创建缺失链接;目标已有真实文件时备份到 `~/.dotfiles-backup-<时间戳>` 再替换 |
 | `install [name...]` | `link` + 自动安装该配置的软件本体与分组运行时依赖 |
 | `deps [name...]` | 只装软件/依赖而不碰链接；默认处理全部配置 |
-| `setup [auto\|macos\|arch]` | 检测或指定系统，一键安装并配置主力栈 |
+| `setup [auto\|macos\|linux] [auto\|server\|omarchy]` | 检测或指定系统；Linux 可进一步选择无桌面服务器或 Omarchy 桌面环境 |
 
 ## 系统一键安装
 
 ```bash
-dotfiles setup auto   # 自动识别 macOS 或 Arch
-dotfiles setup macos  # 仅允许在 macOS 执行
-dotfiles setup arch   # 仅允许在 Arch/Arch 衍生系统执行
+dotfiles setup auto           # macOS；Arch→omarchy；Ubuntu/Debian→server
+dotfiles setup macos          # macOS 主力配置
+dotfiles setup linux omarchy  # Arch/Omarchy + Niri/nbshell/Kitty
+dotfiles setup linux server   # 无桌面的 Ubuntu/Debian 服务器
 ```
 
 - 共享主力配置：dotfiles CLI、Zsh、Neovim、Fastfetch、pi、herdr。
 - macOS 额外安装并链接 AeroSpace 和 Kitty；缺少 Homebrew 时从官方固定 URL 自动安装。
-- Arch 额外安装并链接 Niri、nbshell 和 Kitty；先通过 `sudo pacman -S --needed` 安装 Homebrew 前置依赖、配置软件、herdr 插件所需的 Rust/Cargo 与 Yazi，以及 `nbshell/packages.arch.txt`，再按需引导 Linuxbrew 并安装 brew-only 软件。
-- Arch 不安装 `herdr-scratch` cask，也不安装 `python-xattr` 来模拟 macOS `xattr`；Linux 由 herdr 的插件安装器从源码构建 scratch。
+- `linux omarchy`：面向 Arch/Omarchy 桌面，安装并链接 Niri、nbshell 和 Kitty；通过 `pacman` 安装原生依赖和 `nbshell/packages.arch.txt`。
+- `linux server`：面向偏生产环境的无桌面 Ubuntu/Debian，只安装共享终端栈；通过 `apt-get` 安装 Git、Curl、Zsh、Node、Go、构建工具与 tmux，不链接或运行 Niri、nbshell、Kitty、输入法和桌面服务。
+- Linux 在原生包安装后按需引导 Linuxbrew，用于 herdr、Neovim、Fastfetch、Yazi、Rust 等跨发行版工具；不会尝试安装 macOS cask。
+- Linux 由 herdr 插件安装器从源码构建 scratch，不安装 `herdr-scratch` cask，也不安装 `python-xattr`。
+- `setup arch` 暂时保留为 `setup linux omarchy` 的兼容别名，并打印弃用提示。
 - Waybar、Clavis、Kaku 属于备用/回滚配置，不在系统预设中。
 - 配置冲突仍使用时间戳目录备份，重复运行会跳过正确链接和已安装命令。
 - setup 不启动 AeroSpace、不修改登录 Shell、不写入 pi API key，也不自动启用 systemd 服务。
-
 Arch 完成后按需手动执行：
 
 ```bash
@@ -68,7 +71,7 @@ sudo systemctl enable --now tuned.service
 
 `install` / `deps` 的安装策略:
 
-- macOS / 已安装 Homebrew 的 Linux 使用 Homebrew；Arch Linux 使用 `sudo pacman -S --needed`
+- `setup linux omarchy` 会先使用 pacman 安装原生依赖；细粒度 `install` / `deps` 在 Homebrew 可用时优先使用 Homebrew，否则在 Arch 上回退到 pacman
 - 只安装所选配置的软件；不传名称时处理全部配置
 - 已存在的命令会跳过，保持幂等
 - 当前自动覆盖 AeroSpace、Zsh、Neovim、Niri、Waybar、Quickshell/Fcitx5/Kitty、Fastfetch、pi、herdr 与 herdr-scratch

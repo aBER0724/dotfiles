@@ -75,7 +75,7 @@ test_auto_detects_macos() {
   new_case auto-macos
   stub_logger brew
   DOTFILES_UNAME=Darwin run_cli setup auto
-  assert_status 0 && assert_contains "preset  macos"
+  assert_status 0 && assert_contains "preset   macos"
 }
 
 test_auto_detects_arch() {
@@ -88,7 +88,98 @@ OS
   stub_logger brew
   stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"'
   DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
-  assert_status 0 && assert_contains "preset  arch"
+  assert_status 0 && assert_contains "preset   linux-omarchy"
+}
+
+debian_fixture() {
+  cat > "$CASE_ROOT/os-release" <<'OS'
+ID=ubuntu
+ID_LIKE=debian
+NAME="Ubuntu"
+OS
+  stub_logger apt-get
+  stub_logger brew
+  stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"; if [ "${STUB_SUDO_FAIL:-0}" = 1 ]; then exit 42; fi'
+}
+
+test_auto_detects_ubuntu_server() {
+  new_case auto-ubuntu
+  debian_fixture
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
+  assert_status 0 &&
+    assert_contains "profile  server" &&
+    assert_contains "preset   linux-server"
+}
+
+test_server_installs_apt_packages() {
+  new_case server-packages
+  debian_fixture
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
+  assert_status 0 &&
+    grep -F "sudo apt-get update" "$LOG" >/dev/null &&
+    grep -F "sudo apt-get install -y" "$LOG" | grep -F "build-essential" | grep -F "golang-go" | grep -F "tmux" >/dev/null &&
+    ! grep -F "pacman" "$LOG" >/dev/null
+}
+
+test_server_excludes_desktop_stack() {
+  new_case server-links
+  debian_fixture
+  stub_logger npm
+  stub_logger git
+  stub_logger herdr
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
+  assert_status 0 &&
+    [ -L "$HOME/.config/nvim" ] &&
+    [ -L "$HOME/.config/herdr/config.toml" ] &&
+    [ ! -e "$HOME/.config/niri" ] &&
+    [ ! -e "$HOME/.config/nbshell" ] &&
+    [ ! -e "$HOME/.config/kitty" ] &&
+    assert_contains "no desktop services or nbshell were installed"
+}
+
+test_linux_profile_rejects_wrong_distro() {
+  new_case wrong-linux-profile
+  debian_fixture
+  DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
+  assert_status 1 && assert_contains "requires Arch Linux" && [ ! -s "$LOG" ]
+}
+
+test_server_rejects_arch_even_with_apt() {
+  new_case server-on-arch
+  arch_fixture
+  stub_logger apt-get
+  DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
+  assert_status 1 && assert_contains "requires Ubuntu, Debian, or a derivative" && [ ! -s "$LOG" ]
+}
+
+test_unknown_linux_profile_fails() {
+  new_case unknown-linux-profile
+  debian_fixture
+  DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux desktop
+  assert_status 1 && assert_contains "unknown Linux profile 'desktop'"
+}
+
+test_setup_rejects_extra_arguments() {
+  new_case extra-arguments
+  debian_fixture
+  DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server extra
+  assert_status 1 && assert_contains "accepts at most a system and one Linux profile" && [ ! -s "$LOG" ]
+}
+
+test_arch_alias_rejects_profile() {
+  new_case arch-alias-profile
+  arch_fixture
+  DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch server
+  assert_status 1 && assert_contains "alias does not accept a profile" && [ ! -s "$LOG" ]
+}
+
+test_server_package_failure_stops_before_links() {
+  new_case server-failure
+  debian_fixture
+  STUB_SUDO_FAIL=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
+  assert_status 42 &&
+    [ ! -e "$HOME/.config/nvim" ] &&
+    ! grep -F "brew" "$LOG" >/dev/null
 }
 test_macos_rejects_linux() {
   new_case reject-macos
@@ -99,15 +190,15 @@ test_macos_rejects_linux() {
 
 test_arch_rejects_macos() {
   new_case reject-arch
-  DOTFILES_UNAME=Darwin run_cli setup arch
-  assert_status 1 && assert_contains "setup arch requires Arch Linux"
+  DOTFILES_UNAME=Darwin run_cli setup linux omarchy
+  assert_status 1 && assert_contains "setup linux requires Linux"
   [ ! -s "$LOG" ]
 }
 
 test_unknown_preset_fails() {
   new_case unknown
   DOTFILES_UNAME=Darwin run_cli setup debian
-  assert_status 1 && assert_contains "unknown setup preset 'debian'"
+  assert_status 1 && assert_contains "unknown setup system 'debian'"
 }
 test_macos_bootstraps_homebrew() {
   new_case macos-bootstrap
@@ -136,10 +227,19 @@ OS
   stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"; if [ "${STUB_SUDO_FAIL:-0}" = 1 ]; then exit 42; fi'
 }
 
+test_arch_alias_is_compatible() {
+  new_case arch-alias
+  arch_fixture
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  assert_status 0 &&
+    assert_contains "deprecated: 'setup arch' is now 'setup linux omarchy'" &&
+    assert_contains "preset   linux-omarchy"
+}
+
 test_arch_installs_required_packages() {
   new_case arch-packages
   arch_fixture
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     grep -F "sudo pacman -S --needed" "$LOG" >/dev/null &&
     grep -F "base-devel" "$LOG" >/dev/null &&
@@ -153,7 +253,7 @@ test_arch_installs_required_packages() {
 test_arch_installs_herdr_plugin_build_deps() {
   new_case arch-herdr-build-deps
   arch_fixture
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     grep -F "sudo pacman -S --needed" "$LOG" | grep -F "rust" | grep -F "yazi" >/dev/null
 }
@@ -169,7 +269,7 @@ test_macos_installs_herdr_plugin_build_deps() {
 test_arch_package_failure_stops_before_links() {
   new_case arch-failure
   arch_fixture
-  STUB_SUDO_FAIL=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  STUB_SUDO_FAIL=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 42 && [ ! -e "$HOME/.config/niri" ]
 }
 
@@ -180,12 +280,12 @@ test_arch_links_primary_stack_only() {
   stub_logger npm
   stub_logger git
   stub_logger herdr
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     [ -L "$HOME/.config/niri" ] &&
     [ -L "$HOME/.config/nbshell/config.json" ] &&
     [ -L "$HOME/.config/nbshell/screensaver.txt" ] &&
-    grep -F "▄██████▄" "$HOME/.config/nbshell/screensaver.txt" >/dev/null &&
+    grep -F "▄█████▄" "$HOME/.config/nbshell/screensaver.txt" >/dev/null &&
     grep -F '"bongoActive": false' "$HOME/.config/nbshell/config.json" >/dev/null &&
     [ -L "$HOME/.config/kitty/kitty.conf" ] &&
     [ ! -e "$HOME/.config/waybar" ] &&
@@ -197,7 +297,7 @@ test_arch_prints_but_does_not_enable_services() {
   new_case arch-manual
   arch_fixture
   stub_command systemctl 'echo systemctl-executed >> "$LOG"; exit 99'
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     assert_contains "systemctl --user enable --now nbshell.service" &&
     assert_contains "sudo systemctl enable --now tuned.service" &&
@@ -232,7 +332,7 @@ test_arch_bootstraps_linuxbrew_without_scratch_cask() {
   stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"; printf "#!/bin/sh\nexit 0\n"'
   stub_command bootstrap-bash 'printf "bootstrap-bash %s\n" "$*" >> "$LOG"'
   stub_logger brew
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     ! grep -F "python-xattr" "$LOG" >/dev/null &&
     grep -F "curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh" "$LOG" >/dev/null &&
@@ -245,7 +345,7 @@ test_arch_installs_native_packages_before_homebrew() {
   arch_fixture
   stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"; printf "#!/bin/sh\nexit 0\n"'
   stub_command bootstrap-bash 'printf "bootstrap-bash %s\n" "$*" >> "$LOG"'
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 || return 1
   pacman_line="$(grep -nF 'sudo pacman -S --needed' "$LOG" | head -n 1 | cut -d: -f1)"
   bootstrap_line="$(grep -nF 'bootstrap-bash -c' "$LOG" | head -n 1 | cut -d: -f1)"
@@ -368,12 +468,22 @@ test_existing_commands_smoke() {
 test_usage_lists_setup() {
   new_case usage
   run_cli
-  assert_status 1 && assert_contains "setup [auto|macos|arch]"
+  assert_status 1 && assert_contains "setup [auto|macos|linux] [auto|server|omarchy]"
 }
 
 
 run_test "auto detects macOS" test_auto_detects_macos
 run_test "auto detects Arch" test_auto_detects_arch
+run_test "auto detects Ubuntu server" test_auto_detects_ubuntu_server
+run_test "server installs apt packages" test_server_installs_apt_packages
+run_test "server excludes desktop stack" test_server_excludes_desktop_stack
+run_test "Linux profile rejects wrong distro" test_linux_profile_rejects_wrong_distro
+run_test "server rejects Arch even with apt" test_server_rejects_arch_even_with_apt
+run_test "unknown Linux profile fails" test_unknown_linux_profile_fails
+run_test "setup rejects extra arguments" test_setup_rejects_extra_arguments
+run_test "Arch alias rejects profile" test_arch_alias_rejects_profile
+run_test "server package failure stops before links" test_server_package_failure_stops_before_links
+run_test "Arch compatibility alias works" test_arch_alias_is_compatible
 run_test "macOS preset rejects Linux" test_macos_rejects_linux
 run_test "Arch preset rejects macOS" test_arch_rejects_macos
 run_test "unknown preset fails" test_unknown_preset_fails

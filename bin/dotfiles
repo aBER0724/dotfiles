@@ -41,7 +41,8 @@ LINK_TABLE=(
 
 # Runtime software used by managed configs.
 # Each entry: "<managed-name>|<command>|<brew-kind>|<brew-package>|<arch-package>".
-# brew-kind is formula/cask/npm; "-" means unavailable on that platform.
+# Native distro mappings are intentionally limited to software with stable package
+# names; Linuxbrew handles the remaining cross-distro tools.
 SOFTWARE_TABLE=(
   "aerospace|aerospace|cask|nikitabobko/tap/aerospace|-"
   "zshrc|zsh|formula|zsh|zsh"
@@ -72,10 +73,13 @@ GROUP_TABLE=(
   "wm|niri nbshell-config nbshell-screensaver"
 )
 
-# System setup presets contain primary configs only; rollback configs stay manual.
+# Setup is split by operating system and, on Linux, by environment profile.
+# `server` is safe for headless Ubuntu/Debian hosts; `omarchy` is the full
+# Arch desktop stack with Niri, nbshell, and Kitty.
 PRESET_TABLE=(
   "macos|dotfiles-cli zsh nvim fastfetch pi herdr aerospace kitty"
-  "arch|dotfiles-cli zsh nvim fastfetch pi herdr niri nbshell kitty"
+  "linux-server|dotfiles-cli zsh nvim fastfetch pi herdr"
+  "linux-omarchy|dotfiles-cli zsh nvim fastfetch pi herdr niri nbshell kitty"
 )
 
 # Expand aliases in "$*" to concrete names (set -u + empty string is fine here).
@@ -100,24 +104,37 @@ host_uname() {
   fi
 }
 
-is_arch_host() {
+linux_distro() {
   local os_release="${DOTFILES_OS_RELEASE:-/etc/os-release}" id="" id_like=""
   [ "$(host_uname)" = "Linux" ] || return 1
-  [ -r "$os_release" ] || return 1
+  [ -r "$os_release" ] || { echo unknown; return 0; }
   id="$(sed -n 's/^ID=//p' "$os_release" | head -n 1 | tr -d '\"')"
   id_like="$(sed -n 's/^ID_LIKE=//p' "$os_release" | head -n 1 | tr -d '\"')"
-  [ "$id" = "arch" ] && return 0
-  case " $id_like " in *" arch "*) return 0 ;; esac
-  return 1
+  case " $id $id_like " in
+    *" arch "*) echo arch ;;
+    *" ubuntu "*|*" debian "*) echo debian ;;
+    *) echo unknown ;;
+  esac
+}
+
+detect_linux_profile() {
+  case "$(linux_distro)" in
+    arch) echo omarchy ;;
+    debian) echo server ;;
+    *)
+      echo "dotfiles: unsupported Linux distribution; supported environments: omarchy (Arch) and server (Ubuntu/Debian)" >&2
+      return 1
+      ;;
+  esac
 }
 
 detect_system() {
   if [ "$(host_uname)" = "Darwin" ]; then
     echo macos
-  elif is_arch_host; then
-    echo arch
+  elif [ "$(host_uname)" = "Linux" ]; then
+    echo linux
   else
-    echo "dotfiles: unsupported system; supported presets: macos arch" >&2
+    echo "dotfiles: unsupported system; supported systems: macos linux" >&2
     return 1
   fi
 }
@@ -130,14 +147,41 @@ validate_system() {
         return 1
       }
       ;;
-    arch)
-      is_arch_host || {
-        echo "dotfiles: setup arch requires Arch Linux" >&2
+    linux)
+      [ "$(host_uname)" = "Linux" ] || {
+        echo "dotfiles: setup linux requires Linux" >&2
         return 1
       }
       ;;
     *)
-      echo "dotfiles: unknown setup preset '$1' (supported: auto macos arch)" >&2
+      echo "dotfiles: unknown setup system '$1' (supported: auto macos linux)" >&2
+      return 1
+      ;;
+  esac
+}
+
+validate_linux_profile() {
+  local profile="$1" distro
+  distro="$(linux_distro)"
+  case "$profile" in
+    server)
+      [ "$distro" = debian ] || {
+        echo "dotfiles: Linux profile 'server' requires Ubuntu, Debian, or a derivative" >&2
+        return 1
+      }
+      command -v apt-get >/dev/null 2>&1 || {
+        echo "dotfiles: Linux profile 'server' requires apt-get" >&2
+        return 1
+      }
+      ;;
+    omarchy)
+      [ "$distro" = arch ] || {
+        echo "dotfiles: Linux profile 'omarchy' requires Arch Linux or an Arch derivative" >&2
+        return 1
+      }
+      ;;
+    *)
+      echo "dotfiles: unknown Linux profile '$profile' (supported: auto server omarchy)" >&2
       return 1
       ;;
   esac
@@ -160,7 +204,7 @@ HOMEBREW_INSTALL_URL="${DOTFILES_HOMEBREW_INSTALL_URL:-https://raw.githubusercon
 BOOTSTRAP_BASH="${DOTFILES_BASH_BIN:-/bin/bash}"
 MACOS_BASE_PACKAGES="git zsh node go"
 ARCH_BASE_PACKAGES="git curl file procps-ng zsh nodejs npm go base-devel"
-
+DEBIAN_BASE_PACKAGES="git curl file procps zsh nodejs npm golang-go build-essential tmux"
 select_entries() {
   # "$*" joins args with spaces; empty when no names given (all entries).
   # Plain-string iteration keeps this bash 3.2-safe (empty arrays + set -u
@@ -299,20 +343,36 @@ arch_packages_for() {
   printf '%s\n' "$packages"
 }
 
+run_privileged() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+  else
+    command -v sudo >/dev/null 2>&1 || {
+      echo "dotfiles: sudo is required to install native Linux packages" >&2
+      return 1
+    }
+    sudo "$@"
+  fi
+}
+
 install_arch_setup_packages() {
   local wanted="$1" packages
   command -v pacman >/dev/null 2>&1 || {
-    echo "dotfiles: pacman is required for setup arch" >&2
-    return 1
-  }
-  command -v sudo >/dev/null 2>&1 || {
-    echo "dotfiles: sudo is required for setup arch" >&2
+    echo "dotfiles: pacman is required for the Linux omarchy profile" >&2
     return 1
   }
   packages="$(arch_packages_for "$wanted")"
-  sudo pacman -S --needed $packages
+  run_privileged pacman -S --needed $packages
 }
 
+install_debian_setup_packages() {
+  command -v apt-get >/dev/null 2>&1 || {
+    echo "dotfiles: apt-get is required for the Linux server profile" >&2
+    return 1
+  }
+  run_privileged apt-get update
+  run_privileged apt-get install -y $DEBIAN_BASE_PACKAGES
+}
 run_software_install() {
   local wanted="$1" skip_arch="${2:-0}" entry owner command_name brew_kind brew_package arch_package
   local brew_formulae="" brew_casks="" npm_packages="" arch_packages=""
@@ -492,29 +552,65 @@ install_macos_base_packages() {
   brew install $MACOS_BASE_PACKAGES
 }
 cmd_setup() {
-  local preset="${1:-auto}" wanted
+  local system="${1:-auto}" profile="${2:-auto}" extra="${3:-}" preset wanted
   echo "== detect system =="
-  [ "$preset" = auto ] && preset="$(detect_system)"
-  validate_system "$preset"
-  wanted="$(preset_entries "$preset")"
-  echo "preset  $preset"
-  printf 'entries %s\n' "$wanted"
-  if [ "$preset" = arch ]; then
-    echo "== install native packages =="
-    install_arch_setup_packages "$wanted"
+  if [ "$(id -u)" -eq 0 ]; then
+    echo "dotfiles: setup must run as a regular user; sudo is requested only for native packages" >&2
+    return 1
   fi
+  if [ -n "$extra" ]; then
+    echo "dotfiles: setup accepts at most a system and one Linux profile" >&2
+    return 1
+  fi
+  if [ "$system" = arch ]; then
+    if [ "$profile" != auto ]; then
+      echo "dotfiles: deprecated 'setup arch' alias does not accept a profile" >&2
+      return 1
+    fi
+    echo "deprecated: 'setup arch' is now 'setup linux omarchy'"
+    system=linux
+    profile=omarchy
+  fi
+  [ "$system" = auto ] && system="$(detect_system)"
+  validate_system "$system"
+  if [ "$system" = linux ]; then
+    [ "$profile" = auto ] && profile="$(detect_linux_profile)"
+    validate_linux_profile "$profile"
+    preset="linux-$profile"
+    echo "system   linux"
+    echo "profile  $profile"
+  else
+    if [ "$profile" != auto ]; then
+      echo "dotfiles: macOS setup does not accept a Linux profile" >&2
+      return 1
+    fi
+    preset=macos
+    echo "system   macos"
+  fi
+  wanted="$(preset_entries "$preset")"
+  echo "preset   $preset"
+  printf 'entries %s\n' "$wanted"
+
+  if [ "$preset" = linux-omarchy ]; then
+    echo "== install native packages (pacman) =="
+    install_arch_setup_packages "$wanted"
+  elif [ "$preset" = linux-server ]; then
+    echo "== install native packages (apt) =="
+    install_debian_setup_packages
+  fi
+
   echo "== bootstrap package manager =="
   ensure_homebrew
   if [ "$preset" = macos ]; then
     echo "== install base packages =="
     install_macos_base_packages
   fi
+
   echo "== install config software =="
-  if [ "$preset" = arch ]; then
-    run_software_install "$wanted" 1
-  else
-    run_software_install "$wanted"
-  fi
+  case "$preset" in
+    linux-*) run_software_install "$wanted" 1 ;;
+    *) run_software_install "$wanted" ;;
+  esac
 
   echo "== link configs =="
   select_entries $wanted
@@ -529,10 +625,14 @@ cmd_setup() {
       echo "Start AeroSpace and grant Accessibility permission when prompted."
       echo "Optional: change the login shell manually with chsh."
       ;;
-    arch)
+    linux-omarchy)
       echo "  systemctl --user enable --now nbshell.service"
       echo "  sudo systemctl enable --now tuned.service"
       echo "If scratch registration failed, run: herdr-scratch link"
+      ;;
+    linux-server)
+      echo "Headless profile complete; no desktop services or nbshell were installed."
+      echo "Optional: change the login shell manually with chsh."
       ;;
   esac
 }
@@ -543,7 +643,7 @@ case "${1:-}" in
   link)   shift; select_entries "$@"; cmd_link ;;
   install) shift; select_entries "$@"; cmd_install "$(expand_groups "$*")" ;;
   deps) shift; cmd_deps "$@" ;;
-  setup) shift; cmd_setup "${1:-auto}" ;;
+  setup) shift; cmd_setup "${1:-auto}" "${2:-auto}" "${3:-}" ;;
   *)
     echo "Usage: dotfiles {list|status|link|install|deps|setup} [name...]"
     echo "  list                show every managed entry and its target"
@@ -551,7 +651,8 @@ case "${1:-}" in
     echo "  link [name...]      create links; backup+replace conflicts"
     echo "  install [name...]   link + install selected config software/deps"
     echo "  deps [name...]      install selected config software/deps (no linking)"
-    echo "  setup [auto|macos|arch]  install and configure the primary system preset"
+    echo "  setup [auto|macos|linux] [auto|server|omarchy]"
+    echo "                      install a system preset; Linux auto-detects its environment"
     echo
     echo "names: $(for e in "${LINK_TABLE[@]}"; do printf '%s ' "${e%%|*}"; done)"
     echo "groups: $(for g in "${GROUP_TABLE[@]}"; do printf '%s ' "${g%%|*}"; done)"
