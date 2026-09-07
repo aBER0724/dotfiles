@@ -122,6 +122,40 @@ test_server_shortcut_runs_as_root() {
     ! grep -F "sudo apt-get" "$LOG" >/dev/null &&
     ! grep -F "brew" "$LOG" >/dev/null
 }
+server_nvim_fixture() {
+  debian_fixture
+  stub_logger node
+  stub_logger herdr
+  stub_logger yazi
+  stub_logger fastfetch
+  stub_command uname 'if [ "$1" = "-m" ]; then echo x86_64; else /usr/bin/uname "$@"; fi'
+  stub_command id 'if [ "$1" = "-u" ]; then echo 0; else /usr/bin/id "$@"; fi'
+  stub_command tar 'printf "tar %s\n" "$*" >> "$LOG"; mkdir -p "$4/nvim-linux-x86_64"'
+  stub_command cp 'printf "cp %s\n" "$*" >> "$LOG"'
+  stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"; out=""; while [ "$#" -gt 0 ]; do if [ "$1" = "-o" ]; then shift; out="$1"; break; fi; shift; done; [ -z "$out" ] || : > "$out"'
+}
+
+test_server_upgrades_old_neovim() {
+  new_case server-old-neovim
+  server_nvim_fixture
+  stub_command nvim 'exit 1'
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
+  assert_status 0 &&
+    assert_contains "install Neovim v0.12.5 from GitHub release" &&
+    grep -F "curl -fsSL https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86_64.tar.gz" "$LOG" >/dev/null &&
+    grep -F "cp -R" "$LOG" | grep -F "/usr/local/" >/dev/null
+}
+
+test_server_keeps_current_neovim() {
+  new_case server-current-neovim
+  server_nvim_fixture
+  stub_command nvim 'exit 0'
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
+  assert_status 0 &&
+    assert_not_contains "install Neovim v0.12.5 from GitHub release" &&
+    ! grep -F "neovim/releases/download" "$LOG" >/dev/null
+}
+
 
 test_root_rejected_for_omarchy() {
   new_case root-omarchy
@@ -496,6 +530,9 @@ run_test "auto detects macOS" test_auto_detects_macos
 run_test "auto detects Arch" test_auto_detects_arch
 run_test "auto detects Ubuntu server" test_auto_detects_ubuntu_server
 run_test "server shortcut runs as root" test_server_shortcut_runs_as_root
+
+run_test "server upgrades old Neovim" test_server_upgrades_old_neovim
+run_test "server keeps current Neovim" test_server_keeps_current_neovim
 run_test "root is rejected for Omarchy" test_root_rejected_for_omarchy
 run_test "server installs apt packages" test_server_installs_apt_packages
 run_test "server excludes desktop stack" test_server_excludes_desktop_stack

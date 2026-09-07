@@ -72,7 +72,7 @@ nvim/
 ## 新设备安装
 
 ```bash
-# 确保 Neovim ≥ 0.9 已安装
+# 确保 Neovim ≥ 0.11.2 已安装（server setup 默认安装 0.12.5）
 dotfiles link nvim        # 建立 ~/.config/nvim -> ~/dotfiles/nvim 符号链接
 nvim                      # 首次启动自动安装全部插件
 ```

@@ -424,7 +424,7 @@ install_debian_server_tools() {
     run_privileged cp -R "$tmpdir/node-v$NODE_VERSION-linux-$node_arch/share/." /usr/local/share/
     rm -rf -- "$tmpdir"
   }
-  command -v nvim >/dev/null 2>&1 || {
+  if ! command -v nvim >/dev/null 2>&1 || ! nvim --clean --headless "+lua if vim.version.lt(vim.version(), vim.version.parse('$NEOVIM_VERSION')) then vim.cmd('cquit') end" +qa >/dev/null 2>&1; then
     case "$arch" in
       x86_64) nvim_asset="nvim-linux-x86_64" ;;
       aarch64) nvim_asset="nvim-linux-arm64" ;;
@@ -435,7 +435,7 @@ install_debian_server_tools() {
     tar -xzf "$tmpdir/nvim.tar.gz" -C "$tmpdir"
     run_privileged cp -R "$tmpdir/$nvim_asset/." /usr/local/
     rm -rf -- "$tmpdir"
-  }
+  fi
   install_linux_binary herdr "https://github.com/herdrdev/herdr/releases/download/v$HERDR_VERSION/herdr-linux-$arch"
   command -v yazi >/dev/null 2>&1 || {
     case "$arch" in

@@ -1,5 +1,9 @@
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not (vim.uv or vim.loop).fs_stat(lazypath) then
+local lazy_init = lazypath .. "/lua/lazy/init.lua"
+if not (vim.uv or vim.loop).fs_stat(lazy_init) then
+  -- An interrupted clone can leave the directory and .git metadata behind
+  -- without a usable Lua module. The plugin cache is disposable, so rebuild it.
+  vim.fn.delete(lazypath, "rf")
   local lazyrepo = "https://github.com/folke/lazy.nvim.git"
   local out = vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
   if vim.v.shell_error ~= 0 then
