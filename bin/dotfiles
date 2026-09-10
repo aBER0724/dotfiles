@@ -30,6 +30,7 @@ LINK_TABLE=(
   "pi-settings|pi-agent/settings.json|$HOME/.pi/agent/settings.json"
   "pi-models|pi-agent/models.json|$HOME/.pi/agent/models.json"
   "pi-extensions|pi-agent/extensions|$HOME/.pi/agent/extensions"
+  "agent-skills|agent-skills/skills|$HOME/.agents/skills"
   "herdr|herdr/config.toml|$HOME/.config/herdr/config.toml"
   "kitty-main|kitty/kitty.conf|$HOME/.config/kitty/kitty.conf"
   "kitty-linux|kitty/platform-linux.conf|$HOME/.config/kitty/platform-linux.conf"
@@ -65,7 +66,7 @@ SOFTWARE_TABLE=(
 # Group aliases: "<alias>|<space-separated names>". Passing the alias to
 # status/link/install expands to all members, e.g. `dotfiles link pi`.
 GROUP_TABLE=(
-  "pi|pi-settings pi-models pi-extensions"
+  "pi|pi-settings pi-models pi-extensions agent-skills"
   "zsh|zshrc zshenv zprofile shinit p10k"
   "kitty|kitty-main kitty-linux kitty-macos kitty-tab-bar kitty-watcher kitty-resize-separator"
   "herdr|herdr"
@@ -275,9 +276,23 @@ cmd_status() {
   done
 }
 
+ensure_agent_skills_source() {
+  if [ ! -d "$DOTFILES/agent-skills/skills" ]; then
+    command -v git >/dev/null 2>&1 || {
+      echo "dotfiles: git is required to initialize the agent-skills submodule" >&2
+      return 1
+    }
+    echo "init    agent-skills submodule"
+    git -C "$DOTFILES" submodule update --init --recursive -- agent-skills
+  fi
+}
+
 cmd_link() {
   local name src target backup_dir ts oldifs
   backup_dir="${DOTFILES_BACKUP_DIR:-$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)}"
+  if software_selected agent-skills "$(printf '%s\n' "$SELECTED" | cut -d'|' -f1 | tr '\n' ' ')"; then
+    ensure_agent_skills_source
+  fi
   ts=0
   oldifs="$IFS"; IFS=$'\n'
   for entry in $SELECTED; do
