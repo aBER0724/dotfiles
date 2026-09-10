@@ -18,7 +18,7 @@ Personal configuration files.
 | [fastfetch](/fastfetch) | System info |
 | [zsh](/zsh) | Zsh config (zshrc, zprofile, zshenv, p10k) |
 | [pi-agent](/pi-agent) | pi coding agent — syncs settings, models, extensions, and curated agent skills; API keys stay per-device |
-| [herdr](/herdr) | Terminal workspace manager — syncs config.toml, plugin inventory, and the herdr-lazygit pane override (side-by-side diffs) |
+| [herdr](/herdr) | Terminal workspace manager — syncs config.toml + plugin inventory |
 | [bin](/bin) | `dotfiles` CLI — one command to link/status/install all configs |
 
 ## Theme
