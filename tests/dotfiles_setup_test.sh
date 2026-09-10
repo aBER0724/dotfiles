@@ -518,6 +518,18 @@ test_existing_commands_smoke() {
   DOTFILES_SKIP_RUNTIME_INSTALLERS=1 run_cli install fastfetch
   assert_status 0 && [ -L "$HOME/.config/fastfetch" ]
 }
+test_pi_links_agent_skills() {
+  new_case pi-agent-skills
+  mkdir -p "$HOME/.agents/skills"
+  printf 'local skill\n' > "$HOME/.agents/skills/local.txt"
+  run_cli link pi
+  assert_status 0 &&
+    [ -L "$HOME/.agents/skills" ] &&
+    [ "$(readlink "$HOME/.agents/skills")" = "$REPO/agent-skills/skills" ] &&
+    assert_contains "backup  agent-skills"
+}
+
+
 
 test_usage_lists_setup() {
   new_case usage
@@ -566,6 +578,7 @@ run_test "nbshell installer removes Bongo Cat" test_nbshell_installer_removes_bo
 run_test "Zsh deps install Oh My Zsh" test_zsh_deps_install_oh_my_zsh
 run_test "zshrc survives missing Oh My Zsh" test_zshrc_survives_missing_oh_my_zsh
 run_test "existing commands smoke" test_existing_commands_smoke
+run_test "pi links curated agent skills" test_pi_links_agent_skills
 run_test "usage lists setup" test_usage_lists_setup
 
 echo "$PASS passed, $FAIL failed"

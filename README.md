@@ -16,7 +16,7 @@ Personal configuration files.
 | [nvim](/nvim) | Neovim (LazyVim) |
 | [fastfetch](/fastfetch) | System info |
 | [zsh](/zsh) | Zsh config (zshrc, zprofile, zshenv, p10k) |
-| [pi-agent](/pi-agent) | pi coding agent — syncs settings, models, extensions; API keys stay per-device |
+| [pi-agent](/pi-agent) | pi coding agent — syncs settings, models, extensions, and curated agent skills; API keys stay per-device |
 | [herdr](/herdr) | Terminal workspace manager — syncs config.toml + plugin inventory |
 | [bin](/bin) | `dotfiles` CLI — one command to link/status/install all configs |
 
@@ -30,7 +30,7 @@ Palette is owned by [nbshell](/nbshell)(`Alt+T` 切换主题):`theme-sync.py` �
 ## Setup
 
 ```bash
-git clone https://github.com/aBER0724/dotfiles.git ~/dotfiles
+git clone --recurse-submodules https://github.com/aBER0724/dotfiles.git ~/dotfiles
 bash ~/dotfiles/bin/dotfiles setup auto
 
 # Or select the operating system and Linux environment explicitly:
@@ -93,10 +93,11 @@ PATH="$HOME/.local/bin:$PATH" QML_IMPORT_PATH="$HOME/.local/lib/qt6/qml" key she
 
 Config in `~/.pi/agent/`, symlinked from [pi-agent/](pi-agent/README.md).
 
-- **Synced**: `settings.json` (plugins list, theme, defaults), `models.json` (third-party providers), `extensions/` (extension configs)
+- **Synced**: `settings.json` (plugins list, theme, defaults), `models.json` (third-party providers), `extensions/` (extension configs), and the [`agent-skills`](https://github.com/aBER0724/agent-skills) submodule linked to `~/.agents/skills`
 - **Not synced**: `auth.json` (API keys), package caches, sessions
 - **API keys**: third-party key-based providers, no login — set per device in `~/.pi/agent/auth.json` or env var
 - **Plugins**: declared by source in `settings.json`, auto-reinstalled on first launch
+- **Skills**: `dotfiles link pi` initializes the submodule when needed and links its `skills/` directory globally
 
 ## herdr
 

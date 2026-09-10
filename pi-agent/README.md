@@ -1,7 +1,7 @@
 # pi-agent
 
 [pi coding agent](https://pi.dev) 配置,跨设备同步。
-只同步声明式配置;密钥、缓存、会话全部留在各设备本地。
+只同步声明式配置和 [`agent-skills`](https://github.com/aBER0724/agent-skills) 子模块中的精选 skills;密钥、缓存、会话全部留在各设备本地。
 
 ## 来源
 
@@ -14,7 +14,8 @@
 pi-agent/
 ├── settings.json     # 插件列表(packages)、主题、默认 provider/model
 ├── models.json       # 自定义 provider 定义(new-api)— 无密钥
-└── extensions/       # 自定义扩展(pi-autoresearch 白名单、herdr state 工具)
+├── extensions/       # 自定义扩展(pi-autoresearch 白名单、herdr state 工具)
+└── ../agent-skills/   # Git 子模块;skills/ 链接到 ~/.agents/skills
 ```
 
 ## 主题(随 nbshell 同步)
@@ -87,10 +88,9 @@ macOS 不运行 nbshell，因此 `dotfiles install pi` 会把仓库内的 Tokyo 
 
 ```bash
 # 1. 建目录 + 链接配置(或直接 dotfiles install pi)
-mkdir -p ~/.pi/agent
-ln -sf ~/dotfiles/pi-agent/settings.json ~/.pi/agent/settings.json
-ln -sf ~/dotfiles/pi-agent/models.json  ~/.pi/agent/models.json
-ln -sf ~/dotfiles/pi-agent/extensions  ~/.pi/agent/extensions
+git clone --recurse-submodules https://github.com/aBER0724/dotfiles.git ~/dotfiles
+bash ~/dotfiles/bin/dotfiles link pi
+# 上述命令会链接 settings/models/extensions，并将 agent-skills/skills 链接到 ~/.agents/skills
 
 # 2. 每设备配置一次 API key(无登录,全部 key-based;auth.json 不同步)
 printf '{"new-api": {"type": "api_key", "key": "sk-..."}}' > ~/.pi/agent/auth.json
