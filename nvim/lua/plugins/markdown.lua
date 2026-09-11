@@ -31,6 +31,18 @@ return {
       assert(reverse.code == 0, check.stderr)
     end,
     config = function(_, opts)
+      local code = require("fk_markdown.render.markdown.code")
+      if not code._tikz_wrapped then
+        local original_run = code.run
+        code.run = function(self)
+          local language = self.data and self.data.language
+          if language and require("config.tikz_markdown").render(self.context, self.marks, self.node, language.text) then
+            return
+          end
+          return original_run(self)
+        end
+        code._tikz_wrapped = true
+      end
       require("fk_markdown").setup(opts)
       local state = require("fk_markdown.state")
       local original_validate = state.validate
@@ -107,7 +119,12 @@ return {
         bottom_pad = 0,
       },
       image = {
-        enabled = false,
+        enabled = true,
+        render_modes = true,
+        size = "auto",
+        max_height = 40,
+        cache_dir = vim.fn.stdpath("cache") .. "/fk_markdown/images",
+        update_interval = 100,
       },
       plant_uml = {
         enabled = true,
@@ -183,6 +200,9 @@ return {
       },
       picker = {
         name = "snacks.picker",
+      },
+      footer = {
+        enabled = false,
       },
       ui = {
         enable = false,
