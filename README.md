@@ -32,6 +32,10 @@ Palette is owned by [nbshell](/nbshell)(`Alt+T` 切换主题):`theme-sync.py` �
 ```bash
 git clone --recurse-submodules https://github.com/aBER0724/dotfiles.git ~/dotfiles
 bash ~/dotfiles/bin/dotfiles setup auto
+# The setup links the CLI to ~/.local/bin/dotfiles. If this shell does not
+# already include ~/.local/bin (for example a fresh Bash login), enable it once:
+export PATH="$HOME/.local/bin:$PATH"
+dotfiles setup auto
 
 # Or select the operating system and Linux environment explicitly:
 bash ~/dotfiles/bin/dotfiles setup macos

@@ -479,6 +479,54 @@ install_debian_server_tools() {
     rm -rf -- "$tmpdir"
   }
 }
+install_debian_herdr_tools() {
+  # `install/deps herdr` is also a supported repair path on headless
+  # Debian/Ubuntu. Herdr and Yazi are official release binaries rather
+  # than Debian packages; the plugin inventory additionally needs builders.
+  [ "$(host_uname)" = Linux ] || return 0
+  [ "$(linux_distro)" = debian ] || return 0
+  if [ "${DOTFILES_SKIP_SERVER_TOOLS:-0}" = 1 ]; then
+    echo "skip    herdr server tools (test mode)"
+    return 0
+  fi
+  if command -v herdr >/dev/null 2>&1 && command -v go >/dev/null 2>&1 && command -v cargo >/dev/null 2>&1 && command -v yazi >/dev/null 2>&1 && command -v tmux >/dev/null 2>&1; then
+    return 0
+  fi
+  command -v apt-get >/dev/null 2>&1 || {
+    echo "dotfiles: apt-get is required to install herdr on Debian/Ubuntu" >&2
+    return 1
+  }
+  local arch yazi_asset tmpdir
+  echo "== install herdr server tools =="
+  run_privileged apt-get update
+  run_privileged apt-get install -y golang-go build-essential tmux rustc cargo unzip ca-certificates
+  arch="$(linux_arch)"
+  install_linux_binary herdr "https://github.com/herdrdev/herdr/releases/download/v$HERDR_VERSION/herdr-linux-$arch"
+  if ! command -v yazi >/dev/null 2>&1; then
+    case "$arch" in
+      x86_64) yazi_asset="yazi-x86_64-unknown-linux-gnu.zip" ;;
+      aarch64) yazi_asset="yazi-aarch64-unknown-linux-gnu.zip" ;;
+    esac
+    tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-yazi.XXXXXX")"
+    echo "install yazi from GitHub release v$YAZI_VERSION"
+    curl -fsSL "https://github.com/sxyazi/yazi/releases/download/v$YAZI_VERSION/$yazi_asset" -o "$tmpdir/yazi.zip"
+    unzip -q "$tmpdir/yazi.zip" -d "$tmpdir"
+    run_privileged install -m 0755 "$(find "$tmpdir" -type f -name yazi | head -n 1)" /usr/local/bin/yazi
+    if [ -n "$(find "$tmpdir" -type f -name ya | head -n 1)" ]; then
+      run_privileged install -m 0755 "$(find "$tmpdir" -type f -name ya | head -n 1)" /usr/local/bin/ya
+    fi
+    rm -rf -- "$tmpdir"
+  fi
+}
+
+run_selected_debian_runtime() {
+  local wanted="$1"
+  if [ "$(host_uname)" = Linux ] && [ "$(linux_distro)" = debian ] && software_selected herdr "$wanted"; then
+    install_debian_herdr_tools
+  fi
+}
+
+
 run_software_install() {
   local wanted="$1" skip_arch="${2:-0}" skip_brew="${3:-0}" entry owner command_name brew_kind brew_package arch_package
   local brew_formulae="" brew_casks="" npm_packages="" arch_packages=""
@@ -595,6 +643,7 @@ cmd_deps() {
   if [ -z "$wanted" ]; then
     wanted="$(for e in "${LINK_TABLE[@]}"; do printf '%s ' "${e%%|*}"; done)"
   fi
+  run_selected_debian_runtime "$wanted"
   run_software_install "$wanted"
   if software_selected zshrc "$wanted"; then run_zsh_deps; fi
   if software_selected herdr "$wanted"; then run_herdr_plugins; fi
@@ -609,6 +658,7 @@ cmd_install() {
 
   cmd_link
   echo
+  run_selected_debian_runtime "$wanted"
   run_software_install "$wanted"
   run_config_runtimes "$wanted"
   echo
