@@ -34,7 +34,7 @@ pi-agent/
 | `pi-slopchop` | 输出精简 |
 | `@narumitw/pi-goal` | goal 追踪 |
 | `@narumitw/pi-plan-mode` | 计划模式 |
-| `@narumitw/pi-subagents` | 子代理编排 |
+| [`pi-subagents`](https://github.com/nicobailon/pi-subagents) | 子代理、并行工作流、后台任务与 reviewer/oracle/worker 等内置角色 |
 | `@juicesharp/rpiv-ask-user-question` | 结构化提问 |
 | `@juicesharp/rpiv-todo` | 任务清单 |
 | `@narumitw/pi-btw` | by-the-way |
@@ -65,6 +65,16 @@ pi-agent/
 | `new-api` | `https://new-api.aberrrrrrr.space/v1` | 自托管 OpenAI 兼容网关,含 gpt-5.x / glm 等模型 |
 
 默认 provider/model 在 `settings.json`(`defaultProvider: new-api`)。
+
+## Subagent 模型路由
+
+`pi-subagents` 的声明式配置位于 `settings.json` 的 `subagents` 字段：
+
+- 默认模型：`new-api/gpt-5.6-luna`；
+- 默认 provider：`new-api`；
+- 内置 `scout`、`researcher`、`evidence-auditor`、`worker`、`reviewer`、`oracle`、`delegate` 角色的 fallback：`new-api/deepseek-v4.1-flash`；
+- fallback 只针对工具执行前的可重试 provider/model 错误，例如限流、过载、模型不可用或 provider timeout；普通任务失败、运行超时以及已经执行工具后的失败不会自动重放。
+- 新增或修改 `settings.json` 后重启 Pi 或执行 `/reload`，使扩展重新加载。
 
 ## 为什么 settings.json 里的 packages 是唯一真源
 
