@@ -6,7 +6,7 @@
 ## 来源
 
 - [pi coding agent](https://pi.dev) — 本体(核心 CLI)
-- 22 个 npm 插件包 + 自研扩展,见「插件清单」
+- 23 个 npm/Git 插件包 + 自研扩展,见「插件清单」
 
 ## 目录结构
 
@@ -50,6 +50,7 @@ pi-agent/
 | `@tmustier/pi-raw-paste` | 原始粘贴 |
 | `@victor-software-house/pi-curated-themes` | 主题集(flexoki-dark) |
 | `pi-autoresearch` | 自动调研流水线 |
+| `git:github.com/NVlabs/SoL-Pi` | SoL-Pi 插件 |
 
 ## 自定义扩展(extensions/)
 
