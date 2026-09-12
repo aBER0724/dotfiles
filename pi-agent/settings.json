@@ -23,7 +23,8 @@
     "npm:@narumitw/pi-caffeinate",
     "npm:@tmustier/pi-raw-paste",
     "npm:@victor-software-house/pi-curated-themes",
-    "npm:pi-autoresearch"
+    "npm:pi-autoresearch",
+    "git:github.com/NVlabs/SoL-Pi"
   ],
   "lastChangelogVersion": "0.85.1",
   "theme": "nbshell",
@@ -35,25 +36,39 @@
     "defaultThinking": "max",
     "agentOverrides": {
       "scout": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash:xhigh"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash:xhigh"
+        ]
       },
       "researcher": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash:xhigh"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash:xhigh"
+        ]
       },
       "evidence-auditor": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash:xhigh"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash:xhigh"
+        ]
       },
       "worker": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash:xhigh"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash:xhigh"
+        ]
       },
       "reviewer": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash:xhigh"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash:xhigh"
+        ]
       },
       "oracle": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash:xhigh"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash:xhigh"
+        ]
       },
       "delegate": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash:xhigh"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash:xhigh"
+        ]
       }
     }
   },
