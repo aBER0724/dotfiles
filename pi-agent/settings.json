@@ -31,35 +31,31 @@
   "tuiMode": "fullscreen",
   "defaultThinkingLevel": "high",
   "subagents": {
-    "defaultModel": "new-api/gpt-5.6-luna:max",
+    "defaultModel": "new-api/gpt-5.6-luna",
     "defaultProvider": "new-api",
-    "defaultThinking": "max",
     "agentOverrides": {
       "scout": {
-        "model": "new-api/deepseek-v4.1-flash:xhigh"
+        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
       },
       "researcher": {
-        "model": "new-api/deepseek-v4.1-flash:xhigh"
+        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
       },
       "evidence-auditor": {
-        "model": "new-api/deepseek-v4.1-flash:xhigh"
+        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
       },
       "worker": {
-        "model": "new-api/deepseek-v4.1-flash:xhigh"
+        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
       },
       "reviewer": {
-        "model": "new-api/deepseek-v4.1-flash:xhigh"
+        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
       },
       "oracle": {
-        "model": "new-api/deepseek-v4.1-flash:xhigh"
+        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
       },
       "delegate": {
-        "model": "new-api/deepseek-v4.1-flash:xhigh"
+        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
       }
     }
   },
-  "hideThinkingBlock": true,
-  "extensions": [
-    "-builtin:mcp"
-  ]
+  "hideThinkingBlock": true
 }
