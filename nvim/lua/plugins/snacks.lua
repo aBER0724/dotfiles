@@ -10,6 +10,8 @@ return {
     "folke/snacks.nvim",
     opts = {
       image = {
+        -- fk_markdown.nvim handles inline Markdown images.
+        doc = { enabled = false },
         math = { enabled = false },
       },
     },
