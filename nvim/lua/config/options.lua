@@ -4,6 +4,12 @@
 
 vim.opt.rtp:prepend(vim.fn.stdpath("data") .. "/lazy/aura/packages/neovim")
 
+-- Spell check: LazyVim turns `spell` on for markdown/text/gitcommit with
+-- spelllang "en" only, so every CJK character gets flagged as a misspelling
+-- and the buffer turns into a wall of underlines. The "cjk" name is special
+-- cased by Neovim (no dictionary file needed): East Asian characters are
+-- excluded from spell checking, English is still checked.
+vim.opt.spelllang = { "en", "cjk" }
 vim.opt.scrolloff = 8 -- more context above/below cursor
 vim.opt.sidescrolloff = 12
 vim.opt.pumheight = 15 -- taller completion menu

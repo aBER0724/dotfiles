@@ -38,5 +38,6 @@ session.json
 release-notes.json
 config.toml.hunkdiff-backup
 herdr/scratch/bin/
+herdr/.config.toml.gpui-lock
 # private credentials (never commit)
 private/
