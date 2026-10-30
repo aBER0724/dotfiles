@@ -10,6 +10,8 @@ set -euo pipefail
 DOTFILES="${DOTFILES_DIR:-$HOME/dotfiles}"
 
 # Each entry: "<name>|<repo-relative-path>|<target>"
+# A target may start with `@app-support/` for per-OS application dirs;
+# see resolve_target below.
 # `name` is what you pass to status/link/install to act on that one dotfile.
 LINK_TABLE=(
   "dotfiles-cli|bin/dotfiles|$HOME/.local/bin/dotfiles"
@@ -32,12 +34,14 @@ LINK_TABLE=(
   "pi-extensions|pi-agent/extensions|$HOME/.pi/agent/extensions"
   "agent-skills|agent-skills/skills|$HOME/.agents/skills"
   "herdr|herdr/config.toml|$HOME/.config/herdr/config.toml"
+  "herdr-lazygit-user|herdr/lazygit-user.yml|$HOME/.config/herdr/plugins/config/herdr-lazygit/lazygit-user.yml"
   "kitty-main|kitty/kitty.conf|$HOME/.config/kitty/kitty.conf"
   "kitty-linux|kitty/platform-linux.conf|$HOME/.config/kitty/platform-linux.conf"
   "kitty-macos|kitty/platform-macos.conf|$HOME/.config/kitty/platform-macos.conf"
   "kitty-tab-bar|kitty/tab_bar.py|$HOME/.config/kitty/tab_bar.py"
   "kitty-watcher|kitty/watcher.py|$HOME/.config/kitty/watcher.py"
   "kitty-resize-separator|kitty/resize_separator.py|$HOME/.config/kitty/resize_separator.py"
+  "lazygit|lazygit/config.yml|@app-support/lazygit/config.yml"
 )
 
 # Runtime software used by managed configs.
@@ -61,6 +65,7 @@ SOFTWARE_TABLE=(
   "herdr|cargo|formula|rust|rust"
   "herdr|yazi|formula|yazi|yazi"
   "herdr|herdr-scratch|cask|macintacos/tap/herdr-scratch|-"
+  "lazygit|lazygit|formula|lazygit|lazygit"
 )
 
 # Group aliases: "<alias>|<space-separated names>". Passing the alias to
@@ -69,7 +74,7 @@ GROUP_TABLE=(
   "pi|pi-settings pi-models pi-extensions agent-skills"
   "zsh|zshrc zshenv zprofile shinit p10k"
   "kitty|kitty-main kitty-linux kitty-macos kitty-tab-bar kitty-watcher kitty-resize-separator"
-  "herdr|herdr"
+  "herdr|herdr herdr-lazygit-user"
   "nbshell|nbshell-config nbshell-screensaver"
   "wm|niri nbshell-config nbshell-screensaver"
 )
@@ -78,9 +83,9 @@ GROUP_TABLE=(
 # `server` is safe for headless Ubuntu/Debian hosts; `omarchy` is the full
 # Arch desktop stack with Niri, nbshell, and Kitty.
 PRESET_TABLE=(
-  "macos|dotfiles-cli zsh nvim fastfetch pi herdr aerospace kitty"
-  "linux-server|dotfiles-cli zsh nvim fastfetch pi herdr"
-  "linux-omarchy|dotfiles-cli zsh nvim fastfetch pi herdr niri nbshell kitty"
+  "macos|dotfiles-cli zsh nvim fastfetch pi herdr aerospace kitty lazygit"
+  "linux-server|dotfiles-cli zsh nvim fastfetch pi herdr lazygit"
+  "linux-omarchy|dotfiles-cli zsh nvim fastfetch pi herdr niri nbshell kitty lazygit"
 )
 
 # Expand aliases in "$*" to concrete names (set -u + empty string is fine here).
@@ -95,6 +100,24 @@ expand_groups() {
     if [ -n "$members" ]; then out="$out $members"; else out="$out $w"; fi
   done
   echo "$out"
+}
+
+# Resolve per-OS application support directories. A target written as
+# `@app-support/<rest>` means `~/Library/Application Support/<rest>` on macOS
+# and `~/.config/<rest>` on Linux (lazygit and similar apps use these paths).
+resolve_target() {
+  local target="$1" rest
+  case "$target" in
+    "@app-support/"*)
+      rest="${target#@app-support/}"
+      if [ "$(host_uname)" = "Darwin" ]; then
+        printf '%s\n' "$HOME/Library/Application Support/$rest"
+      else
+        printf '%s\n' "$HOME/.config/$rest"
+      fi
+      ;;
+    *) printf '%s\n' "$target" ;;
+  esac
 }
 
 host_uname() {
@@ -244,7 +267,7 @@ cmd_list() {
   for entry in "${LINK_TABLE[@]}"; do
     name="${entry%%|*}"
     src="${entry#*|}"
-    target="${src#*|}"
+    target="$(resolve_target "${src#*|}")"
     src="${src%%|*}"
     printf "%-14s %-55s %s\n" "$name" "$src" "$target"
   done
@@ -258,7 +281,7 @@ cmd_status() {
     IFS="$oldifs"
     name="${entry%%|*}"
     src="${entry#*|}"
-    target="${src#*|}"
+    target="$(resolve_target "${src#*|}")"
     src="${src%%|*}"
     if [ -L "$target" ]; then
       points="$(readlink "$target" 2>/dev/null || true)"
@@ -299,7 +322,7 @@ cmd_link() {
     IFS="$oldifs"
     name="${entry%%|*}"
     src="${entry#*|}"
-    target="${src#*|}"
+    target="$(resolve_target "${src#*|}")"
     src="${src%%|*}"
     mkdir -p "$(dirname "$target")"
     if [ -L "$target" ]; then

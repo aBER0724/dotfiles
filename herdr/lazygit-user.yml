@@ -1,0 +1,26 @@
+# lazygit-user.yml — personal override layer for the herdr-lazygit plugin.
+#
+# Loaded LAST in the plugin's LG_CONFIG_FILE chain, so it wins over the plugin's
+# bundled config. Keep it here rather than in the plugin checkout: the checkout
+# is replaced on plugin update.
+#
+# WHY A DIFFERENT KEY THAN THE SYSTEM LAZYGIT CONFIG:
+# the plugin bundles its own pinned lazygit (0.63.0), which uses the old
+# `git.pagers` array. The system lazygit 0.66 in
+# ~/Library/Application Support/lazygit/config.yml uses `git.diffRenderers`,
+# which 0.63 silently ignores — that is why diffs in this pane stayed unified.
+#
+# `|` cycles pagers forward, `\` backwards. The pane is a ~42-column sidebar by
+# default: press U to expand into the full lazygit layout before reading a
+# side-by-side diff.
+git:
+  pagers:
+    # Left/right diff (default). delta inherits theme/fill/line-number settings
+    # from ~/.gitconfig [delta]. --wrap-max-lines defaults to 2,
+    # which truncates long lines in side-by-side mode; "unlimited" wraps them.
+    - name: delta side-by-side
+      pager: delta --dark --paging=never --side-by-side --wrap-max-lines=unlimited
+    # Top/bottom fallback: git's own raw output. Uses `cat` because [delta]
+    # side-by-side = true in ~/.gitconfig would otherwise apply here too.
+    - name: git unified
+      pager: cat
