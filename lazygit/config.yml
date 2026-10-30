@@ -1,0 +1,26 @@
+# lazygit configuration
+# Docs: https://github.com/jesseduffield/lazygit/blob/master/docs/Config.md
+# Diff renderers: https://github.com/jesseduffield/lazygit/blob/master/docs/Custom_DiffRenderers.md
+#
+# Diffs are rendered by `delta` (brew formula `git-delta`, tuned in ~/.gitconfig
+# under [delta]). lazygit 0.6x+ picks its renderer with `git.diffRenderers`;
+# the old `git.paging.pager` key no longer exists.
+#
+# In the diff view: `|` cycles forward, `\` cycles back. The first entry is the
+# default, so diffs open left/right (side-by-side).
+# Staging panel shows whole files (not per-hunk). `a` stages/unstages the
+# entire file; expand a hunk with `enter`/`space` when you need partial staging.
+gui:
+  useHunkModeInDiffView: false
+git:
+  diffRenderers:
+    # Left/right diff. delta inherits theme/fill/line-number settings from
+    # ~/.gitconfig, so only layout flags are given here. --wrap-max-lines defaults
+    # to 2, which silently truncates long lines with '→' in side-by-side mode;
+    # "unlimited" wraps them instead.
+    - name: delta side-by-side
+      command: delta --{{colorScheme}} --paging=never --side-by-side --wrap-max-lines=unlimited
+    # Top/bottom diff for narrow panels: git's own raw output, unaffected by the
+    # [delta] side-by-side setting in ~/.gitconfig.
+    - name: git unified
+      type: rawGit

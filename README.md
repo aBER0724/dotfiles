@@ -14,10 +14,11 @@ Personal configuration files.
 | [kaku](/kaku) | Terminal (WezTerm-based) |
 | [kitty](/kitty) | Kitty terminal — Kaku-inspired port (fonts, Kaku Dark, Cmd keymap) |
 | [nvim](/nvim) | Neovim (LazyVim) |
+| [lazygit](/lazygit) | lazygit — side-by-side (delta) diff by default, `|` cycles renderers |
 | [fastfetch](/fastfetch) | System info |
 | [zsh](/zsh) | Zsh config (zshrc, zprofile, zshenv, p10k) |
 | [pi-agent](/pi-agent) | pi coding agent — syncs settings, models, extensions, and curated agent skills; API keys stay per-device |
-| [herdr](/herdr) | Terminal workspace manager — syncs config.toml + plugin inventory |
+| [herdr](/herdr) | Terminal workspace manager — syncs config.toml, plugin inventory, and the herdr-lazygit pane override (side-by-side diffs) |
 | [bin](/bin) | `dotfiles` CLI — one command to link/status/install all configs |
 
 ## Theme
