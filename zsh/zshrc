@@ -118,12 +118,28 @@ unset _p10k
 # so moving a block can change which version of a command wins.
 [[ -d /usr/local/opt/curl/bin ]] && export PATH="/usr/local/opt/curl/bin:$PATH"
 
-# nvm: standalone installation first, then Homebrew.
+# nvm: $HOME/.nvm/nvm.sh 是指向 Homebrew libexec/nvm.sh 的软链,
+# /opt/homebrew/opt/nvm/nvm.sh 又 source 同一个文件 —— 原来两条都命中,
+# 等于每次开窗口把 nvm 加载两遍 (实测 1s 起, 忙时 3s+)。
+# 另外 `source nvm.sh` 会立刻执行 `nvm use default`, 单独实测占掉 nvm 总耗时的
+# ~90%; 所以用 --no-use 跳过它, 改由下面零子进程的 glob 把默认版本放进 PATH。
 export NVM_DIR="$HOME/.nvm"
-[[ -s "$HOME/.nvm/nvm.sh" ]] && source "$HOME/.nvm/nvm.sh"
-[[ -s /opt/homebrew/opt/nvm/nvm.sh ]] && source /opt/homebrew/opt/nvm/nvm.sh
-[[ -s "$HOME/.nvm/etc/bash_completion.d/nvm" ]] && source "$HOME/.nvm/etc/bash_completion.d/nvm"
+[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh" --no-use
 [[ -s /opt/homebrew/opt/nvm/etc/bash_completion.d/nvm ]] && source /opt/homebrew/opt/nvm/etc/bash_completion.d/nvm
+
+# 等价于 `nvm use default`: 读 ~/.nvm/alias/default (当前是 18), 直接拼出 bin 目录。
+# 纯 glob 展开不 fork 子进程; `nvm use <ver>` 仍然照常可用。
+() {
+  local want bins
+  [[ -r "$NVM_DIR/alias/default" ]] || return
+  want=$(<"$NVM_DIR/alias/default")
+  bins=( "$NVM_DIR"/versions/node/v${want#v}*(NOn) )
+  if (( $#bins )); then
+    path=( "${bins[1]}/bin" $path )
+  else
+    nvm use default >/dev/null 2>&1
+  fi
+}
 
 [[ -d /opt/homebrew/bin ]] && export PATH="/opt/homebrew/bin:$PATH"
 export PATH="$PATH:$HOME/.local/bin"
@@ -146,9 +162,16 @@ fi
 
 [[ ! -f "$HOME/.x-cmd.root/X" ]] || source "$HOME/.x-cmd.root/X"
 
+# thefuck 是 Python 程序, 一次 `thefuck --alias` 约 0.7s, 原来每次开窗口调两次。
+# 改成第一次真的敲 fuck/FUCK 时才初始化。
 if command -v thefuck >/dev/null 2>&1; then
-  eval "$(thefuck --alias)"
-  eval "$(thefuck --alias FUCK)"
+  _thefuck_init() {
+    unfunction _thefuck_init fuck FUCK 2>/dev/null
+    eval "$(command thefuck --alias)"
+    eval "$(command thefuck --alias FUCK)"
+  }
+  fuck() { _thefuck_init; fuck "$@" }
+  FUCK() { _thefuck_init; FUCK "$@" }
 fi
 
 # Kaku shell and PATH integration.
@@ -259,3 +282,6 @@ if [ -n "$OTTY_SHELL_INTEGRATION" ] && [ -r "$OTTY_SHELL_INTEGRATION/otty-integr
   . "$OTTY_SHELL_INTEGRATION/otty-integration.zsh"
 fi
 # <<< otty shell integration <<<
+
+# bun completions
+[ -s "/Users/aber/.bun/_bun" ] && source "/Users/aber/.bun/_bun"

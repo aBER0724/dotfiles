@@ -2,7 +2,7 @@ onboarding = false
 
 # BEGIN nbshell managed theme
 [theme]
-name = "catppuccin-mocha"
+name = "catppuccin"
 auto_switch = false
 
 [theme.custom]
@@ -17,6 +17,7 @@ green = "#a6e3a1"
 
 [experimental]
 kitty_graphics = true
+pane_history = true
 
 [ui]
 host_cursor = "native"
@@ -24,8 +25,15 @@ status_indicators = "symbols"
 
 show_agent_labels_on_pane_borders = true
 agent_panel_sort = "spaces"
+tab_bar_position = "bottom"
+hide_tab_bar_when_single_tab = false
 [ui.toast]
-delivery = "terminal"
+delivery = "herdr"
+
+[ui.sidebar]
+
+[ui.sidebar.agents]
+rows = [["state_icon", "machine", "workspace", "tab"], ["agent"]]
 
 # lazygit
 [[keys.command]]              # lazygit: open in a split
