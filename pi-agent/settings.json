@@ -1,6 +1,6 @@
 {
-  "defaultProvider": "new-api",
-  "defaultModel": "gpt-5.6-sol",
+  "defaultProvider": "magpie",
+  "defaultModel": "newapi/deepseek-v4.1-flash",
   "packages": [
     "npm:@juanibiapina/pi-extension-settings",
     "npm:@juanibiapina/pi-powerbar",
@@ -26,7 +26,7 @@
     "npm:pi-autoresearch",
     "git:github.com/NVlabs/SoL-Pi"
   ],
-  "lastChangelogVersion": "0.85.1",
+  "lastChangelogVersion": "1.4.0",
   "theme": "nbshell",
   "tuiMode": "fullscreen",
   "defaultThinkingLevel": "high",
@@ -36,41 +36,30 @@
     "defaultThinking": "max",
     "agentOverrides": {
       "scout": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash:xhigh"
-        ]
+        "model": "new-api/deepseek-v4.1-flash:xhigh"
       },
       "researcher": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash:xhigh"
-        ]
+        "model": "new-api/deepseek-v4.1-flash:xhigh"
       },
       "evidence-auditor": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash:xhigh"
-        ]
+        "model": "new-api/deepseek-v4.1-flash:xhigh"
       },
       "worker": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash:xhigh"
-        ]
+        "model": "new-api/deepseek-v4.1-flash:xhigh"
       },
       "reviewer": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash:xhigh"
-        ]
+        "model": "new-api/deepseek-v4.1-flash:xhigh"
       },
       "oracle": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash:xhigh"
-        ]
+        "model": "new-api/deepseek-v4.1-flash:xhigh"
       },
       "delegate": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash:xhigh"
-        ]
+        "model": "new-api/deepseek-v4.1-flash:xhigh"
       }
     }
   },
-  "hideThinkingBlock": true
+  "hideThinkingBlock": true,
+  "extensions": [
+    "-builtin:mcp"
+  ]
 }
