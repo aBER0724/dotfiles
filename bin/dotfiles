@@ -32,7 +32,7 @@ LINK_TABLE=(
   "fcitx5-conf|fcitx5/conf|$HOME/.config/fcitx5/conf"
   "fastfetch|fastfetch|$HOME/.config/fastfetch"
   "pi-settings|pi-agent/settings.json|$HOME/.pi/agent/settings.json"
-  "pi-models|pi-agent/models.json|$HOME/.pi/agent/models.json"
+  "pi-models|pi-agent/models.merged.json|$HOME/.pi/agent/models.json"
   "pi-extensions|pi-agent/extensions|$HOME/.pi/agent/extensions"
   "agent-skills|@home/.config/magpie/library/skills|$HOME/.agents/skills"
   "herdr|herdr/config.toml|$HOME/.config/herdr/config.toml"
@@ -320,6 +320,7 @@ cmd_link() {
   local name src target backup_dir ts oldifs
   backup_dir="${DOTFILES_BACKUP_DIR:-$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)}"
   ts=0
+  if selected_has pi-models; then merge_pi_models; fi
   oldifs="$IFS"; IFS=$'\n'
   for entry in $SELECTED; do
     IFS="$oldifs"
@@ -349,6 +350,33 @@ cmd_link() {
     ln -sfn "$src" "$target"
     echo "link    $name ($target)"
   done
+}
+# Merge the public pi-agent/models.json with the machine-local, gitignored
+# pi-agent/models.local.json into pi-agent/models.merged.json (the symlink
+# target for ~/.pi/agent/models.json). Keeps local providers (magpie) off the
+# repo while letting pi use one file.
+merge_pi_models() {
+  python3 - "$DOTFILES" <<'PY'
+import json, sys, os
+root = sys.argv[1]
+base = json.load(open(f"{root}/pi-agent/models.json"))
+local = f"{root}/pi-agent/models.local.json"
+if os.path.exists(local):
+    extra = json.load(open(local))
+    base.setdefault("providers", {}).update(extra.get("providers", {}))
+json.dump(base, open(f"{root}/pi-agent/models.merged.json", "w"), indent=2)
+PY
+}
+
+selected_has() {
+  local name="$1" entry oldifs="$IFS"
+  IFS=$'\n'
+  for entry in $SELECTED; do
+    IFS="$oldifs"
+    [ "${entry%%|*}" = "$name" ] && return 0
+  done
+  IFS="$oldifs"
+  return 1
 }
 run_zsh_deps() {
   echo "== zsh deps =="
@@ -861,7 +889,7 @@ case "${1:-}" in
     echo "  link [name...]      create links; backup+replace conflicts"
     echo "  install [name...]   link + install selected config software/deps"
     echo "  deps [name...]      install selected config software/deps (no linking)"
-    echo "  setup [auto|macos|linux|server] [auto|server|omarchy]"
+    echo "  setup [auto|macos|linux|server] [auto|server|omarchy|niri]"
     echo "                      install a preset; 'setup server' is the root-friendly headless shortcut"
     echo
     echo "names: $(for e in "${LINK_TABLE[@]}"; do printf '%s ' "${e%%|*}"; done)"

@@ -14,6 +14,7 @@
 pi-agent/
 ├── settings.json     # 插件列表(packages)、主题、默认 provider/model
 ├── models.json       # 自定义 provider 定义(new-api)— 无密钥
+├── models.local.json # (gitignored) 机器本地 provider 覆盖,link 时并入 models.merged.json
 ├── extensions/       # 自定义扩展(pi-autoresearch 白名单、herdr state 工具)
 # ~/.agents/skills → ~/.config/magpie/library/skills(机器本地,不在仓库内)
 ```
@@ -67,6 +68,7 @@ pi-agent/
 
 默认 provider/model 在 `settings.json`(`defaultProvider: new-api`)。
 
+仓库外的 `pi-agent/models.local.json`（gitignored，不在远端）在 `dotfiles link` 时与 `models.json` 合并成 `models.merged.json`，后者才是 `~/.pi/agent/models.json` 的 symlink 目标——用来放本机的 magpie 等私有 provider。
 ## Subagent 模型路由
 
 `pi-subagents` 的声明式配置位于 `settings.json` 的 `subagents` 字段：

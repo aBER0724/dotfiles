@@ -43,3 +43,7 @@ private/
 
 # tool artifacts
 .spec-workflow/
+
+# pi local-only model providers (merged into models.merged.json at link time)
+pi-agent/models.local.json
+pi-agent/models.merged.json

@@ -549,7 +549,7 @@ test_pi_links_agent_skills() {
 test_usage_lists_setup() {
   new_case usage
   run_cli
-  assert_status 1 && assert_contains "setup [auto|macos|linux|server] [auto|server|omarchy]"
+  assert_status 1 && assert_contains "setup [auto|macos|linux|server] [auto|server|omarchy|niri]"
 }
 
 
