@@ -4,7 +4,9 @@
 # Run:  bash ~/dotfiles/herdr/install-plugins.sh
 set -euo pipefail
 
-PLUGINS="$HOME/dotfiles/herdr/plugins.txt"
+# Resolve the inventory next to this script, not at ~/dotfiles/herdr: the
+# checkout can live anywhere. HERDR_PLUGINS_FILE points at a fixture instead.
+PLUGINS="${HERDR_PLUGINS_FILE:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/plugins.txt}"
 HOST_UNAME="${DOTFILES_UNAME:-$(uname -s)}"
 
 if ! command -v herdr >/dev/null 2>&1; then
@@ -18,8 +20,10 @@ fi
 
 # These are required by entries in plugins.txt. Stop before attempting known
 # failures and route through the platform-aware dotfiles dependency installer.
+# HERDR_PLUGIN_DEPS exists so the missing-dependency path stays testable on a
+# machine that already has all four.
 MISSING_DEPS=""
-for dep in go cargo yazi tmux; do
+for dep in ${HERDR_PLUGIN_DEPS:-go cargo yazi tmux}; do
   command -v "$dep" >/dev/null 2>&1 || MISSING_DEPS="$MISSING_DEPS $dep"
 done
 if [ -n "$MISSING_DEPS" ]; then

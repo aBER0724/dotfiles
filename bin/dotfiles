@@ -615,7 +615,14 @@ run_software_install() {
     if [ "$skip_arch" = 1 ] && { [ "$arch_package" != "-" ] && [ "$brew_package" = "-" ] || [ "$brew_kind" = cask ]; }; then
       continue
     fi
-    command -v "$command_name" >/dev/null 2>&1 && continue
+    # DOTFILES_MISSING_SOFTWARE names commands to treat as absent, so tests can
+    # exercise the install path on a machine that already ships them.
+    case " ${DOTFILES_MISSING_SOFTWARE:-} " in
+      *" $command_name "*) ;;
+      *)
+        command -v "$command_name" >/dev/null 2>&1 && continue
+        ;;
+    esac
     if [ "$brew_kind" = "npm" ]; then
       if command -v npm >/dev/null 2>&1; then
         npm_packages="$npm_packages $brew_package"

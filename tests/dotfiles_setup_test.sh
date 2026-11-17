@@ -14,6 +14,11 @@ new_case() {
   LOG="$CASE_ROOT/commands.log"
   mkdir -p "$HOME" "$STUB_BIN"
   : > "$LOG"
+  # Every case runs `dotfiles setup`, which would otherwise reach the real
+  # package managers: `npm install -g` from a sandbox HOME tries to write
+  # /usr/lib/node_modules and fails with EACCES (npm exits 243), turning every
+  # setup assertion into "expected 0, got 243".
+  stub_logger npm
   export HOME STUB_BIN LOG
 }
 
@@ -74,7 +79,7 @@ run_test() {
 test_auto_detects_macos() {
   new_case auto-macos
   stub_logger brew
-  DOTFILES_UNAME=Darwin run_cli setup auto
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup auto
   assert_status 0 && assert_contains "preset   macos"
 }
 
@@ -259,7 +264,7 @@ test_macos_bootstraps_homebrew() {
   stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"; printf "#!/bin/sh\nexit 0\n"'
   stub_command bootstrap-bash 'printf "bootstrap-bash %s\n" "$*" >> "$LOG"'
   stub_command brew 'printf "brew %s\n" "$*" >> "$LOG"'
-  DOTFILES_UNAME=Darwin DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" run_cli setup macos
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" run_cli setup macos
   assert_status 0 && grep -F "curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh" "$LOG" >/dev/null
 }
 
@@ -267,7 +272,7 @@ test_macos_skips_homebrew_bootstrap() {
   new_case macos-existing-brew
   stub_logger brew
   stub_command curl 'echo unexpected-curl >> "$LOG"; exit 99'
-  DOTFILES_UNAME=Darwin run_cli setup macos
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup macos
   assert_status 0 && ! grep -F "unexpected-curl" "$LOG" >/dev/null
 }
 
@@ -307,7 +312,8 @@ test_arch_installs_required_packages() {
 test_arch_installs_herdr_plugin_build_deps() {
   new_case arch-herdr-build-deps
   arch_fixture
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
+  DOTFILES_MISSING_SOFTWARE="go cargo yazi tmux" \
+    DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     grep -F "sudo pacman -S --needed" "$LOG" | grep -F "rust" | grep -F "yazi" >/dev/null
 }
@@ -315,7 +321,10 @@ test_arch_installs_herdr_plugin_build_deps() {
 test_macos_installs_herdr_plugin_build_deps() {
   new_case macos-herdr-build-deps
   stub_logger brew
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup macos
+  # An Omarchy host already ships go/cargo/yazi/tmux, and the software step
+  # skips whatever it finds on PATH; name them missing so the brew path runs.
+  DOTFILES_MISSING_SOFTWARE="go cargo yazi tmux" \
+    DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup macos
   assert_status 0 &&
     grep -F "brew install" "$LOG" | grep -F "rust" | grep -F "yazi" >/dev/null
 }
@@ -424,8 +433,7 @@ test_arch_installs_native_packages_before_homebrew() {
 
 test_arch_installs_scratch_through_herdr() {
   new_case arch-scratch-plugin
-  mkdir -p "$HOME/dotfiles/herdr"
-  cp "$REPO/herdr/plugins.txt" "$HOME/dotfiles/herdr/plugins.txt"
+  cp "$REPO/herdr/plugins.txt" "$CASE_ROOT/plugins.txt"
   stub_logger go
   stub_logger cargo
   stub_logger yazi
@@ -434,7 +442,9 @@ test_arch_installs_scratch_through_herdr() {
   stub_command git 'exit 0'
   OUTPUT="$CASE_ROOT/output"
   STATUS=0
-  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$HOME" DOTFILES_UNAME=Linux bash "$REPO/herdr/install-plugins.sh" >"$OUTPUT" 2>&1 || STATUS=$?
+  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$HOME" DOTFILES_UNAME=Linux \
+    HERDR_PLUGINS_FILE="$CASE_ROOT/plugins.txt" \
+    bash "$REPO/herdr/install-plugins.sh" >"$OUTPUT" 2>&1 || STATUS=$?
   assert_status 0 &&
     grep -F "herdr plugin install macintacos/herdr-scratch -y" "$LOG" >/dev/null &&
     ! grep -F "herdr plugin link" "$LOG" >/dev/null
@@ -442,8 +452,7 @@ test_arch_installs_scratch_through_herdr() {
 
 test_macos_skips_scratch_source_build() {
   new_case macos-scratch-cask
-  mkdir -p "$HOME/dotfiles/herdr"
-  cp "$REPO/herdr/plugins.txt" "$HOME/dotfiles/herdr/plugins.txt"
+  cp "$REPO/herdr/plugins.txt" "$CASE_ROOT/plugins.txt"
   stub_logger go
   stub_logger cargo
   stub_logger yazi
@@ -451,7 +460,9 @@ test_macos_skips_scratch_source_build() {
   stub_logger herdr
   OUTPUT="$CASE_ROOT/output"
   STATUS=0
-  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$HOME" DOTFILES_UNAME=Darwin bash "$REPO/herdr/install-plugins.sh" >"$OUTPUT" 2>&1 || STATUS=$?
+  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$HOME" DOTFILES_UNAME=Darwin \
+    HERDR_PLUGINS_FILE="$CASE_ROOT/plugins.txt" \
+    bash "$REPO/herdr/install-plugins.sh" >"$OUTPUT" 2>&1 || STATUS=$?
   assert_status 0 &&
     assert_contains "user.scratch (provided by the macOS Homebrew cask)" &&
     ! grep -F "herdr plugin install macintacos/herdr-scratch" "$LOG" >/dev/null
@@ -459,8 +470,7 @@ test_macos_skips_scratch_source_build() {
 
 test_plugin_failure_shows_actual_log() {
   new_case plugin-failure-log
-  mkdir -p "$HOME/dotfiles/herdr"
-  printf '%s\n' 'broken|github|herdr plugin install example/broken' > "$HOME/dotfiles/herdr/plugins.txt"
+  printf '%s\n' 'broken|github|herdr plugin install example/broken' > "$CASE_ROOT/plugins.txt"
   stub_logger go
   stub_logger cargo
   stub_logger yazi
@@ -468,7 +478,9 @@ test_plugin_failure_shows_actual_log() {
   stub_command herdr 'printf "herdr %s\n" "$*" >> "$LOG"; echo "cargo: linker cc not found" >&2; exit 1'
   OUTPUT="$CASE_ROOT/output"
   STATUS=0
-  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$HOME" DOTFILES_UNAME=Linux bash "$REPO/herdr/install-plugins.sh" >"$OUTPUT" 2>&1 || STATUS=$?
+  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$HOME" DOTFILES_UNAME=Linux \
+    HERDR_PLUGINS_FILE="$CASE_ROOT/plugins.txt" \
+    bash "$REPO/herdr/install-plugins.sh" >"$OUTPUT" 2>&1 || STATUS=$?
   assert_status 1 &&
     assert_contains "cargo: linker cc not found" &&
     assert_contains "failed to install: broken"
@@ -476,14 +488,18 @@ test_plugin_failure_shows_actual_log() {
 
 test_plugin_installer_stops_when_required_deps_missing() {
   new_case plugin-missing-deps
-  mkdir -p "$HOME/dotfiles/herdr"
-  cp "$REPO/herdr/plugins.txt" "$HOME/dotfiles/herdr/plugins.txt"
+  cp "$REPO/herdr/plugins.txt" "$CASE_ROOT/plugins.txt"
   stub_logger herdr
   stub_logger go
   stub_logger tmux
   OUTPUT="$CASE_ROOT/output"
   STATUS=0
-  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$HOME" DOTFILES_UNAME=Linux bash "$REPO/herdr/install-plugins.sh" >"$OUTPUT" 2>&1 || STATUS=$?
+  # cargo and yazi exist in /usr/bin on an Omarchy box, so name the missing
+  # dependency explicitly instead of relying on the host not having it.
+  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$HOME" DOTFILES_UNAME=Linux \
+    HERDR_PLUGIN_DEPS="go tmux missing-dep-for-test" \
+    HERDR_PLUGINS_FILE="$CASE_ROOT/plugins.txt" \
+    bash "$REPO/herdr/install-plugins.sh" >"$OUTPUT" 2>&1 || STATUS=$?
   assert_status 1 &&
     assert_contains "bash ~/dotfiles/bin/dotfiles deps herdr" &&
     [ ! -s "$LOG" ]

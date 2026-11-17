@@ -131,4 +131,5 @@ bash ~/dotfiles/herdr/install-plugins.sh
 ```
 
 > 有 Go 构建步骤的插件（token-dashboard、Linux 上的 scratch）需要 Go；navigator 和 renamer 需要 Rust/Cargo；file-explorer 需要 Yazi。
+> 依赖检查可在测试中用 `HERDR_PLUGIN_DEPS` 覆盖，清单路径可用 `HERDR_PLUGINS_FILE` 覆盖（脚本默认读自己同目录的 `plugins.txt`，与仓库放在哪无关）。
 > `setup` / `deps herdr` 会安装这些依赖。若直接运行本脚本且依赖缺失，它会在尝试插件前停止并给出恢复命令；其他安装错误仍会显示每个插件的实际日志。

@@ -87,6 +87,8 @@ sudo systemctl enable --now tuned.service
 |------|------|------|
 | `DOTFILES_DIR` | `~/dotfiles` | 仓库路径 |
 | `DOTFILES_BACKUP_DIR` | `~/.dotfiles-backup-<时间戳>` | 冲突文件备份目录 |
+| `DOTFILES_MISSING_SOFTWARE` | 空 | 空格分隔的命令名,视为“未安装”而强制走安装路径(测试用,避免“本机已装 yazi 就跳过 brew/pacman 断言”这种机器相关失败) |
+| `DOTFILES_SKIP_RUNTIME_INSTALLERS` | `0` | `1` 时跳过 herdr 插件、zsh 依赖、fcitx5/nbshell 等运行时安装脚本(测试用) |
 
 ## 实现说明
 
