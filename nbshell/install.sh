@@ -19,7 +19,6 @@ CONFIG_FILE="$CONFIG_DIR/config.json"
 SCREENSAVER_FILE="$CONFIG_DIR/screensaver.txt"
 THEME_DIR="$DATA_HOME/nbshell/themes"
 WALLPAPER_DIR="$DATA_HOME/nbshell/wallpapers"
-FCITX_CONFIG_DIR="$CONFIG_HOME/fcitx5"
 
 required_commands="git qs niri python3 bash flock fc-list"
 missing=""
@@ -181,55 +180,8 @@ if command -v xdg-mime >/dev/null 2>&1; then
     xdg-mime default kitty-default.desktop x-scheme-handler/terminal || true
 fi
 
-printf '\n== Install Fcitx5/Rime candidate UI ==\n'
-mkdir -p "$FCITX_CONFIG_DIR/conf"
-ln -sfnT "$SCRIPT_DIR/../fcitx5/conf/classicui.conf" "$FCITX_CONFIG_DIR/conf/classicui.conf"
-ln -sfnT "$SCRIPT_DIR/../fcitx5/conf/kimpanel.conf" "$FCITX_CONFIG_DIR/conf/kimpanel.conf"
-python3 - "$FCITX_CONFIG_DIR/config" <<'PY'
-from pathlib import Path
-import re
-import sys
-
-path = Path(sys.argv[1])
-text = path.read_text() if path.exists() else "[Behavior]\n"
-text = re.sub(r'(?ms)^\[Behavior/DisabledAddons\]\n.*?(?=^\[|\Z)', '', text).rstrip()
-path.write_text(text + "\n\n[Behavior/DisabledAddons]\n0=kimpanel\n")
-PY
-
-# Install the user's Rime configuration when fcitx5-rime is available. Keep a
-# clean source checkout separate from Rime's generated build/ and user data.
-if [ -f /usr/share/fcitx5/inputmethod/rime.conf ]; then
-    rime_dir="$DATA_HOME/fcitx5/rime"
-    rime_source="$DATA_HOME/nbshell/rime-config"
-    rime_repo=https://github.com/aBER0724/rime.git
-    if [[ -d "$rime_source/.git" ]]; then
-        git -C "$rime_source" pull --ff-only || true
-    else
-        rm -rf "$rime_source"
-        git clone --depth=1 "$rime_repo" "$rime_source"
-    fi
-    mkdir -p "$rime_dir"
-    git -C "$rime_source" archive HEAD | tar -x -C "$rime_dir"
-
-    python3 - "$FCITX_CONFIG_DIR/profile" <<'PY'
-from pathlib import Path
-import re
-import sys
-
-path = Path(sys.argv[1])
-text = path.read_text() if path.exists() else ""
-if "Name=rime" not in text:
-    item_numbers = [int(value) for value in re.findall(r"(?m)^\[Groups/0/Items/(\d+)\]$", text)]
-    index = max(item_numbers, default=-1) + 1
-    text = text.rstrip() + f"\n\n[Groups/0/Items/{index}]\nName=rime\nLayout=\n"
-if re.search(r"(?m)^DefaultIM=.*$", text):
-    text = re.sub(r"(?m)^DefaultIM=.*$", "DefaultIM=rime", text, count=1)
-path.parent.mkdir(parents=True, exist_ok=True)
-path.write_text(text.lstrip())
-PY
-fi
-python3 "$SCRIPT_DIR/../fcitx5/rime-lua-compat.py"
-
+# fcitx5/Rime setup lives in ../fcitx5/install.sh, invoked through the `fcitx`
+# group (included in the `wm` group and the linux-niri preset).
 # Keep btop's user preferences, but point its palette at the generated theme.
 mkdir -p "$CONFIG_HOME/btop/themes"
 python3 - "$CONFIG_HOME/btop/btop.conf" <<'PY'
