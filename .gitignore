@@ -40,3 +40,7 @@ config.toml.hunkdiff-backup
 herdr/scratch/bin/
 # private credentials (never commit)
 private/
+
+# tool artifacts
+.spec-workflow/
+agent-skills/
