@@ -11,6 +11,7 @@ Personal configuration files.
 | [nbshell](/nbshell) | [nbshell](https://github.com/nerdislb/nbshell) Nerd Font/TUI Quickshell shell for niri; pinned user-local installer + synced config |
 | [clavis](/clavis) | Previous StatIndet/Clavis shell retained as a manual rollback |
 | [waybar](/waybar) | Legacy Waybar configuration retained as a second manual rollback |
+| [omarchy](/omarchy) | Stock Omarchy bar — minimal layout (workspaces · active window · tray + clock) and a click-to-open tray widget |
 | [kaku](/kaku) | Terminal (WezTerm-based) |
 | [kitty](/kitty) | Kitty terminal — Kaku-inspired port (fonts, Kaku Dark, Cmd keymap) |
 | [nvim](/nvim) | Neovim (LazyVim) |
@@ -59,7 +60,7 @@ dotfiles install wm
 
 `setup` installs the primary stack, links its configuration, and runs user-level plugin/install scripts. Linux is divided into environment profiles:
 
-- `linux omarchy`: the default Arch profile for stock Omarchy (Hyprland/uwsm) — Kitty, fcitx5+Rime input method, native pacman packages. Omarchy itself provides the desktop stack (waybar, hypridle, autostart).
+- `linux omarchy`: the default Arch profile for stock Omarchy (Hyprland/uwsm) — Kitty, fcitx5+Rime input method, native pacman packages. Omarchy itself provides the desktop stack (waybar, hypridle, autostart); only its bar config is synced, see [omarchy/](omarchy/README.md).
 - `linux niri`: the custom Niri + nbshell desktop stack — everything in `omarchy` plus niri, nbshell, and `nbshell/packages.arch.txt`.
 - `server` (or `linux server`): a headless Ubuntu/Debian stack containing only the shared terminal tools (Zsh, Neovim, Fastfetch, pi, and herdr). It supports root-owned server environments, uses `apt-get` plus official Linux release binaries, and deliberately excludes Homebrew, Niri, nbshell, Kitty, input methods, and desktop services.
 - `linux auto` (or plain `setup auto`): selects `omarchy` on Arch derivatives and `server` on Ubuntu/Debian.
