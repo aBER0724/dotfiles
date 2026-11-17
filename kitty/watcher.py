@@ -19,7 +19,10 @@ import threading
 import time
 
 STATUS_CACHE_FILE = os.path.expanduser('~/.cache/kitty-status.txt')
-STATUS_SCRIPT = os.path.expanduser('~/dotfiles/kitty/status.sh')
+# status.sh lives next to this file, wherever the checkout is; realpath()
+# resolves the ~/.config/kitty symlink back into the repo.
+STATUS_SCRIPT = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), 'status.sh')
 
 METRICS_REFRESH_INTERVAL = 30
 CLOCK_REDRAW_INTERVAL = 10

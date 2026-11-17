@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # kitty tab bar 右侧状态: CPU / Mem / 时间
-# 输出格式: "CPU 12%  Mem 4.2G/16G  02/16 16:23"
+# 输出: "「CPU%」「MEM%」" 两个整数, 以 `|` 分隔 (e.g. "15|47")。
+# 布局/文字/时间戳由 tab_bar.py 渲染, 这里只采集数字。
 # 跨 macOS (Darwin) 和 Linux。
 
 set -u
@@ -35,32 +36,7 @@ cpu_percent() {
   fi
 }
 
-mem_usage() {
-  if [ "$os" = "Darwin" ]; then
-    local page_size total_bytes
-    page_size=$(vm_stat | awk '/page size of/ {print $8}')
-    total_bytes=$(sysctl -n hw.memsize)
-
-    local active wired
-    active=$(vm_stat | awk '/^Pages active:/     {gsub(/\./,"",$3); print $3}')
-    wired=$(vm_stat  | awk '/^Pages wired down:/ {gsub(/\./,"",$4); print $4}')
-
-    # 已用 ≈ active + wired (inactive 可被回收,不算真正"在用")
-    local used_bytes=$(( (active + wired) * page_size ))
-    awk -v u="$used_bytes" -v t="$total_bytes" 'BEGIN {
-      printf "%.1fG/%.0fG", u/1073741824, t/1073741824
-    }'
-  else
-    # Linux: 用 MemAvailable 反推已用
-    awk '
-      /^MemTotal:/     { t = $2 }
-      /^MemAvailable:/ { a = $2 }
-      END {
-        u = t - a;
-        printf "%.1fG/%.0fG", u/1048576, t/1048576
-      }' /proc/meminfo
-  fi
-}
+# 已用内存百分比由 main() 直接算, 不再单独提供 "4.2G/16G" 文案。
 
 main() {
   local cpu mem_percent
