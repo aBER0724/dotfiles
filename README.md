@@ -109,7 +109,7 @@ Config in `~/.pi/agent/`, symlinked from [pi-agent/](pi-agent/README.md).
 - **Not synced**: `auth.json` (API keys), package caches, sessions
 - **API keys**: third-party key-based providers, no login — set per device in `~/.pi/agent/auth.json` or env var
 - **Plugins**: declared by source in `settings.json`, auto-reinstalled on first launch
-- **Skills**: not synced — `~/.agents/skills` links to the machine-local magpie library (`~/.config/magpie/library/skills`); `dotfiles link pi` keeps the link pointed there; the old `agent-skills` submodule was removed
+- **Skills**: not synced — `~/.agents/skills` links to the machine-local magpie library (`~/.config/magpie/library/skills`); `dotfiles link pi` keeps the link pointed there where that directory exists, and `skip`s (pruning a stale dead link) on machines without magpie; the old `agent-skills` submodule was removed
 
 ## herdr
 

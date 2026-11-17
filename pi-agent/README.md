@@ -1,7 +1,7 @@
 # pi-agent
 
 [pi coding agent](https://pi.dev) 配置,跨设备同步。
-只同步声明式配置;密钥、缓存、会话全部留在各设备本地。skills 由各机的 magpie 库(`~/.config/magpie/library/skills`)提供,`dotfiles link pi` 把 `~/.agents/skills` 指到该目录。
+只同步声明式配置;密钥、缓存、会话全部留在各设备本地。skills 由各机的 magpie 库(`~/.config/magpie/library/skills`)提供,`dotfiles link pi` 把 `~/.agents/skills` 指到该目录;没有 magpie 的机器(如本仓库的 Linux 主机)会 `skip` 这一条,并顺手清掉旧的断链。
 
 ## 来源
 
@@ -16,7 +16,8 @@ pi-agent/
 ├── models.json       # 自定义 provider 定义(new-api)— 无密钥
 ├── models.local.json # (gitignored) 机器本地 provider 覆盖,link 时并入 models.merged.json
 ├── extensions/       # 自定义扩展(pi-autoresearch 白名单、herdr state 工具)
-# ~/.agents/skills → ~/.config/magpie/library/skills(机器本地,不在仓库内)
+# ~/.agents/skills → ~/.config/magpie/library/skills(机器本地,不在仓库内;
+# 目录不存在时 `dotfiles link pi` 跳过并清掉旧断链)
 ```
 
 ## 主题(随 nbshell 同步)
