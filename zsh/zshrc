@@ -282,3 +282,12 @@ if [ -n "$OTTY_SHELL_INTEGRATION" ] && [ -r "$OTTY_SHELL_INTEGRATION/otty-integr
   . "$OTTY_SHELL_INTEGRATION/otty-integration.zsh"
 fi
 # <<< otty shell integration <<<
+
+# bun completions
+[ -s "/Users/aber/.bun/_bun" ] && source "/Users/aber/.bun/_bun"
+
+# >>> bercail v0.10.0
+eval "$(/opt/homebrew/bin/brew shellenv)"
+export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
+source "$HOME/.config/bercail/shell/bercail.zsh"
+# <<< bercail
