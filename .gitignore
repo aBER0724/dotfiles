@@ -15,6 +15,10 @@
 *.log
 core
 
+# Python bytecode (kitty/*.py, nbshell/scripts/*.py run from the repo)
+__pycache__/
+*.pyc
+
 # kaku runtime artifacts (config dir uses its own .gitignore too)
 kaku/.alma-snapshots/
 sk-kaku
