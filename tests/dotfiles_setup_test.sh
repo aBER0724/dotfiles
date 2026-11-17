@@ -543,6 +543,33 @@ test_pi_links_agent_skills() {
     [ "$(readlink "$HOME/.agents/skills")" = "$HOME/.config/magpie/library/skills" ] &&
     assert_contains "backup  agent-skills"
 }
+test_pi_skips_missing_machine_local_source() {
+  new_case pi-agent-skills-missing
+  # No ~/.config/magpie/library/skills on this machine: the machine-local
+  # source is absent, so the entry is skipped instead of linked dead.
+  run_cli link pi
+  assert_status 0 &&
+    [ ! -e "$HOME/.agents/skills" ] &&
+    assert_contains "skip    agent-skills"
+}
+
+test_pi_prunes_dangling_machine_local_link() {
+  new_case pi-agent-skills-dangling
+  mkdir -p "$HOME/.agents"
+  ln -sfn "$HOME/.config/magpie/library/skills" "$HOME/.agents/skills"
+  run_cli link pi
+  assert_status 0 &&
+    [ ! -e "$HOME/.agents/skills" ] && [ ! -L "$HOME/.agents/skills" ] &&
+    assert_contains "prune   agent-skills"
+}
+
+test_status_reports_dangling_machine_local_link() {
+  new_case pi-agent-skills-dangling-status
+  mkdir -p "$HOME/.agents"
+  ln -sfn "$HOME/.config/magpie/library/skills" "$HOME/.agents/skills"
+  run_cli status pi
+  assert_status 0 && assert_contains "DANGLING (source missing)"
+}
 
 
 
@@ -595,6 +622,9 @@ run_test "Zsh deps install Oh My Zsh" test_zsh_deps_install_oh_my_zsh
 run_test "zshrc survives missing Oh My Zsh" test_zshrc_survives_missing_oh_my_zsh
 run_test "existing commands smoke" test_existing_commands_smoke
 run_test "pi links curated agent skills" test_pi_links_agent_skills
+run_test "pi skips a missing machine-local source" test_pi_skips_missing_machine_local_source
+run_test "pi prunes a dangling machine-local link" test_pi_prunes_dangling_machine_local_link
+run_test "status reports a dangling machine-local link" test_status_reports_dangling_machine_local_link
 run_test "usage lists setup" test_usage_lists_setup
 
 echo "$PASS passed, $FAIL failed"

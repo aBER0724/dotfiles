@@ -25,8 +25,8 @@ dotfiles {list|status|link|install|deps|setup} [name...]
 | 命令 | 说明 |
 |------|------|
 | `list` | 列出所有受管条目(name → 源 → 目标) |
-| `status [name...]` | 显示链接状态:`ok` / `STALE` / `CONFLICT` / `missing`(默认全部) |
-| `link [name...]` | 创建缺失链接;目标已有真实文件时备份到 `~/.dotfiles-backup-<时间戳>` 再替换 |
+| `status [name...]` | 显示链接状态:`ok` / `STALE` / `DANGLING`(源不存在) / `CONFLICT` / `missing`(默认全部) |
+| `link [name...]` | 创建缺失链接;目标已有真实文件时备份到 `~/.dotfiles-backup-<时间戳>` 再替换;`@home/` 源在本机不存在时 `skip` 并清掉旧断链 |
 | `install [name...]` | `link` + 自动安装该配置的软件本体与分组运行时依赖 |
 | `deps [name...]` | 只装软件/依赖而不碰链接；默认处理全部配置 |
 | `setup [auto\|macos\|linux\|server] [auto\|server\|omarchy\|niri]` | 检测或指定系统；`setup server` 是支持 root 的无桌面快捷方式 |

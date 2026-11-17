@@ -292,8 +292,10 @@ cmd_status() {
     src="$(resolve_source "${src%%|*}")"
     if [ -L "$target" ]; then
       points="$(readlink "$target" 2>/dev/null || true)"
-      if [ "$points" = "$src" ]; then
+      if [ "$points" = "$src" ] && [ -e "$src" ]; then
         state="ok"
+      elif [ "$points" = "$src" ]; then
+        state="DANGLING (source missing)"
       else
         state="STALE → $points"
       fi
@@ -318,7 +320,7 @@ resolve_source() {
 }
 
 cmd_link() {
-  local name src target backup_dir ts oldifs
+  local name src raw_src machine_local target backup_dir ts oldifs
   backup_dir="${DOTFILES_BACKUP_DIR:-$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)}"
   ts=0
   if selected_has pi-models; then merge_pi_models; fi
@@ -328,7 +330,23 @@ cmd_link() {
     name="${entry%%|*}"
     src="${entry#*|}"
     target="$(resolve_target "${src#*|}")"
-    src="$(resolve_source "${src%%|*}")"
+    raw_src="${src%%|*}"
+    src="$(resolve_source "$raw_src")"
+    machine_local=0
+    case "$raw_src" in
+      "@home/"*) machine_local=1 ;;
+    esac
+    # A machine-local source this machine does not have must not leave a dead
+    # link behind: prune the dangling link, and never create a new one.
+    if [ "$machine_local" = 1 ] && [ ! -e "$src" ]; then
+      if [ -L "$target" ] && [ "$(readlink "$target" 2>/dev/null || true)" = "$src" ]; then
+        rm -f "$target"
+        echo "prune   $name (dangling → missing $src)"
+      else
+        echo "skip    $name (machine-local source missing: $src)"
+      fi
+      continue
+    fi
     mkdir -p "$(dirname "$target")"
     if [ -L "$target" ]; then
       if [ "$(readlink "$target" 2>/dev/null || true)" = "$src" ]; then
