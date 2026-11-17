@@ -61,6 +61,22 @@ pi-agent/
 | `herdr-agent-state.ts` | herdr 插件状态同步工具 |
 | `rtk.ts` | bash 命令改写(委托 `rtk rewrite`),需要 `rtk >= 0.23.0` 在 PATH;由 `dotfiles install pi` 通过 Linuxbrew 的 `rtk` formula 安装 |
 
+### 机器本地扩展
+
+`pi-extensions` 把整个目录链到 `~/.pi/agent/extensions`,所以往这个目录里放链接等于往仓库里放文件。
+只想在某一台机器启用的扩展不要提交,链接建好后由 `extensions/.gitignore` 忽略:
+
+| 文件 | 用途 | 来源 |
+|------|------|------|
+| `herdr-chat-bridge.ts` | herdr 面板里的 CLI 对话桥 | herdr-mods 的 `herdr-chat-ui` 检出 |
+
+```bash
+# 只在有 herdr-mods 检出的机器上执行
+ln -sfn "$HOME/Code/herdr-mods/herdr-chat-ui/pi-extension/herdr-chat-bridge.ts" \
+  "$HOME/.pi/agent/extensions/herdr-chat-bridge.ts"
+```
+
+没有检出时不需要任何操作,pi 根本看不到这个扩展。
 ## Provider(models.json)
 
 | Provider | baseUrl | 说明 |

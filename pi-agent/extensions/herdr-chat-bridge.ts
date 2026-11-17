@@ -1,1 +1,0 @@
-/Users/aber/Code/herdr-mods/herdr-chat-ui/pi-extension/herdr-chat-bridge.ts

@@ -1,0 +1,4 @@
+# pi-agent/extensions is linked to ~/.pi/agent/extensions as a whole, so an
+# opt-in link inside this directory lands in the repo. Keep machine-local
+# extensions out of git; see the "机器本地扩展" table in ../README.md.
+herdr-chat-bridge.ts
