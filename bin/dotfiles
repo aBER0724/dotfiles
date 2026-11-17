@@ -62,6 +62,7 @@ SOFTWARE_TABLE=(
   "kitty-main|kitty|cask|kitty|kitty"
   "fastfetch|fastfetch|formula|fastfetch|fastfetch"
   "pi-settings|pi|npm|@earendil-works/pi-coding-agent|-"
+  "pi|rtk|formula|rtk|-"
   "herdr|herdr|formula|herdr|-"
   "herdr|go|formula|go|go"
   "herdr|tmux|formula|tmux|tmux"

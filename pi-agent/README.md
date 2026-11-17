@@ -59,6 +59,7 @@ pi-agent/
 |------|------|
 | `pi-autoresearch.json` | autoresearch 白名单配置 |
 | `herdr-agent-state.ts` | herdr 插件状态同步工具 |
+| `rtk.ts` | bash 命令改写(委托 `rtk rewrite`),需要 `rtk >= 0.23.0` 在 PATH;由 `dotfiles install pi` 通过 Linuxbrew 的 `rtk` formula 安装 |
 
 ## Provider(models.json)
 
