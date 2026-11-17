@@ -284,10 +284,18 @@ fi
 # <<< otty shell integration <<<
 
 # bun completions
-[ -s "/Users/aber/.bun/_bun" ] && source "/Users/aber/.bun/_bun"
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 # >>> bercail v0.10.0
-eval "$(/opt/homebrew/bin/brew shellenv)"
+# Homebrew lives at /opt/homebrew on macOS and ~/.linuxbrew or
+# /home/linuxbrew/.linuxbrew on Linux; the Linuxbrew fallback above already
+# covers the latter, so only run this when the macOS prefix exists.
+[[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
 export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
 [ -r "$HOME/.config/bercail/shell/bercail.zsh" ] && source "$HOME/.config/bercail/shell/bercail.zsh"
 # <<< bercail
+
+# PATH picks up entries from zprofile, Homebrew shellenv, Kaku, mise and
+# bercail; make it unique (first occurrence wins) instead of exporting the
+# same directory three or four times.
+typeset -U path
