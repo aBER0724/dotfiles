@@ -26,6 +26,7 @@ CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 FCITX_CONFIG_DIR="$CONFIG_HOME/fcitx5"
+FCITX_UNIT=omarchy-fcitx5.service
 
 if ! command -v fcitx5 >/dev/null 2>&1; then
     echo "fcitx5 not installed — skipped fcitx5 setup"
@@ -33,6 +34,48 @@ if ! command -v fcitx5 >/dev/null 2>&1; then
 fi
 
 printf '\n== fcitx5 setup ==\n'
+
+fcitx_managed_by_unit() {
+    systemctl --user is-active --quiet "$FCITX_UNIT" 2>/dev/null
+}
+
+fcitx_daemon_pid() {
+    pgrep -u "$(id -u)" -x fcitx5 2>/dev/null || true
+}
+
+fcitx_is_running() {
+    fcitx_managed_by_unit || [ -n "$(fcitx_daemon_pid)" ]
+}
+
+# fcitx5 owns ~/.config/fcitx5/profile while it runs: on exit it writes its
+# in-memory profile over the file, so an edit made underneath a live daemon is
+# lost (rime would simply never be registered). Stop it, patch, start it again
+# the same way it was running.
+fcitx_stop() {
+    if fcitx_managed_by_unit; then
+        systemctl --user stop "$FCITX_UNIT"
+    else
+        fcitx5-remote -e >/dev/null 2>&1 || pkill -u "$(id -u)" -x fcitx5 || true
+    fi
+    for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+        if [ -z "$(fcitx_daemon_pid)" ]; then return 0; fi
+        sleep 0.1
+    done
+}
+
+fcitx_start() {
+    case "$1" in
+        unit) systemctl --user start "$FCITX_UNIT" ;;
+        daemon) fcitx5 -d --replace >/dev/null 2>&1 || true ;;
+    esac
+}
+
+fcitx_mode=none
+if fcitx_managed_by_unit; then
+    fcitx_mode=unit
+elif [ -n "$(fcitx_daemon_pid)" ]; then
+    fcitx_mode=daemon
+fi
 
 # kimpanel is the KDE tray consumer; both Omarchy's classic UI and nbshell want
 # fcitx's own candidate window, so the addon stays disabled either way.
@@ -89,36 +132,62 @@ fi
 
 if [ ! -f /usr/share/fcitx5/inputmethod/rime.conf ]; then
     echo "fcitx5-rime not installed — skipped rime schema deployment"
-    exit 0
-fi
-
-rime_dir="$DATA_HOME/fcitx5/rime"
-rime_source="$DATA_HOME/fcitx5/rime-config"
-rime_repo=https://github.com/aBER0724/rime.git
-if [[ -d "$rime_source/.git" ]]; then
-    git -C "$rime_source" pull --ff-only || true
 else
-    rm -rf "$rime_source"
-    git clone --depth=1 "$rime_repo" "$rime_source"
-fi
-mkdir -p "$rime_dir"
-git -C "$rime_source" archive HEAD | tar -x -C "$rime_dir"
+    rime_dir="$DATA_HOME/fcitx5/rime"
+    rime_source="$DATA_HOME/fcitx5/rime-config"
+    rime_repo=https://github.com/aBER0724/rime.git
+    if [[ -d "$rime_source/.git" ]]; then
+        git -C "$rime_source" pull --ff-only || true
+    else
+        rm -rf "$rime_source"
+        git clone --depth=1 "$rime_repo" "$rime_source"
+    fi
+    mkdir -p "$rime_dir"
+    git -C "$rime_source" archive HEAD | tar -x -C "$rime_dir"
 
-python3 - "$FCITX_CONFIG_DIR/profile" <<'PY'
+    if [ "$fcitx_mode" != none ]; then
+        fcitx_stop
+    fi
+
+    # Register rime in the default group and make it the activated engine. The
+    # item block goes before [GroupOrder] so the file stays in fcitx's own shape.
+    python3 - "$FCITX_CONFIG_DIR/profile" <<'PY'
 from pathlib import Path
 import re
 import sys
 
 path = Path(sys.argv[1])
 text = path.read_text() if path.exists() else ""
-if "Name=rime" not in text:
-    item_numbers = [int(value) for value in re.findall(r"(?m)^\[Groups/0/Items/(\d+)\]$", text)]
-    index = max(item_numbers, default=-1) + 1
-    text = text.rstrip() + f"\n\n[Groups/0/Items/{index}]\nName=rime\nLayout=\n"
+if not text.strip():
+    text = (
+        "[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=rime\n\n"
+        "[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n"
+        "[GroupOrder]\n0=Default\n"
+    )
+if not re.search(r"(?m)^Name=rime$", text):
+    numbers = [int(value) for value in re.findall(r"(?m)^\[Groups/0/Items/(\d+)\]$", text)]
+    block = f"[Groups/0/Items/{max(numbers, default=-1) + 1}]\nName=rime\nLayout=\n\n"
+    if re.search(r"(?m)^\[GroupOrder\]$", text):
+        text = re.sub(r"(?m)^\[GroupOrder\]$", block + "[GroupOrder]", text, count=1)
+    else:
+        text = text.rstrip() + "\n\n" + block.rstrip() + "\n"
 if re.search(r"(?m)^DefaultIM=.*$", text):
     text = re.sub(r"(?m)^DefaultIM=.*$", "DefaultIM=rime", text, count=1)
 path.parent.mkdir(parents=True, exist_ok=True)
 path.write_text(text.lstrip())
 PY
 
-python3 "$SCRIPT_DIR/rime-lua-compat.py"
+    case "$fcitx_mode" in
+        unit) fcitx_start unit ;;
+        daemon) fcitx_start daemon ;;
+    esac
+
+    python3 "$SCRIPT_DIR/rime-lua-compat.py"
+fi
+
+# A restart above already read the new classicui config; this covers the path
+# where nothing restarted (rime unavailable) so the theme applies immediately.
+if fcitx_is_running && busctl --user status org.fcitx.Fcitx5 >/dev/null 2>&1; then
+    busctl --user call org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1 \
+        ReloadAddonConfig s classicui >/dev/null 2>&1 || true
+fi
