@@ -41,3 +41,7 @@ herdr/scratch/bin/
 herdr/.config.toml.gpui-lock
 # private credentials (never commit)
 private/
+
+# tool artifacts
+.spec-workflow/
+agent-skills/
