@@ -31,7 +31,7 @@ MAILCHECK=0
 }
 
 # Keep this close to the top. Anything requiring user input must run above it.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+if [[ -t 1 && -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
@@ -100,17 +100,23 @@ unset _zsh_z
 
 # Prompt ----------------------------------------------------------------------
 
-for _p10k in \
-  "$ZSH_CUSTOM/themes/powerlevel10k/powerlevel10k.zsh-theme" \
-  "$HOME/powerlevel10k/powerlevel10k.zsh-theme" \
-  /opt/homebrew/opt/powerlevel10k/powerlevel10k.zsh-theme
-do
-  [[ -r "$_p10k" ]] && { source "$_p10k"; break; }
-done
-unset _p10k
+# Only build the prompt when stdout is a terminal. Scripted interactive shells
+# (`zsh -i -c ...`, editors, CI) never render a prompt, and powerlevel10k's
+# gitstatus daemon fails to initialise there, printing
+# "[ERROR]: gitstatus failed to initialize." on every such invocation.
+if [[ -t 1 ]]; then
+  for _p10k in \
+    "$ZSH_CUSTOM/themes/powerlevel10k/powerlevel10k.zsh-theme" \
+    "$HOME/powerlevel10k/powerlevel10k.zsh-theme" \
+    /opt/homebrew/opt/powerlevel10k/powerlevel10k.zsh-theme
+  do
+    [[ -r "$_p10k" ]] && { source "$_p10k"; break; }
+  done
+  unset _p10k
 
-# Run `p10k configure` to regenerate this file.
-[[ -r "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
+  # Run `p10k configure` to regenerate this file.
+  [[ -r "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
+fi
 
 # PATH and toolchains ---------------------------------------------------------
 
