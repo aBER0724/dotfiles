@@ -289,5 +289,5 @@ fi
 # >>> bercail v0.10.0
 eval "$(/opt/homebrew/bin/brew shellenv)"
 export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
-source "$HOME/.config/bercail/shell/bercail.zsh"
+[ -r "$HOME/.config/bercail/shell/bercail.zsh" ] && source "$HOME/.config/bercail/shell/bercail.zsh"
 # <<< bercail

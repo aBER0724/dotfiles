@@ -520,12 +520,12 @@ test_existing_commands_smoke() {
 }
 test_pi_links_agent_skills() {
   new_case pi-agent-skills
-  mkdir -p "$HOME/.agents/skills"
+  mkdir -p "$HOME/.config/magpie/library/skills" "$HOME/.agents/skills"
   printf 'local skill\n' > "$HOME/.agents/skills/local.txt"
   run_cli link pi
   assert_status 0 &&
     [ -L "$HOME/.agents/skills" ] &&
-    [ "$(readlink "$HOME/.agents/skills")" = "$REPO/agent-skills/skills" ] &&
+    [ "$(readlink "$HOME/.agents/skills")" = "$HOME/.config/magpie/library/skills" ] &&
     assert_contains "backup  agent-skills"
 }
 
