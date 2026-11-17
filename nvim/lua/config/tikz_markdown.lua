@@ -162,12 +162,19 @@ local function resolve_bin(name)
   end
   local home = vim.fn.expand("~")
   local candidates = {
+    -- macOS: TinyTeX under ~/Library or the classic Homebrew prefixes.
     home .. "/Library/TinyTeX/bin/universal-darwin/" .. name,
     home .. "/Library/TinyTeX/bin/x86_64-darwin/" .. name,
     home .. "/Library/TinyTeX/bin/aarch64-darwin/" .. name,
     home .. "/.TinyTeX/bin/universal-darwin/" .. name,
     "/opt/homebrew/bin/" .. name,
+    -- Linux: the same TinyTeX layout uses a -linux arch directory, and distro
+    -- packages land in /usr/bin (PATH already covers it, this is the fallback).
+    home .. "/.TinyTeX/bin/x86_64-linux/" .. name,
+    home .. "/.TinyTeX/bin/aarch64-linux/" .. name,
+    home .. "/.TinyTeX/bin/universal-linux/" .. name,
     "/usr/local/bin/" .. name,
+    "/usr/bin/" .. name,
   }
   for _, candidate in ipairs(candidates) do
     if vim.fn.filereadable(candidate) == 1 then
