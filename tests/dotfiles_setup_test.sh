@@ -337,7 +337,7 @@ test_arch_links_primary_stack_only() {
   DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     [ -L "$HOME/.config/environment.d/fcitx.conf" ] &&
-    grep -F "GTK_IM_MODULE=fcitx" "$HOME/.config/environment.d/fcitx.conf" >/dev/null &&
+    grep -F "QT_IM_MODULE=fcitx" "$HOME/.config/environment.d/fcitx.conf" >/dev/null &&
     [ -L "$HOME/.config/fcitx5/conf" ] &&
     [ -L "$HOME/.config/kitty/kitty.conf" ] &&
     [ ! -e "$HOME/.config/niri" ] &&
