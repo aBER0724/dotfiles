@@ -521,7 +521,8 @@ test_plugin_installer_stops_when_required_deps_missing() {
     HERDR_PLUGINS_FILE="$CASE_ROOT/plugins.txt" \
     bash "$REPO/herdr/install-plugins.sh" >"$OUTPUT" 2>&1 || STATUS=$?
   assert_status 1 &&
-    assert_contains "bash ~/dotfiles/bin/dotfiles deps herdr" &&
+    # The hint prints the real checkout path, not ~/dotfiles.
+    assert_contains "bin/dotfiles deps herdr" &&
     [ ! -s "$LOG" ]
 }
 

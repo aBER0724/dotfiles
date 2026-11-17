@@ -29,7 +29,7 @@ done
 if [ -n "$MISSING_DEPS" ]; then
   echo "error: missing required herdr plugin dependencies:$MISSING_DEPS" >&2
   echo "Install them and retry with:" >&2
-  echo "  bash ~/dotfiles/bin/dotfiles deps herdr" >&2
+  echo "  bash $(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)/bin/dotfiles deps herdr" >&2
   exit 1
 fi
 
@@ -60,7 +60,7 @@ if [ -n "$FAILED" ]; then
   echo
   echo "WARNING: failed to install:$FAILED"
   echo "  Review the per-plugin logs above, install the reported dependency, and re-run:"
-  echo "  bash ~/dotfiles/herdr/install-plugins.sh"
+  echo "  bash ${BASH_SOURCE[0]}"
   exit 1
 fi
 
