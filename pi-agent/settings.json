@@ -35,39 +35,25 @@
     "defaultProvider": "new-api",
     "agentOverrides": {
       "scout": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash"
-        ]
+        "model": "new-api/deepseek-v4.1-flash"
       },
       "researcher": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash"
-        ]
+        "model": "new-api/deepseek-v4.1-flash"
       },
       "evidence-auditor": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash"
-        ]
+        "model": "new-api/deepseek-v4.1-flash"
       },
       "worker": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash"
-        ]
+        "model": "new-api/deepseek-v4.1-flash"
       },
       "reviewer": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash"
-        ]
+        "model": "new-api/deepseek-v4.1-flash"
       },
       "oracle": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash"
-        ]
+        "model": "new-api/deepseek-v4.1-flash"
       },
       "delegate": {
-        "fallbackModels": [
-          "new-api/deepseek-v4.1-flash"
-        ]
+        "model": "new-api/deepseek-v4.1-flash"
       }
     }
   },

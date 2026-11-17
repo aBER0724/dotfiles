@@ -92,8 +92,10 @@ ln -sfn "$HOME/Code/herdr-mods/herdr-chat-ui/pi-extension/herdr-chat-bridge.ts" 
 
 - 默认模型：`new-api/gpt-5.6-luna`；
 - 默认 provider：`new-api`；
-- 内置 `scout`、`researcher`、`evidence-auditor`、`worker`、`reviewer`、`oracle`、`delegate` 角色的 fallback：`new-api/deepseek-v4.1-flash`；
-- fallback 只针对工具执行前的可重试 provider/model 错误，例如限流、过载、模型不可用或 provider timeout；普通任务失败、运行超时以及已经执行工具后的失败不会自动重放。
+- 内置 `scout`、`researcher`、`evidence-auditor`、`worker`、`reviewer`、`oracle`、`delegate` 角色固定用 `new-api/deepseek-v4.1-flash`(覆盖里的 `model`)；
+- `pi-subagents` 0.89.0 起移除了 `fallbackModels` 与同一次启动内的模型切换：写 `fallbackModels` 会直接抛
+  `uses removed field 'fallbackModels'; configure one model instead`,扩展加载失败。要换模型只能在覆盖里写单个 `model`,
+  失败重试得由用户显式重新发起。
 - 新增或修改 `settings.json` 后重启 Pi 或执行 `/reload`，使扩展重新加载。
 
 ## 为什么 settings.json 里的 packages 是唯一真源
