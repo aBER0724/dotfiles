@@ -17,10 +17,10 @@ Personal configuration files.
 | [lazygit](/lazygit) | lazygit — side-by-side (delta) diff by default, `|` cycles renderers |
 | [fastfetch](/fastfetch) | System info |
 | [zsh](/zsh) | Zsh config (zshrc, zprofile, zshenv, p10k) |
-| [pi-agent](/pi-agent) | pi coding agent — syncs settings, models, extensions, and curated agent skills; API keys stay per-device |
+| [pi-agent](/pi-agent) | pi coding agent — syncs settings, models, and extensions; API keys stay per-device |
 | [herdr](/herdr) | Terminal workspace manager — syncs config.toml, plugin inventory, and the herdr-lazygit pane override (side-by-side diffs) |
 | [clash-verge](/clash-verge) | Clash Verge Rev — global extension script that rebuilds the FlClash proxy-group set (入口 / 17 地区 / 14 服务) from whatever nodes the subscription has |
-| [bin](/bin) | `dotfiles` CLI — one command to link/status/install all configs |
+| [bin](/bin) | `dotfiles` CLI — one command to link/status/install all configs; `mate` drives pi/claude sub-agents from one shell |
 
 ## Theme
 
@@ -32,7 +32,7 @@ Palette is owned by [nbshell](/nbshell)(`Alt+T` 切换主题):`theme-sync.py` �
 ## Setup
 
 ```bash
-git clone --recurse-submodules https://github.com/aBER0724/dotfiles.git ~/dotfiles
+git clone https://github.com/aBER0724/dotfiles.git ~/dotfiles
 bash ~/dotfiles/bin/dotfiles setup auto
 # The setup links the CLI to ~/.local/bin/dotfiles. If this shell does not
 # already include ~/.local/bin (for example a fresh Bash login), enable it once:
@@ -99,11 +99,11 @@ PATH="$HOME/.local/bin:$PATH" QML_IMPORT_PATH="$HOME/.local/lib/qt6/qml" key she
 
 Config in `~/.pi/agent/`, symlinked from [pi-agent/](pi-agent/README.md).
 
-- **Synced**: `settings.json` (plugins list, theme, defaults), `models.json` (third-party providers), `extensions/` (extension configs), and the [`agent-skills`](https://github.com/aBER0724/agent-skills) submodule linked to `~/.agents/skills`
+- **Synced**: `settings.json` (plugins list, theme, defaults), `models.json` (third-party providers), `extensions/` (extension configs)
 - **Not synced**: `auth.json` (API keys), package caches, sessions
 - **API keys**: third-party key-based providers, no login — set per device in `~/.pi/agent/auth.json` or env var
 - **Plugins**: declared by source in `settings.json`, auto-reinstalled on first launch
-- **Skills**: `dotfiles link pi` initializes the submodule when needed and links its `skills/` directory globally
+- **Skills**: not synced — `~/.agents/skills` links to the machine-local magpie library (`~/.config/magpie/library/skills`); `dotfiles link pi` keeps the link pointed there; the old `agent-skills` submodule was removed
 
 ## herdr
 

@@ -32,7 +32,7 @@ LINK_TABLE=(
   "pi-settings|pi-agent/settings.json|$HOME/.pi/agent/settings.json"
   "pi-models|pi-agent/models.json|$HOME/.pi/agent/models.json"
   "pi-extensions|pi-agent/extensions|$HOME/.pi/agent/extensions"
-  "agent-skills|agent-skills/skills|$HOME/.agents/skills"
+  "agent-skills|@home/.config/magpie/library/skills|$HOME/.agents/skills"
   "herdr|herdr/config.toml|$HOME/.config/herdr/config.toml"
   "herdr-lazygit-user|herdr/lazygit-user.yml|$HOME/.config/herdr/plugins/config/herdr-lazygit/lazygit-user.yml"
   "kitty-main|kitty/kitty.conf|$HOME/.config/kitty/kitty.conf"
@@ -269,7 +269,7 @@ cmd_list() {
     name="${entry%%|*}"
     src="${entry#*|}"
     target="$(resolve_target "${src#*|}")"
-    src="${src%%|*}"
+    src="$(resolve_source "${src%%|*}")"
     printf "%-14s %-55s %s\n" "$name" "$src" "$target"
   done
 }
@@ -283,10 +283,10 @@ cmd_status() {
     name="${entry%%|*}"
     src="${entry#*|}"
     target="$(resolve_target "${src#*|}")"
-    src="${src%%|*}"
+    src="$(resolve_source "${src%%|*}")"
     if [ -L "$target" ]; then
       points="$(readlink "$target" 2>/dev/null || true)"
-      if [ "$points" = "$DOTFILES/$src" ]; then
+      if [ "$points" = "$src" ]; then
         state="ok"
       else
         state="STALE → $points"
@@ -300,23 +300,20 @@ cmd_status() {
   done
 }
 
-ensure_agent_skills_source() {
-  if [ ! -d "$DOTFILES/agent-skills/skills" ]; then
-    command -v git >/dev/null 2>&1 || {
-      echo "dotfiles: git is required to initialize the agent-skills submodule" >&2
-      return 1
-    }
-    echo "init    agent-skills submodule"
-    git -C "$DOTFILES" submodule update --init --recursive -- agent-skills
-  fi
+# Resolve link sources the same way resolve_target handles targets:
+# `@home/<rest>` means $HOME/<rest> for sources that live outside the repo
+# (e.g. the magpie skill library, which is machine-local).
+resolve_source() {
+  local src="$1"
+  case "$src" in
+    "@home/"*) printf '%s\n' "$HOME/${src#@home/}" ;;
+    *)         printf '%s\n' "$DOTFILES/$src" ;;
+  esac
 }
 
 cmd_link() {
   local name src target backup_dir ts oldifs
   backup_dir="${DOTFILES_BACKUP_DIR:-$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)}"
-  if software_selected agent-skills "$(printf '%s\n' "$SELECTED" | cut -d'|' -f1 | tr '\n' ' ')"; then
-    ensure_agent_skills_source
-  fi
   ts=0
   oldifs="$IFS"; IFS=$'\n'
   for entry in $SELECTED; do
@@ -324,14 +321,14 @@ cmd_link() {
     name="${entry%%|*}"
     src="${entry#*|}"
     target="$(resolve_target "${src#*|}")"
-    src="${src%%|*}"
+    src="$(resolve_source "${src%%|*}")"
     mkdir -p "$(dirname "$target")"
     if [ -L "$target" ]; then
-      if [ "$(readlink "$target" 2>/dev/null || true)" = "$DOTFILES/$src" ]; then
+      if [ "$(readlink "$target" 2>/dev/null || true)" = "$src" ]; then
         echo "ok      $name ($target)"
       else
-        echo "repair  $name → $DOTFILES/$src"
-        ln -sfn "$DOTFILES/$src" "$target"
+        echo "repair  $name → $src"
+        ln -sfn "$src" "$target"
       fi
       continue
     fi
@@ -344,11 +341,10 @@ cmd_link() {
       mv "$target" "$backup_dir/"
       echo "backup  $name ($target)"
     fi
-    ln -sfn "$DOTFILES/$src" "$target"
+    ln -sfn "$src" "$target"
     echo "link    $name ($target)"
   done
 }
-
 run_zsh_deps() {
   echo "== zsh deps =="
   if command -v git >/dev/null 2>&1; then

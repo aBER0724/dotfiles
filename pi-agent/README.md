@@ -1,7 +1,7 @@
 # pi-agent
 
 [pi coding agent](https://pi.dev) 配置,跨设备同步。
-只同步声明式配置和 [`agent-skills`](https://github.com/aBER0724/agent-skills) 子模块中的精选 skills;密钥、缓存、会话全部留在各设备本地。
+只同步声明式配置;密钥、缓存、会话全部留在各设备本地。skills 由各机的 magpie 库(`~/.config/magpie/library/skills`)提供,`dotfiles link pi` 把 `~/.agents/skills` 指到该目录。
 
 ## 来源
 
@@ -15,7 +15,7 @@ pi-agent/
 ├── settings.json     # 插件列表(packages)、主题、默认 provider/model
 ├── models.json       # 自定义 provider 定义(new-api)— 无密钥
 ├── extensions/       # 自定义扩展(pi-autoresearch 白名单、herdr state 工具)
-└── ../agent-skills/   # Git 子模块;skills/ 链接到 ~/.agents/skills
+# ~/.agents/skills → ~/.config/magpie/library/skills(机器本地,不在仓库内)
 ```
 
 ## 主题(随 nbshell 同步)
@@ -99,9 +99,9 @@ macOS 不运行 nbshell，因此 `dotfiles install pi` 会把仓库内的 Tokyo 
 
 ```bash
 # 1. 建目录 + 链接配置(或直接 dotfiles install pi)
-git clone --recurse-submodules https://github.com/aBER0724/dotfiles.git ~/dotfiles
+git clone https://github.com/aBER0724/dotfiles.git ~/dotfiles
 bash ~/dotfiles/bin/dotfiles link pi
-# 上述命令会链接 settings/models/extensions，并将 agent-skills/skills 链接到 ~/.agents/skills
+# 上述命令会链接 settings/models/extensions,并把 ~/.agents/skills 指向 ~/.config/magpie/library/skills
 
 # 2. 每设备配置一次 API key(无登录,全部 key-based;auth.json 不同步)
 printf '{"new-api": {"type": "api_key", "key": "sk-..."}}' > ~/.pi/agent/auth.json
