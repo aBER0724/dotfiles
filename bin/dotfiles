@@ -28,6 +28,8 @@ LINK_TABLE=(
   "clavis|clavis/config|$HOME/.config/clavis"
   "nbshell-config|nbshell/config/config.json|$HOME/.config/nbshell/config.json"
   "nbshell-screensaver|nbshell/config/screensaver.txt|$HOME/.config/nbshell/screensaver.txt"
+  "fcitx5-env|fcitx5/environment.d/fcitx.conf|$HOME/.config/environment.d/fcitx.conf"
+  "fcitx5-conf|fcitx5/conf|$HOME/.config/fcitx5/conf"
   "fastfetch|fastfetch|$HOME/.config/fastfetch"
   "pi-settings|pi-agent/settings.json|$HOME/.pi/agent/settings.json"
   "pi-models|pi-agent/models.json|$HOME/.pi/agent/models.json"
@@ -56,8 +58,8 @@ SOFTWARE_TABLE=(
   "niri|niri|-|-|niri"
   "waybar|waybar|-|-|waybar"
   "nbshell-config|qs|-|-|quickshell"
-  "nbshell-config|fcitx5|-|-|fcitx5-im"
-  "nbshell-config|kitty|cask|kitty|kitty"
+  "fcitx5-conf|fcitx5|-|-|fcitx5-im fcitx5-rime fcitx5-configtool"
+  "kitty-main|kitty|cask|kitty|kitty"
   "fastfetch|fastfetch|formula|fastfetch|fastfetch"
   "pi-settings|pi|npm|@earendil-works/pi-coding-agent|-"
   "herdr|herdr|formula|herdr|-"
@@ -76,17 +78,20 @@ GROUP_TABLE=(
   "zsh|zshrc zshenv zprofile shinit p10k"
   "kitty|kitty-main kitty-linux kitty-macos kitty-tab-bar kitty-watcher kitty-resize-separator"
   "herdr|herdr herdr-lazygit-user"
+  "fcitx|fcitx5-env fcitx5-conf"
   "nbshell|nbshell-config nbshell-screensaver"
-  "wm|niri nbshell-config nbshell-screensaver"
+  "wm|niri nbshell-config nbshell-screensaver fcitx5-env fcitx5-conf"
 )
 
 # Setup is split by operating system and, on Linux, by environment profile.
-# `server` is safe for headless Ubuntu/Debian hosts; `omarchy` is the full
-# Arch desktop stack with Niri, nbshell, and Kitty.
+# `server` is safe for headless Ubuntu/Debian hosts; `omarchy` is the default
+# Arch profile targeting stock Omarchy (Hyprland/uwsm); `niri` is the custom
+# Niri + nbshell stack. Auto-detect picks omarchy on Arch, server on Debian.
 PRESET_TABLE=(
   "macos|dotfiles-cli zsh nvim fastfetch pi herdr aerospace kitty lazygit"
   "linux-server|dotfiles-cli zsh nvim fastfetch pi herdr lazygit"
-  "linux-omarchy|dotfiles-cli zsh nvim fastfetch pi herdr niri nbshell kitty lazygit"
+  "linux-omarchy|dotfiles-cli zsh nvim fastfetch pi herdr fcitx kitty lazygit"
+  "linux-niri|dotfiles-cli zsh nvim fastfetch pi herdr niri nbshell kitty fcitx lazygit"
 )
 
 # Expand aliases in "$*" to concrete names (set -u + empty string is fine here).
@@ -199,14 +204,14 @@ validate_linux_profile() {
         return 1
       }
       ;;
-    omarchy)
+    omarchy|niri)
       [ "$distro" = arch ] || {
-        echo "dotfiles: Linux profile 'omarchy' requires Arch Linux or an Arch derivative" >&2
+        echo "dotfiles: Linux profile '$profile' requires Arch Linux or an Arch derivative" >&2
         return 1
       }
       ;;
     *)
-      echo "dotfiles: unknown Linux profile '$profile' (supported: auto server omarchy)" >&2
+      echo "dotfiles: unknown Linux profile '$profile' (supported: auto server omarchy niri)" >&2
       return 1
       ;;
   esac
@@ -398,7 +403,7 @@ run_privileged() {
 install_arch_setup_packages() {
   local wanted="$1" packages
   command -v pacman >/dev/null 2>&1 || {
-    echo "dotfiles: pacman is required for the Linux omarchy profile" >&2
+    echo "dotfiles: pacman is required for Arch desktop profiles (omarchy, niri)" >&2
     return 1
   }
   packages="$(arch_packages_for "$wanted")"
@@ -643,6 +648,10 @@ run_config_runtimes() {
     echo "== nbshell (user-local, never sudo) =="
     bash "$DOTFILES/nbshell/install.sh"
   fi
+  if software_selected fcitx5-conf "$wanted"; then
+    echo "== fcitx5 (user-local, never sudo) =="
+    bash "$DOTFILES/fcitx5/install.sh"
+  fi
   if software_selected pi-settings "$wanted"; then
     echo "== pi =="
     setup_pi_theme
@@ -775,7 +784,7 @@ cmd_setup() {
   echo "preset   $preset"
   printf 'entries %s\n' "$wanted"
 
-  if [ "$preset" = linux-omarchy ]; then
+  if [ "$preset" = linux-omarchy ] || [ "$preset" = linux-niri ]; then
     echo "== install native packages (pacman) =="
     install_arch_setup_packages "$wanted"
   elif [ "$preset" = linux-server ]; then
@@ -800,7 +809,7 @@ cmd_setup() {
     linux-server)
       run_software_install "$wanted" 1 1
       ;;
-    linux-omarchy)
+    linux-omarchy|linux-niri)
       run_software_install "$wanted" 1
       ;;
     *)
@@ -822,6 +831,11 @@ cmd_setup() {
       echo "Optional: change the login shell manually with chsh."
       ;;
     linux-omarchy)
+      echo "fcitx5 autostarts via Omarchy's default Hyprland config; IM env vars"
+      echo "come from ~/.config/environment.d/fcitx.conf (imported by uwsm)."
+      echo "If scratch registration failed, run: herdr-scratch link"
+      ;;
+    linux-niri)
       echo "  systemctl --user enable --now nbshell.service"
       echo "  sudo systemctl enable --now tuned.service"
       echo "If scratch registration failed, run: herdr-scratch link"

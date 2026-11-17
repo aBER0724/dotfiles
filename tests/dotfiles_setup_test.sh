@@ -298,9 +298,9 @@ test_arch_installs_required_packages() {
     grep -F "sudo pacman -S --needed" "$LOG" >/dev/null &&
     grep -F "base-devel" "$LOG" >/dev/null &&
     ! grep -F "python-xattr" "$LOG" >/dev/null &&
-    grep -F "niri" "$LOG" >/dev/null &&
-    grep -F "quickshell" "$LOG" >/dev/null &&
-    grep -F "gpu-screen-recorder" "$LOG" >/dev/null &&
+    grep -F "fcitx5-im" "$LOG" >/dev/null &&
+    grep -F "fcitx5-rime" "$LOG" >/dev/null &&
+    grep -F "kitty" "$LOG" >/dev/null &&
     assert_not_contains "no supported package mapping for: nvim niri"
 }
 
@@ -336,25 +336,40 @@ test_arch_links_primary_stack_only() {
   stub_logger herdr
   DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
-    [ -L "$HOME/.config/niri" ] &&
-    [ -L "$HOME/.config/nbshell/config.json" ] &&
-    [ -L "$HOME/.config/nbshell/screensaver.txt" ] &&
-    grep -F "▄█████▄" "$HOME/.config/nbshell/screensaver.txt" >/dev/null &&
-    grep -F '"bongoActive": false' "$HOME/.config/nbshell/config.json" >/dev/null &&
+    [ -L "$HOME/.config/environment.d/fcitx.conf" ] &&
+    grep -F "GTK_IM_MODULE=fcitx" "$HOME/.config/environment.d/fcitx.conf" >/dev/null &&
+    [ -L "$HOME/.config/fcitx5/conf" ] &&
     [ -L "$HOME/.config/kitty/kitty.conf" ] &&
+    [ ! -e "$HOME/.config/niri" ] &&
+    [ ! -e "$HOME/.config/nbshell" ] &&
     [ ! -e "$HOME/.config/waybar" ] &&
     [ ! -e "$HOME/.config/clavis" ] &&
     [ ! -e "$HOME/.config/kaku" ]
 }
 
+test_niri_profile_links_custom_stack() {
+  new_case niri-links
+  arch_fixture
+  stub_logger npm
+  stub_logger git
+  stub_logger herdr
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux niri
+  assert_status 0 &&
+    assert_contains "preset   linux-niri" &&
+    [ -L "$HOME/.config/niri" ] &&
+    [ -L "$HOME/.config/nbshell/config.json" ] &&
+    [ -L "$HOME/.config/nbshell/screensaver.txt" ] &&
+    [ -L "$HOME/.config/environment.d/fcitx.conf" ] &&
+    [ -L "$HOME/.config/fcitx5/conf" ] &&
+    [ -L "$HOME/.config/kitty/kitty.conf" ]
+}
 test_arch_prints_but_does_not_enable_services() {
   new_case arch-manual
   arch_fixture
   stub_command systemctl 'echo systemctl-executed >> "$LOG"; exit 99'
   DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
-    assert_contains "systemctl --user enable --now nbshell.service" &&
-    assert_contains "sudo systemctl enable --now tuned.service" &&
+    assert_contains "environment.d/fcitx.conf" &&
     ! grep -F "systemctl-executed" "$LOG" >/dev/null
 }
 
@@ -563,6 +578,7 @@ run_test "macOS skips Homebrew bootstrap" test_macos_skips_homebrew_bootstrap
 run_test "Arch installs required packages" test_arch_installs_required_packages
 run_test "Arch package failure stops before links" test_arch_package_failure_stops_before_links
 run_test "Arch links primary stack only" test_arch_links_primary_stack_only
+run_test "Niri profile links custom stack" test_niri_profile_links_custom_stack
 run_test "Arch prints services without enabling" test_arch_prints_but_does_not_enable_services
 run_test "macOS links primary stack only" test_macos_links_primary_stack_only
 run_test "setup is idempotent" test_existing_links_and_commands_are_skipped
