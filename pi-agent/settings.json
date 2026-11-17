@@ -35,25 +35,39 @@
     "defaultProvider": "new-api",
     "agentOverrides": {
       "scout": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash"
+        ]
       },
       "researcher": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash"
+        ]
       },
       "evidence-auditor": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash"
+        ]
       },
       "worker": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash"
+        ]
       },
       "reviewer": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash"
+        ]
       },
       "oracle": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash"
+        ]
       },
       "delegate": {
-        "fallbackModels": ["new-api/deepseek-v4.1-flash"]
+        "fallbackModels": [
+          "new-api/deepseek-v4.1-flash"
+        ]
       }
     }
   },
@@ -66,9 +80,9 @@
     "enabled": true
   },
   "extensionChangelogVersions": {
-    "{\"source\":\"npm:@narumitw/pi-goal\",\"scope\":\"user\"}": "0.55.1",
+    "{\"source\":\"npm:@narumitw/pi-goal\",\"scope\":\"user\"}": "0.55.3",
     "{\"source\":\"npm:@narumitw/pi-plan-mode\",\"scope\":\"user\"}": "0.60.1",
-    "{\"source\":\"npm:pi-subagents\",\"scope\":\"user\"}": "0.88.0",
+    "{\"source\":\"npm:pi-subagents\",\"scope\":\"user\"}": "0.89.0",
     "{\"source\":\"npm:@narumitw/pi-btw\",\"scope\":\"user\"}": "0.63.8",
     "{\"source\":\"npm:pi-mcp-adapter\",\"scope\":\"user\"}": "7.0.1",
     "{\"source\":\"npm:pi-rtk-optimizer\",\"scope\":\"user\"}": "0.9.0",
@@ -77,6 +91,7 @@
     "{\"source\":\"npm:pi-workspace-history\",\"scope\":\"user\"}": "0.5.2",
     "{\"source\":\"npm:@narumitw/pi-caffeinate\",\"scope\":\"user\"}": "0.49.15",
     "{\"source\":\"npm:@tmustier/pi-raw-paste\",\"scope\":\"user\"}": "0.1.3",
-    "{\"source\":\"npm:pi-autoresearch\",\"scope\":\"user\"}": "1.9.0"
+    "{\"source\":\"npm:pi-autoresearch\",\"scope\":\"user\"}": "1.9.0",
+    "{\"source\":\"npm:pi-cache-optimizer\",\"scope\":\"user\"}": "2.10.6"
   }
 }
