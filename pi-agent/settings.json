@@ -1,6 +1,6 @@
 {
+  "defaultModel": "newapi/swe-2",
   "defaultProvider": "magpie",
-  "defaultModel": "newapi/deepseek-v4.1-flash",
   "packages": [
     "npm:@juanibiapina/pi-extension-settings",
     "npm:@juanibiapina/pi-powerbar",
@@ -26,7 +26,7 @@
     "npm:pi-autoresearch",
     "git:github.com/NVlabs/SoL-Pi"
   ],
-  "lastChangelogVersion": "1.4.0",
+  "lastChangelogVersion": "1.5.2",
   "theme": "nbshell",
   "tuiMode": "fullscreen",
   "defaultThinkingLevel": "high",
@@ -61,5 +61,23 @@
   "hideThinkingBlock": true,
   "extensions": [
     "-builtin:mcp"
-  ]
+  ],
+  "cacheWarming": "streaming",
+  "compaction": {
+    "enabled": true
+  },
+  "extensionChangelogVersions": {
+    "{\"source\":\"npm:@narumitw/pi-goal\",\"scope\":\"user\"}": "0.55.1",
+    "{\"source\":\"npm:@narumitw/pi-plan-mode\",\"scope\":\"user\"}": "0.60.1",
+    "{\"source\":\"npm:pi-subagents\",\"scope\":\"user\"}": "0.88.0",
+    "{\"source\":\"npm:@narumitw/pi-btw\",\"scope\":\"user\"}": "0.63.8",
+    "{\"source\":\"npm:pi-mcp-adapter\",\"scope\":\"user\"}": "7.0.1",
+    "{\"source\":\"npm:pi-rtk-optimizer\",\"scope\":\"user\"}": "0.9.0",
+    "{\"source\":\"npm:@narumitw/pi-lsp\",\"scope\":\"user\"}": "0.49.12",
+    "{\"source\":\"npm:pi-agent-browser-native@0.2.10\",\"scope\":\"user\"}": "0.2.10",
+    "{\"source\":\"npm:pi-workspace-history\",\"scope\":\"user\"}": "0.5.2",
+    "{\"source\":\"npm:@narumitw/pi-caffeinate\",\"scope\":\"user\"}": "0.49.15",
+    "{\"source\":\"npm:@tmustier/pi-raw-paste\",\"scope\":\"user\"}": "0.1.3",
+    "{\"source\":\"npm:pi-autoresearch\",\"scope\":\"user\"}": "1.9.0"
+  }
 }
