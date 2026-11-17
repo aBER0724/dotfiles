@@ -19,6 +19,7 @@ Personal configuration files.
 | [zsh](/zsh) | Zsh config (zshrc, zprofile, zshenv, p10k) |
 | [pi-agent](/pi-agent) | pi coding agent — syncs settings, models, extensions, and curated agent skills; API keys stay per-device |
 | [herdr](/herdr) | Terminal workspace manager — syncs config.toml, plugin inventory, and the herdr-lazygit pane override (side-by-side diffs) |
+| [clash-verge](/clash-verge) | Clash Verge Rev — global extension script that rebuilds the FlClash proxy-group set (入口 / 17 地区 / 14 服务) from whatever nodes the subscription has |
 | [bin](/bin) | `dotfiles` CLI — one command to link/status/install all configs |
 
 ## Theme
