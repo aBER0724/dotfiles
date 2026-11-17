@@ -1,0 +1,237 @@
+#!/bin/bash
+# mate — drive sub-agents across CLI coding agents (pi, claude) from one shell
+# Usage:
+#   mate pi     "<task>"        one child pi run (read-only tools by default)
+#   mate claude "<task>"        one Claude Code run through the local magpie proxy
+#   mate chain  "<task>"        claude plans → pi executes → claude reviews
+#   mate fanout "<task>" [n]    n pi workers on the same task, different angles
+#
+# Children never read stdin: the whole task goes in as an argument. Each child
+# call prints one line of usage JSON to stderr, so cost stays visible while the
+# answer stays clean on stdout.
+#
+# Environment:
+#   MAGPIE        proxy base URL for claude children (default http://127.0.0.1:3425)
+#   PI_MODEL      model id for pi children (default swe-2)
+#   WORKER_MODEL  model id for claude children (default newapi/deepseek-v4.1-flash)
+#   PI_FLAGS      extra pi flags (default "-ns -ne", see below)
+#   TOOLS         tool allowlist (default read,grep,find,ls,bash)
+#   TIMEOUT       seconds per child call (default 300; needs timeout/gtimeout)
+#   WRITE=1       let children use write/edit as well
+set -euo pipefail
+
+MAGPIE="${MAGPIE:-http://127.0.0.1:3425}"
+# Cheap, fast, non-reasoning models are the point: children run narrow tasks.
+PI_MODEL="${PI_MODEL:-swe-2}"
+WORKER_MODEL="${WORKER_MODEL:-newapi/deepseek-v4.1-flash}"
+
+# -ns -ne: load neither the skills directory nor extensions. The skills listing
+# alone is ~18k tokens of fixed overhead; a child running one narrow task does
+# not need it, and dropping it takes a call from ~18k down to ~1.8k.
+PI_FLAGS="${PI_FLAGS:--ns -ne}"
+
+TOOLS_READ="read,grep,find,ls,bash"
+TOOLS_WRITE="read,grep,find,ls,bash,write,edit"
+# Claude Code spells the same allowlist differently from pi.
+CLAUDE_TOOLS_READ="Read Glob Grep Bash"
+CLAUDE_TOOLS_WRITE="Read Glob Grep Bash Write Edit"
+if [ "${WRITE:-0}" = 1 ] && [ -z "${TOOLS:-}" ]; then
+  TOOLS="$TOOLS_WRITE"
+else
+  TOOLS="${TOOLS:-$TOOLS_READ}"
+fi
+TIMEOUT="${TIMEOUT:-300}"
+
+usage() {
+  echo "Usage: mate {pi|claude|chain|fanout} \"<task>\" [n]"
+  echo "  pi \"<task>\"          one child pi run; read-only tools unless WRITE=1"
+  echo "  claude \"<task>\"      one Claude Code run through the magpie proxy"
+  echo "  chain \"<task>\"       claude plans, pi executes, claude reviews"
+  echo "  fanout \"<task>\" [n]  n pi workers in parallel, n defaults to 3"
+  echo
+  echo "env: MAGPIE       =$MAGPIE"
+  echo "     PI_MODEL     =$PI_MODEL"
+  echo "     WORKER_MODEL =$WORKER_MODEL"
+  echo "     PI_FLAGS     =$PI_FLAGS"
+  echo "     TOOLS        =$TOOLS"
+  echo "     TIMEOUT      =$TIMEOUT (seconds per child call)"
+}
+
+die() {
+  echo "mate: $*" >&2
+  exit 1
+}
+
+# macOS ships no timeout(1); use it only when coreutils provides it, otherwise
+# run without a wall-clock cap rather than failing.
+timeout_bin() {
+  if command -v timeout >/dev/null 2>&1; then
+    command -v timeout
+  elif command -v gtimeout >/dev/null 2>&1; then
+    command -v gtimeout
+  else
+    return 1
+  fi
+}
+
+run_with_timeout() {
+  local tb
+  if [ "$TIMEOUT" -gt 0 ] 2>/dev/null && tb="$(timeout_bin)"; then
+    "$tb" "$TIMEOUT" "$@"
+  else
+    "$@"
+  fi
+}
+
+need_python() {
+  command -v python3 >/dev/null 2>&1 || die "python3 is required to parse child usage"
+}
+
+# --- child pi -------------------------------------------------------------
+# `env -u PI_CODING_AGENT_DIR -u PI_OFFLINE` is not optional: when this script
+# runs inside a parent agent, those variables point the child at the parent's
+# run-tmp home, where the magpie provider from ~/.pi/agent is missing and every
+# call dies with "No API key". Clearing them makes the child read the real
+# config. Usage comes from the JSONL stream: sum every message_end usage block.
+run_pi() {
+  run_with_timeout env -u PI_CODING_AGENT_DIR -u PI_OFFLINE \
+    pi -p --mode json --no-session --model "$PI_MODEL" $PI_FLAGS --tools "$TOOLS" "$1" \
+  | python3 -c '
+import sys, json
+last = ""
+tot = {}
+for line in sys.stdin:
+    line = line.strip()
+    if not line.startswith("{"):
+        continue
+    try:
+        e = json.loads(line)
+    except Exception:
+        continue
+    if e.get("type") == "message_end":
+        m = e.get("message") or {}
+        for k, v in (m.get("usage") or {}).items():
+            if isinstance(v, (int, float)):
+                tot[k] = tot.get(k, 0) + v
+        if m.get("role") == "assistant":
+            t = "".join(c.get("text", "") for c in (m.get("content") or []) if isinstance(c, dict))
+            if t.strip():
+                last = t
+    elif e.get("type") == "error":
+        print("ERROR:", json.dumps(e)[:300], file=sys.stderr)
+print("usage:", json.dumps(tot), file=sys.stderr)
+print(last)
+'
+}
+
+# --- child claude ---------------------------------------------------------
+# ~/.claude/settings.json carries its own env block and that wins over exported
+# shell variables, so base URL and token can only be injected through
+# --settings. --strict-mcp-config skips MCP discovery, which otherwise costs
+# tens of seconds of startup on every call. Usage is a plain field in the
+# single result object; cost and turn count sit next to it.
+run_claude() {
+  local task="$1" allowed
+  allowed="$CLAUDE_TOOLS_READ"
+  if [ "$TOOLS" = "$TOOLS_WRITE" ]; then
+    allowed="$CLAUDE_TOOLS_WRITE"
+  fi
+  run_with_timeout claude -p "$task" \
+    --output-format json \
+    --model "$WORKER_MODEL" \
+    --strict-mcp-config --no-session-persistence \
+    --allowedTools $allowed \
+    --settings "{\"env\":{\"ANTHROPIC_BASE_URL\":\"$MAGPIE\",\"ANTHROPIC_AUTH_TOKEN\":\"magpie\"}}" \
+  | python3 -c '
+import sys, json
+raw = sys.stdin.read()
+try:
+    d = json.loads(raw)
+except Exception:
+    print(raw[-800:], file=sys.stderr)
+    raise SystemExit(1)
+if d.get("is_error"):
+    print("ERROR:", d.get("api_error"), d.get("result"), file=sys.stderr)
+u = {k: v for k, v in (d.get("usage") or {}).items() if isinstance(v, int)}
+print("usage:", json.dumps(u), "cost:", d.get("total_cost_usd"), "turns:", d.get("num_turns"), file=sys.stderr)
+print(d.get("result", ""))
+'
+}
+
+need_task() {
+  [ -n "${1:-}" ] || die "$2 needs a task string; see: mate $2 \"<task>\""
+}
+
+cmd_pi() {
+  need_task "${1:-}" pi
+  need_python
+  run_pi "$1"
+}
+
+cmd_claude() {
+  need_task "${1:-}" claude
+  need_python
+  run_claude "$1"
+}
+
+cmd_chain() {
+  local task="${1:-}" plan result
+  need_task "$task" chain
+  need_python
+  plan="$(run_claude "You are the planner. Break the task below into 2-4 steps that can each be verified on its own. One step per line, no preamble, no commentary.
+Task: $task")"
+  echo "--- plan (claude) ---" >&2
+  echo "$plan" >&2
+  echo "--- execute (pi) ---" >&2
+  result="$(run_pi "Follow this plan step by step, then give the conclusion. Plan:
+$plan
+
+Task: $task")"
+  echo "$result"
+  echo "--- review (claude) ---" >&2
+  run_claude "Review the work below against the plan. Name what is wrong or missing first, then what holds up. Be brief.
+Plan:
+$plan
+
+Task: $task
+
+Work:
+$result"
+}
+
+cmd_fanout() {
+  local task="${1:-}" n="${2:-3}" i out
+  need_task "$task" fanout
+  case "$n" in
+    *[!0-9]*) die "fanout wants a positive number of workers, got: $n" ;;
+  esac
+  [ "$n" -ge 1 ] || die "fanout wants at least 1 worker"
+  need_python
+  FANOUT_TMP="$(mktemp -d "${TMPDIR:-/tmp}/mate-fanout.XXXXXX")"
+  out="$FANOUT_TMP"
+  # Answers are printed before the directory goes away; the path lives in a
+  # global because the EXIT trap fires after this function's locals are gone.
+  trap 'rm -rf "$FANOUT_TMP"' EXIT
+  for i in $(seq 1 "$n"); do
+    run_pi "Angle $i of $n: $task
+Answer only from this angle, in 200 words or less." > "$out/$i.txt" 2>>"$out/usage.log" &
+  done
+  wait || true
+  if [ -s "$out/usage.log" ]; then
+    cat "$out/usage.log" >&2
+  fi
+  for i in $(seq 1 "$n"); do
+    echo "===== worker $i/$n ====="
+    if [ -f "$out/$i.txt" ]; then cat "$out/$i.txt"; fi
+    echo
+  done
+}
+
+case "${1:-}" in
+  pi)     shift; cmd_pi "$@" ;;
+  claude) shift; cmd_claude "$@" ;;
+  chain)  shift; cmd_chain "$@" ;;
+  fanout) shift; cmd_fanout "$@" ;;
+  -h|--help|help) usage; exit 0 ;;
+  *) usage; exit 1 ;;
+esac
