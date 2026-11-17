@@ -1,6 +1,6 @@
 {
-  "defaultModel": "newapi/swe-2",
-  "defaultProvider": "magpie",
+  "defaultModel": "swe-2",
+  "defaultProvider": "new-api",
   "packages": [
     "npm:@juanibiapina/pi-extension-settings",
     "npm:@juanibiapina/pi-powerbar",

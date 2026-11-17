@@ -71,6 +71,25 @@
           }
         },
         {
+          "id": "swe-2",
+          "name": "SWE-2",
+          "reasoning": true,
+          "contextWindow": 1048576,
+          "maxTokens": 131072,
+          "compat": {
+            "supportsReasoningEffort": true
+          },
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "xhigh",
+            "max": null
+          }
+        },
+        {
           "id": "glm-5.2",
           "name": "GLM 5.2",
           "contextWindow": 128000,
