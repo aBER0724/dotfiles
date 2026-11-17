@@ -468,6 +468,26 @@ test_macos_skips_scratch_source_build() {
     ! grep -F "herdr plugin install macintacos/herdr-scratch" "$LOG" >/dev/null
 }
 
+test_gen_plugins_keeps_github_linux_kind() {
+  new_case herdr-gen-plugins
+  mkdir -p "$HOME/.config/herdr" "$CASE_ROOT/herdr"
+  cp "$REPO/herdr/gen-plugins.sh" "$CASE_ROOT/herdr/"
+  cat > "$HOME/.config/herdr/plugins.json" <<'JSON'
+[
+  {"plugin_id": "pinned.pkg", "source": {"kind": "github", "owner": "me", "repo": "pinned", "resolved_commit": "abc123"}},
+  {"plugin_id": "user.scratch", "source": {"kind": "github", "owner": "macintacos", "repo": "herdr-scratch", "resolved_commit": "def456"}}
+]
+JSON
+  # scratch is tracked unpinned so Linux rebuilds it from current upstream.
+  printf '%s\n' 'user.scratch|github-linux|herdr plugin install macintacos/herdr-scratch' \
+    > "$CASE_ROOT/herdr/plugins.txt"
+  HOME="$HOME" bash "$CASE_ROOT/herdr/gen-plugins.sh" >/dev/null 2>&1 || return 1
+  grep -Fx 'user.scratch|github-linux|herdr plugin install macintacos/herdr-scratch' \
+    "$CASE_ROOT/herdr/plugins.txt" >/dev/null &&
+    grep -Fx 'pinned.pkg|github|herdr plugin install me/pinned --ref abc123' \
+      "$CASE_ROOT/herdr/plugins.txt" >/dev/null
+}
+
 test_plugin_failure_shows_actual_log() {
   new_case plugin-failure-log
   printf '%s\n' 'broken|github|herdr plugin install example/broken' > "$CASE_ROOT/plugins.txt"
@@ -631,6 +651,7 @@ run_test "Arch bootstraps Linuxbrew without scratch cask" test_arch_bootstraps_l
 run_test "Arch installs native packages before Homebrew" test_arch_installs_native_packages_before_homebrew
 run_test "Arch installs scratch through herdr" test_arch_installs_scratch_through_herdr
 run_test "macOS skips scratch source build" test_macos_skips_scratch_source_build
+run_test "gen-plugins keeps the github-linux kind" test_gen_plugins_keeps_github_linux_kind
 run_test "Plugin failure shows actual log" test_plugin_failure_shows_actual_log
 run_test "Plugin installer stops when required deps missing" test_plugin_installer_stops_when_required_deps_missing
 run_test "nbshell installer removes Bongo Cat" test_nbshell_installer_removes_bongo_cat
