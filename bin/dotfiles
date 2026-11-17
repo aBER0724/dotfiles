@@ -42,6 +42,7 @@ LINK_TABLE=(
   "kitty-watcher|kitty/watcher.py|$HOME/.config/kitty/watcher.py"
   "kitty-resize-separator|kitty/resize_separator.py|$HOME/.config/kitty/resize_separator.py"
   "lazygit|lazygit/config.yml|@app-support/lazygit/config.yml"
+  "clash-verge-script|clash-verge/verge-global-script.js|@app-support/io.github.clash-verge-rev.clash-verge-rev/profiles/Script.js"
 )
 
 # Runtime software used by managed configs.
