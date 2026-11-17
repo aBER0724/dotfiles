@@ -29,6 +29,12 @@ Palette is owned by [nbshell](/nbshell)(`Alt+T` 切换主题):`theme-sync.py` �
 并生成 Chromium theme extension(工具栏/omnibox/新标签页配色)—— 经 chromium-controller 在运行中热重载,
 终端冷启动时由 `--load-extension` 兜底;网页明暗(`prefers-color-scheme`)经 portal 即时跟随。
 
+候选窗主题跟着桌面走,不再在仓库里钉死:连接了 nbshell 配置(`linux niri`)时用 nbshell 的
+`theme-hook.sh` 生成的 `Nbshell` 主题;stock Omarchy 上用 Omarchy 自己生成的主题
+(`omarchy-theme-set-fcitx5` 每次换主题都会重写 `~/.local/share/fcitx5/themes/omarchy`)。
+[fcitx5/classicui.conf](/fcitx5/classicui.conf) 只是种子,`fcitx5/install.sh` 按桌面填 `Theme`,
+在 fcitx5-configtool 里手动选过的主题不会被覆盖。
+
 ## Setup
 
 ```bash

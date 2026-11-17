@@ -43,7 +43,7 @@ dotfiles setup server         # 无桌面的 Ubuntu/Debian；允许 root
 
 - 共享主力配置：dotfiles CLI、Zsh、Neovim、Fastfetch、pi、herdr。
 - macOS 额外安装并链接 AeroSpace 和 Kitty；缺少 Homebrew 时从官方固定 URL 自动安装。
-- `linux omarchy`：面向 stock Omarchy(Hyprland/uwsm),通过 `pacman` 安装原生依赖;链接 Kitty 与 fcitx5 配置(environment.d IM 变量、classicui/kimpanel,并按需部署 rime 方案)。桌面栈本身由 Omarchy 提供。
+- `linux omarchy`：面向 stock Omarchy(Hyprland/uwsm),通过 `pacman` 安装原生依赖;链接 Kitty 与 fcitx5 配置(environment.d IM 变量、kimpanel,并按需部署 rime 方案)。桌面栈本身由 Omarchy 提供,候选窗主题跟随系统主题(`omarchy-theme-set-fcitx5`)。
 - `linux niri`：自定义 Niri + nbshell 桌面栈,在 omarchy 基础上额外安装并链接 Niri、nbshell,以及 `nbshell/packages.arch.txt`。
 - `server`（或 `linux server`）：面向偏生产环境的无桌面 Ubuntu/Debian，允许直接以 root 运行；只安装共享终端栈，通过 `apt-get` 和官方 Linux release 安装依赖、Herdr、Yazi、Fastfetch，不使用 Homebrew，也不链接或运行 Niri、nbshell、Kitty、输入法和桌面服务。
 - `linux omarchy`/`linux niri` 在原生包安装后按需引导 Linuxbrew，用于跨发行版工具；server profile 明确跳过 Linuxbrew。

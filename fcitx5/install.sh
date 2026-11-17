@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
-# fcitx5 setup (Linux only). Runs via `dotfiles setup linux omarchy` and
-# `dotfiles deps fcitx`. Everything here is user-local, no sudo.
+# fcitx5 setup (Linux only). Runs via `dotfiles setup linux omarchy`,
+# `dotfiles setup linux niri` and `dotfiles deps fcitx`. Everything here is
+# user-local, no sudo.
 #
 # `dotfiles link fcitx` already handles the plain symlinks:
 #   fcitx5/environment.d/fcitx.conf → ~/.config/environment.d/fcitx.conf
 #   fcitx5/conf                     → ~/.config/fcitx5/conf
-#   (omarchy autostarts fcitx5 via `uwsm-app`; uwsm imports environment.d)
+#   (Omarchy autostarts fcitx5 through omarchy-fcitx5.service; uwsm imports
+#   environment.d)
 # This script covers what cannot be a symlink:
+#   - ~/.config/fcitx5/conf/classicui.conf: seeded from fcitx5/classicui.conf,
+#     then pointed at the theme the desktop generates, so the candidate window
+#     follows the system theme (Omarchy: `omarchy-theme-set-fcitx5` → `omarchy`,
+#     refreshed on every theme switch; nbshell: theme-hook.sh → `Nbshell`).
+#     Runtime state — gitignored, because both desktop tools rewrite it in place.
 #   - ~/.config/fcitx5/config: patched to disable the kimpanel addon
 #   - ~/.local/share/fcitx5/rime: user schema, pulled from the private rime repo
 #     (a clean checkout is kept at ~/.local/share/fcitx5/rime-config and an
@@ -27,8 +34,8 @@ fi
 
 printf '\n== fcitx5 setup ==\n'
 
-# kimpanel is the nbshell tray consumer; the stock classic UI is what Hyprland
-# sessions use. Disabling the addon keeps both layouts happy either way.
+# kimpanel is the KDE tray consumer; both Omarchy's classic UI and nbshell want
+# fcitx's own candidate window, so the addon stays disabled either way.
 mkdir -p "$FCITX_CONFIG_DIR"
 python3 - "$FCITX_CONFIG_DIR/config" <<'PY'
 from pathlib import Path
@@ -40,6 +47,45 @@ text = path.read_text() if path.exists() else "[Behavior]\n"
 text = re.sub(r'(?ms)^\[Behavior/DisabledAddons\]\n.*?(?=^\[|\Z)', '', text).rstrip()
 path.write_text(text + "\n\n[Behavior/DisabledAddons]\n0=kimpanel\n")
 PY
+
+# classicui: seed once, then hand the theme over to whoever generates it. Both
+# theme owners only replace a theme that is unset or still stock, so a theme
+# picked in fcitx5-configtool survives — mirror that rule here.
+classicui="$FCITX_CONFIG_DIR/conf/classicui.conf"
+mkdir -p "${classicui%/*}"
+if [ ! -e "$classicui" ]; then
+    cp "$SCRIPT_DIR/classicui.conf" "$classicui"
+fi
+
+# The niri profile also runs on Arch/Omarchy, so the desktop shell decides which
+# theme owns the candidate window: `Nbshell` wherever nbshell's config is linked
+# (linux niri), otherwise Omarchy's generated `omarchy` theme.
+if [ -e "$CONFIG_HOME/nbshell/config.json" ]; then
+    # nbshell's theme-hook.sh writes the `Nbshell` theme from palette.sh and
+    # reloads classicui; the pointer itself is ours to set. `omarchy` counts as
+    # stock here — it was never a deliberate choice on a nbshell desktop.
+    python3 - "$classicui" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+path = Path(sys.argv[1])
+text = path.read_text() if path.exists() else ""
+for key in ("Theme", "DarkTheme"):
+    pattern = rf"(?m)^{key}=.*$"
+    if not re.search(pattern, text):
+        text = text.rstrip() + f"\n{key}=Nbshell\n"
+    elif re.search(rf"(?m)^{key}=(?:|default|default-dark|omarchy)$", text):
+        text = re.sub(pattern, f"{key}=Nbshell", text, count=1)
+path.write_text(text)
+PY
+elif command -v omarchy-theme-set-fcitx5 >/dev/null 2>&1; then
+    # Regenerates ~/.local/share/fcitx5/themes/omarchy from the live palette and
+    # points classicui at it. Omarchy runs the same tool on every theme switch,
+    # which is what keeps the candidate window in step with the desktop.
+    omarchy-theme-set-fcitx5 --activate ||
+        echo "omarchy-theme-set-fcitx5 failed — the candidate window keeps its current theme"
+fi
 
 if [ ! -f /usr/share/fcitx5/inputmethod/rime.conf ]; then
     echo "fcitx5-rime not installed — skipped rime schema deployment"

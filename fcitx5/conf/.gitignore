@@ -1,0 +1,8 @@
+# This directory is symlinked to ~/.config/fcitx5/conf, so fcitx5 addons write
+# their runtime config here (pinyin.conf, punctuation.conf, classicui.conf, ...).
+# Only the files this repo owns are tracked; everything else is per-device
+# runtime state — classicui.conf included, because the desktop theme scripts
+# (omarchy-theme-set-fcitx5, nbshell theme-hook.sh) rewrite it in place.
+*
+!.gitignore
+!kimpanel.conf
