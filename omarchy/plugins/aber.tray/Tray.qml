@@ -53,16 +53,39 @@ BarWidget {
   readonly property real sectionExtent: sectionHost ? (vertical ? sectionHost.implicitHeight : sectionHost.implicitWidth) : 0
   readonly property bool hasDrawer: allItems.length > 0 || sectionCount > 0 || barDragging
   readonly property int drawerExtent: drawerCount * trayItemExtent + Math.max(0, drawerCount - 1) * trayItemGap + sectionExtent
+  // The extent the drawer is drawn at. It trails drawerExtent so that going
+  // from level 1 to level 2 (the always-hidden icons appearing) grows the
+  // drawer instead of snapping it wider in a single frame.
+  property real drawerExtentSmooth: 0
+  onDrawerExtentChanged: drawerExtentSmooth = drawerExtent
   // A widget being dragged along the bar opens the drawer, to show where it
   // can go, and so does any panel open from the tray or the tray section.
   readonly property bool barDragging: !!bar && bar.traySectionDragActive === true
   readonly property bool holdOpen: trayMenuOpen || managePopupOpen || barDragging || (!!bar && bar.traySectionPopoutOpen === true)
   // The mark under the bar sits under the icon whose menu is open.
   readonly property Item openPanelIndicatorItem: trayMenuOpen ? activeTrayAnchor : null
-  // Match Waybar's group/tray-expander drawer transition-duration.
-  readonly property int animationDuration: 600
-  property real revealProgress: drawerLevel > 0 || holdOpen ? 1 : 0
-  readonly property real revealExtent: drawerExtent * revealProgress
+  // The drawer's slide, in ms. Deliberately a fixed duration rather than
+  // Style.duration(): Omarchy zeroes every shell animation on a machine that
+  // renders on the CPU (this VM draws with llvmpipe, and
+  // ~/.local/state/omarchy/toggles/hypr/no-animations.lua turns animations
+  // off), which left the drawer snapping open with nothing to show the blank
+  // click had landed. A slide this small costs nothing to draw, so it keeps
+  // its motion either way.
+  readonly property int animationDuration: 300
+  // Behaviour does not animate a value that comes from a binding, so the
+  // drawer's progress is assigned rather than bound: syncReveal() writes the
+  // 0 or 1 the state asks for and the Behaviour eases from wherever it is.
+  property real revealProgress: 0
+  readonly property real revealExtent: drawerExtentSmooth * revealProgress
+
+  function syncReveal() {
+    revealProgress = (drawerLevel > 0 || holdOpen) ? 1 : 0
+  }
+  onHoldOpenChanged: syncReveal()
+  Component.onCompleted: {
+    drawerExtentSmooth = drawerExtent
+    syncReveal()
+  }
   // The pinned icons sit against the tray's fixed edge, the drawer opening
   // between them and pushing them out of the way, while the pointer that
   // opened it stays over the drawer. A centered tray keeps the end-fixed
@@ -333,6 +356,7 @@ BarWidget {
 
   onDrawerLevelChanged: {
     applyWidgetTiers()
+    syncReveal()
     // Any way the drawer comes open starts the five-second countdown.
     if (drawerLevel > 0) autoHideTimer.restart()
     else autoHideTimer.stop()
@@ -427,7 +451,12 @@ BarWidget {
   implicitHeight: root.vertical ? trayContent.implicitHeight : root.barSize
 
   Behavior on revealProgress {
-    NumberAnimation { duration: Style.duration(root.animationDuration); easing.type: Easing.OutCubic }
+    NumberAnimation { duration: root.animationDuration; easing.type: Easing.OutCubic }
+  }
+
+  // A shorter, softer ease for the tier change, which moves far less.
+  Behavior on drawerExtentSmooth {
+    NumberAnimation { duration: Math.round(root.animationDuration / 2); easing.type: Easing.OutCubic }
   }
 
   // The section from `start`, `length` long along the bar, as far as the

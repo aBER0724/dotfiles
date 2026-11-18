@@ -118,6 +118,27 @@ tiers twice over: app tray icons (SystemTray items) go through `classifyItem` / 
 To undo the always-hidden marker: `omarchy bar set <id> tier "" --json` (or remove the `tier`
 key by hand).
 
+### Why the drawer animates even with animations off
+
+This VM renders on the CPU, so Omarchy switches every animation off
+(`~/.local/state/omarchy/toggles/hypr/no-animations.lua`, read by
+`default/hypr/software-rendering.lua`) and `Style.duration(ms)` returns 0 for the whole shell. The
+first version of the drawer bound its progress and slid nowhere: the value came straight from a
+binding, and a `Behavior` does not animate a binding (the drawer snapped 319px in one frame).
+Two fixes together:
+
+- `revealProgress` is a plain property that `syncReveal()` *assigns*. The `Behavior` only eases
+  values it sees written, so it now eases from wherever the drawer is.
+- the slide uses a fixed `animationDuration` (300 ms) instead of `Style.duration()`, so it moves on
+  a machine whose animations are off. A 40px-high slide costs nothing to draw; the rest of the
+  shell stays still.
+
+`drawerExtentSmooth` follows `drawerExtent` the same way (a 150 ms ease), so going from level 1 to
+level 2 grows the drawer instead of widening it in one frame.
+
+To get the whole shell animating as well: `omarchy-toggle-animations on` (this also brings back
+blur and shadows, the expensive parts on llvmpipe).
+
 ### How the blank click is wired
 
 `bar` inside a widget is Omarchy's plugin API object, **not** the bar item, so it has no children to
