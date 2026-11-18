@@ -36,6 +36,20 @@ Palette is owned by [nbshell](/nbshell)(`Alt+T` 切换主题):`theme-sync.py` �
 [fcitx5/classicui.conf](/fcitx5/classicui.conf) 只是种子,`fcitx5/install.sh` 按桌面填 `Theme`,
 在 fcitx5-configtool 里手动选过的主题不会被覆盖。
 
+`~/.config/fcitx5/conf/classicui.conf` 本身是运行时状态(被 [fcitx5/conf/.gitignore](/fcitx5/conf/.gitignore)
+忽略):它只在仓库里作为种子存在,由 `fcitx5/install.sh` 在缺文件时复制过去并把 `Theme` 指到桌面生成的主题。
+所以它一旦被删(比如某次 `git pull` 移除了曾经被跟踪的副本,或换了机器只做了 `dotfiles link fcitx`),
+候选窗就退回 stock 主题,而且换主题也不会自己长回来 —— 重写主题目录的钩子不带 `--activate`。
+恢复:
+
+```bash
+dotfiles install fcitx        # 跑 fcitx5/install.sh:补种子 + 指主题 + 重载 classicui
+```
+
+只想修主题、不动 rime 的话,两步即可:`cp ~/dotfiles/fcitx5/classicui.conf ~/.config/fcitx5/conf/`
+然后 `omarchy-theme-set-fcitx5 --activate`。验证:`busctl --user call org.fcitx.Fcitx5 /controller
+org.fcitx.Fcitx.Controller1 GetConfig s 'fcitx://config/addon/classicui'` 里应看到 `"Theme" s "omarchy"`。
+
 ## Setup
 
 ```bash
