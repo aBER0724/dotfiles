@@ -26,7 +26,7 @@ BarWidget {
   readonly property var hiddenIds: settings.hidden instanceof Array ? settings.hidden : []
   readonly property var pinnedItems: bucket("pinned")
   // Level 1 shows the regular drawer icons; level 2, reached by double-
-  // clicking the chevron, appends the always-hidden ones.
+  // clicking the blank bar, appends the always-hidden ones.
   readonly property var drawerItems: {
     var items = bucket("drawer")
     if (drawerLevel >= 2) {
@@ -63,10 +63,10 @@ BarWidget {
   readonly property int animationDuration: 600
   property real revealProgress: drawerLevel > 0 || holdOpen ? 1 : 0
   readonly property real revealExtent: drawerExtent * revealProgress
-  // The pinned icons sit against the tray's fixed edge with the chevron past
-  // them. Opening, the drawer grows the tray between the two and pushes the
-  // chevron out of the way, while the pointer that opened it stays over the
-  // drawer. A centered tray keeps the end-fixed arrangement.
+  // The pinned icons sit against the tray's fixed edge, the drawer opening
+  // between them and pushing them out of the way, while the pointer that
+  // opened it stays over the drawer. A centered tray keeps the end-fixed
+  // arrangement.
   readonly property bool fixedAtStart: fixedEdge === "start"
   // The edge the tray section's widgets grow from: the one the pinned icons
   // keep to, beside which the section opens.
@@ -262,12 +262,12 @@ BarWidget {
     persistTrayState(p, h)
   }
 
-  // The chevron's left button: a press opens the drawer one level, a second
-  // press inside the double-click window escalates it to also reveal the
-  // always-hidden icons, and a press while open closes it again. The first
-  // press of a double-click already opened level 1, so the escalation just
-  // extends what is already animating out.
-  function chevronPressed(button) {
+  // A left click on the bar's blank middle: a press opens the drawer one
+  // level, a second press inside the double-click window escalates it to also
+  // reveal the always-hidden icons, and a press while open closes it again.
+  // The first press of a double-click already opened level 1, so the
+  // escalation just extends what is already animating out.
+  function blankPressed(button) {
     if (button !== Qt.LeftButton) return
     var now = Date.now()
     if (drawerLevel === 1 && now - lastChevronPress < 400) {
@@ -277,6 +277,24 @@ BarWidget {
     }
     lastChevronPress = now
     drawerLevel = drawerLevel === 0 ? 1 : 0
+  }
+
+  // The drawer never lingers: five seconds after the latest opening (a blank
+  // click or an escalation) it folds itself shut again. Popups opened from it
+  // hold it open past the deadline instead of yanking it away underneath the
+  // pointer, and once they close, the drawer goes with them.
+  Timer {
+    id: autoHideTimer
+    interval: 5000
+    onTriggered: {
+      if (root.trayMenuOpen || root.managePopupOpen || root.barDragging
+          || (root.bar && root.bar.traySectionPopoutOpen === true)) {
+        restart()
+        return
+      }
+      root.lastChevronPress = 0
+      root.drawerLevel = 0
+    }
   }
 
   // A tray-section widget's layout entry, looked up by id.
@@ -313,7 +331,12 @@ BarWidget {
     }
   }
 
-  onDrawerLevelChanged: applyWidgetTiers()
+  onDrawerLevelChanged: {
+    applyWidgetTiers()
+    // Any way the drawer comes open starts the five-second countdown.
+    if (drawerLevel > 0) autoHideTimer.restart()
+    else autoHideTimer.stop()
+  }
   onSectionHostChanged: applyWidgetTiers()
 
   Connections {
@@ -326,6 +349,76 @@ BarWidget {
   Connections {
     target: bar
     function onLayoutConfigChanged() { Qt.callLater(root.applyWidgetTiers) }
+  }
+
+  // The drawer has no button of its own: the empty middle of the bar is the
+  // toggle. `bar` is the plugin API object, not the bar item, so the strip is
+  // found by walking up from this widget instead: root -> Loader -> WidgetHost
+  // -> slot -> RightModules (region "right") -> the strip that lays out left,
+  // center and right. The catcher spans the gap between the left and right
+  // sections, so it tracks whatever the layout leaves empty. A right click
+  // there opens the tray manager popup.
+  property var blankArea: null
+
+  function modulesStrip() {
+    var node = root.parent
+    var right = null
+    while (node) {
+      if (node.region === "right") right = node
+      node = node.parent
+    }
+    if (!right || !right.parent) return null
+    var strip = right.parent
+    var left = null
+    for (var i = 0; i < strip.children.length; i++) {
+      var child = strip.children[i]
+      if (child && child.region === "left") { left = child; break }
+    }
+    return { strip: strip, left: left, right: right }
+  }
+
+  function installBlankClick() {
+    if (blankArea) return
+    var found = modulesStrip()
+    if (!found) return
+    blankArea = blankClickComponent.createObject(found.strip, {
+      leftMods: found.left,
+      rightMods: found.right
+    })
+    if (!blankArea) console.warn("aber.tray: could not create the blank-click catcher")
+  }
+
+  Component {
+    id: blankClickComponent
+    MouseArea {
+      id: catcher
+      property Item leftMods: null
+      property Item rightMods: null
+      // The sections are laid out by hand, so their edges are known only after
+      // the first layout pass; bind to them rather than sampling them once.
+      readonly property real leftEdge: leftMods ? leftMods.x + leftMods.width + Style.space(4) : 0
+      readonly property real rightEdge: rightMods ? rightMods.x - Style.space(4) : 0
+      x: leftEdge
+      width: Math.max(0, rightEdge - leftEdge)
+      y: 0
+      height: parent ? parent.height : 0
+      visible: width > 0
+      acceptedButtons: Qt.LeftButton | Qt.RightButton
+      onClicked: function(mouse) {
+        if (mouse.button === Qt.RightButton) {
+          root.managePopupOpen = !root.managePopupOpen
+          return
+        }
+        root.blankPressed(mouse.button)
+      }
+    }
+  }
+
+  Timer {
+    interval: 1000
+    running: true
+    repeat: !blankArea
+    onTriggered: installBlankClick()
   }
 
   visible: pinnedItems.length > 0 || hasDrawer
@@ -360,37 +453,23 @@ BarWidget {
     Item {
       id: horizontalTrayRoot
 
-      readonly property int chevronWidth: root.hasDrawer ? expandIcon.implicitWidth : 0
       readonly property var sectionShown: root.shownSection(drawerArea.x + trayClip.x, trayClip.width, drawerArea.x + trayClip.x + drawerContent.x + section.x, section.width)
 
-      implicitWidth: pinnedRow.implicitWidth + chevronWidth + root.revealExtent
+      implicitWidth: pinnedRow.implicitWidth + root.revealExtent
       implicitHeight: root.barSize
 
       Item {
         id: drawerArea
         x: root.fixedAtStart ? pinnedRow.implicitWidth : 0
-        width: horizontalTrayRoot.chevronWidth + root.revealExtent
+        width: root.revealExtent
         height: root.barSize
         visible: root.hasDrawer
 
-        BarIconButton {
-          id: expandIcon
-          bar: root.bar
-          width: implicitWidth
-          height: implicitHeight
-          x: root.fixedAtStart ? root.revealExtent : 0
-          text: root.fixedAtStart ? "\uf054" : "\uf053"
-          onPressed: function(button) {
-            if (button === Qt.RightButton) root.managePopupOpen = !root.managePopupOpen
-            root.chevronPressed(button)
-          }
-        }
-
-        // The icons and the tray section travel out with the chevron from
-        // beside the pinned icons, the section nearest them.
+        // The icons and the tray section travel out from beside the pinned
+        // icons, the section nearest them.
         Item {
           id: trayClip
-          x: root.fixedAtStart ? 0 : expandIcon.width
+          x: 0
           anchors.verticalCenter: parent.verticalCenter
           width: root.revealExtent
           height: root.barSize
@@ -447,38 +526,23 @@ BarWidget {
     Item {
       id: verticalTrayRoot
 
-      readonly property int chevronHeight: root.hasDrawer ? expandIcon.implicitHeight : 0
       readonly property var sectionShown: root.shownSection(drawerArea.y + trayClip.y, trayClip.height, drawerArea.y + trayClip.y + drawerContent.y + section.y, section.height)
 
       implicitWidth: root.barSize
-      implicitHeight: pinnedCol.implicitHeight + chevronHeight + root.revealExtent
+      implicitHeight: pinnedCol.implicitHeight + root.revealExtent
 
       Item {
         id: drawerArea
         y: root.fixedAtStart ? pinnedCol.implicitHeight : 0
         width: root.barSize
-        height: verticalTrayRoot.chevronHeight + root.revealExtent
+        height: root.revealExtent
         visible: root.hasDrawer
 
-        BarIconButton {
-          id: expandIcon
-          bar: root.bar
-          width: implicitWidth
-          height: implicitHeight
-          y: root.fixedAtStart ? root.revealExtent : 0
-          text: root.fixedAtStart ? "\uf054" : "\uf053"
-          textRotation: 90
-          onPressed: function(button) {
-            if (button === Qt.RightButton) root.managePopupOpen = !root.managePopupOpen
-            root.chevronPressed(button)
-          }
-        }
-
-        // The icons and the tray section travel out with the chevron from
-        // beside the pinned icons, the section nearest them.
+        // The icons and the tray section travel out from beside the pinned
+        // icons, the section nearest them.
         Item {
           id: trayClip
-          y: root.fixedAtStart ? 0 : expandIcon.height
+          y: 0
           anchors.horizontalCenter: parent.horizontalCenter
           width: root.barSize
           height: root.revealExtent
@@ -553,7 +617,7 @@ BarWidget {
       }
 
       Text {
-        text: "图钉 = 常驻在栏上；其余图标在单击展开时显示；眼睛 = 始终隐藏，仅快速双击展开时显示"
+        text: "点击菜单栏空白处展开：单击显示隐藏图标，快速双击再显始终隐藏图标，5 秒后自动收起。右键空白处打开本面板。图钉 = 常驻在栏上；眼睛 = 始终隐藏"
         textFormat: Text.PlainText
         color: Qt.darker(root.foreground, 1.4)
         font.family: root.fontFamily

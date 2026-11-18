@@ -12,22 +12,25 @@ only the bar is customized here; everything else stays Omarchy's own.
 ## Bar layout
 
 ```
-1 2 3 4   m - dotfiles                            ‹  Wed 18 Nov 09:33
-workspaces  active window (file name)     tray     clock       spacer
+1 2 3 4   m - dotfiles                   wifi bt vol batt   Wed 18 Nov 09:33
+workspaces  active window (file name)      tray status      clock       spacer
 ```
 
 - `left` — workspaces, then the current window (the file name in an editor); the launcher moved
   into the tray drawer
-- `center` — empty
-- `right` — the tray chevron, then the clock, then an `omarchy.spacer` that ends the bar
-- `tray` (the drawer behind the chevron) — menu, indicators, elsewhen, weather, system update,
-  keyboard layout, agents, bluetooth, network, audio, display, power, superwhisper
+- `center` — empty, and it is also the drawer's trigger: clicking the blank bar there opens the
+  tray drawer, so there is no chevron button anywhere
+- `right` — the tray (no icon of its own, it grows leftward out of the blank middle), then network,
+  bluetooth, audio and power, then the clock, then an `omarchy.spacer` that ends the bar
+- `tray` (the drawer) — menu, indicators, elsewhen, weather, system update, keyboard layout,
+  agents, display, superwhisper
 
 The window title sits on the left because of the camera notch: Omarchy raises a top bar to the notch
 height and, since the cutout covers the middle, draws the `center` box beside the right section
 instead of centering it (`BarModel.centerBesideRight`). A `center` widget is therefore not centered
 at all on this display, so the title lives right after the workspaces and `center` stays empty. The
-tray keeps the right section, where its drawer opens leftward over the empty middle of the bar.
+tray keeps the right section, where its drawer opens leftward over the empty middle of the bar —
+which is exactly the empty middle the blank-click trigger covers, so the two fit together.
 
 ### The trailing spacer: macOS privacy dot
 
@@ -62,6 +65,7 @@ The clone in this repo keeps the upstream code and changes these things:
 
 - both `HoverHandler`s that expanded the drawer on hover are gone
 - `expandIcon` toggles the drawer on left click (right click is still the tray manager popup)
+- the chevron is gone: the blank middle of the bar opens the drawer (below)
 - the drawer opens in three tiers (below)
 
 ```diff
@@ -93,22 +97,36 @@ the bar goes through Omarchy: `omarchy bar ...`, `omarchy bar move <id> --sectio
 
 ## Three tiers of tray icons
 
-The drawer behind the chevron opens deeper the faster you click it:
+There is no expander button. The empty middle of the bar is the trigger, and how fast you click it
+decides how deep the drawer opens:
 
-| Tier | What | How |
+| Tier | What | How to reach it |
 | --- | --- | --- |
-| 常驻 (pinned) | On the bar itself, no click needed | Move the widget out of `tray`: `omarchy bar move <id> --section right --index 0`. App tray icons can also be pinned in the right-click manager popup. |
-| 隐藏 (hidden) | Shows on a single click of `<` | Keep it in the `tray` section with no tier — the default. |
-| 始终隐藏 (always hidden) | Shows only on a fast double click of `<` | Keep it in `tray` and mark it: `omarchy bar set <id> tier alwaysHidden`. |
+| 常驻 (pinned) | On the bar itself, no click needed | Move the widget out of `tray`: `omarchy bar move <id> --section right --index N`. App tray icons can also be pinned in the right-click manager popup. |
+| 隐藏 (hidden) | Shows on a single click of the blank bar | Keep it in the `tray` section with no tier — the default. |
+| 始终隐藏 (always hidden) | Shows only on a fast second click | Keep it in `tray` and mark it: `omarchy bar set <id> tier alwaysHidden`. |
 
-The double-click window is 400 ms (`lastChevronPress` in `Tray.qml`). A click while the drawer is
-open closes it again. `Tray.qml` implements the tiers twice over: app tray icons (SystemTray
-items) go through `classifyItem` / `hiddenIds` — the `hidden` array on the tray entry — while
-tray-section *widgets* are shown or hidden by `applyWidgetTiers()`, which reads each widget's
-`tier` from its `shell.json` entry.
+A click while the drawer is open closes it. **Five seconds after it opens, the drawer folds itself
+shut again** (`autoHideTimer` in `Tray.qml`); a popup opened from the drawer holds it open instead
+of yanking it away under the pointer, and the drawer closes once the popup does.
+
+The double-click window is 400 ms (`lastChevronPress` in `Tray.qml`). `Tray.qml` implements the
+tiers twice over: app tray icons (SystemTray items) go through `classifyItem` / `hiddenIds` — the
+`hidden` array on the tray entry — while tray-section *widgets* are shown or hidden by
+`applyWidgetTiers()`, which reads each widget's `tier` from its `shell.json` entry.
 
 To undo the always-hidden marker: `omarchy bar set <id> tier "" --json` (or remove the `tier`
 key by hand).
+
+### How the blank click is wired
+
+`bar` inside a widget is Omarchy's plugin API object, **not** the bar item, so it has no children to
+walk. The trigger therefore finds the bar layout from the other direction: up from the widget
+(`root.parent` → `Loader` → `WidgetHost` → `ModuleSlot` → `RightModules`, the outermost ancestor
+carrying `region === "right"`) and then sideways to its sibling with `region === "left"`. The
+`MouseArea` spans `left.x + left.width` to `right.x`, so it follows the layout and the opening
+drawer automatically and never covers a widget. A right click there opens the tray manager popup,
+which is where the old chevron's right click went.
 
 ## Caveat: `shell.json` is written by Omarchy
 

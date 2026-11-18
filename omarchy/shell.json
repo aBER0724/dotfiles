@@ -15,10 +15,22 @@
       ],
       "right": [
         {
-          "id": "aber.tray",
           "hidden": [
             "superwhisper"
-          ]
+          ],
+          "id": "aber.tray"
+        },
+        {
+          "id": "omarchy.network"
+        },
+        {
+          "id": "omarchy.bluetooth"
+        },
+        {
+          "id": "omarchy.audio"
+        },
+        {
+          "id": "omarchy.power"
         },
         {
           "format": "ddd d MMM HH:mm",
@@ -76,20 +88,7 @@
           "id": "omarchy.agents"
         },
         {
-          "id": "omarchy.bluetooth"
-        },
-        {
-          "id": "omarchy.network"
-        },
-        {
-          "id": "omarchy.audio",
-          "tier": "alwaysHidden"
-        },
-        {
           "id": "omarchy.monitor"
-        },
-        {
-          "id": "omarchy.power"
         },
         {
           "id": "superwhisper.panel"
