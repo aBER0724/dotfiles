@@ -15,12 +15,15 @@
       ],
       "right": [
         {
-          "id": "aber.tray"
+          "id": "aber.tray",
+          "hidden": [
+            "superwhisper"
+          ]
         },
         {
-          "id": "omarchy.clock",
           "format": "ddd d MMM HH:mm",
           "formatAlt": "d MMMM 'W'ww yyyy",
+          "id": "omarchy.clock",
           "verticalFormat": "HH\n—\nmm"
         },
         {
@@ -36,7 +39,6 @@
           "id": "omarchy.indicators"
         },
         {
-          "id": "omarchy.elsewhen",
           "cities": [
             {
               "name": "Shanghai",
@@ -58,7 +60,8 @@
               "name": "Dubai",
               "zone": "Asia/Dubai"
             }
-          ]
+          ],
+          "id": "omarchy.elsewhen"
         },
         {
           "id": "omarchy.weather"
@@ -79,7 +82,8 @@
           "id": "omarchy.network"
         },
         {
-          "id": "omarchy.audio"
+          "id": "omarchy.audio",
+          "tier": "alwaysHidden"
         },
         {
           "id": "omarchy.monitor"

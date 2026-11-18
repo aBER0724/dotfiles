@@ -58,10 +58,11 @@ Omarchy's rules: never edit `/usr/share/omarchy` (it is overwritten on update). 
 omarchy plugin clone omarchy.tray   # writes ~/.config/omarchy/plugins/<user>.tray/
 ```
 
-The clone in this repo keeps the upstream code and changes two things:
+The clone in this repo keeps the upstream code and changes these things:
 
 - both `HoverHandler`s that expanded the drawer on hover are gone
 - `expandIcon` toggles the drawer on left click (right click is still the tray manager popup)
+- the drawer opens in three tiers (below)
 
 ```diff
 -        HoverHandler {
@@ -90,10 +91,35 @@ omarchy restart shell
 the bar goes through Omarchy: `omarchy bar ...`, `omarchy bar move <id> --section <section>`,
 `omarchy refresh shell` (backs up first).
 
+## Three tiers of tray icons
+
+The drawer behind the chevron opens deeper the faster you click it:
+
+| Tier | What | How |
+| --- | --- | --- |
+| 常驻 (pinned) | On the bar itself, no click needed | Move the widget out of `tray`: `omarchy bar move <id> --section right --index 0`. App tray icons can also be pinned in the right-click manager popup. |
+| 隐藏 (hidden) | Shows on a single click of `<` | Keep it in the `tray` section with no tier — the default. |
+| 始终隐藏 (always hidden) | Shows only on a fast double click of `<` | Keep it in `tray` and mark it: `omarchy bar set <id> tier alwaysHidden`. |
+
+The double-click window is 400 ms (`lastChevronPress` in `Tray.qml`). A click while the drawer is
+open closes it again. `Tray.qml` implements the tiers twice over: app tray icons (SystemTray
+items) go through `classifyItem` / `hiddenIds` — the `hidden` array on the tray entry — while
+tray-section *widgets* are shown or hidden by `applyWidgetTiers()`, which reads each widget's
+`tier` from its `shell.json` entry.
+
+To undo the always-hidden marker: `omarchy bar set <id> tier "" --json` (or remove the `tier`
+key by hand).
+
 ## Caveat: `shell.json` is written by Omarchy
 
 `~/.config/omarchy/shell.json` is a live config: dragging the bar, dropping a widget into another
-section, and every `omarchy bar ...` command rewrite it. Writes follow the symlink (verified with
-`omarchy bar set`), so they land in this repo directly — that means `git status` will show bar
-tweaks made in the shell, which is the point, but review them before committing rather than
-expecting only hand-edited changes.
+section, and every `omarchy bar ...` command rewrite it. Most writes follow the symlink into this
+repo — but **an atomic write replaces the symlink itself with a real file**. `omarchy bar set` was
+caught doing exactly that: after it ran, `~/.config/omarchy/shell.json` was a plain file and edits
+stopped reaching the repo. Check with `ls -l ~/.config/omarchy/shell.json` and re-link when needed:
+
+```bash
+cp ~/.config/omarchy/shell.json ~/dotfiles/omarchy/shell.json   # keep the latest live config first
+rm ~/.config/omarchy/shell.json
+ln -s ~/dotfiles/omarchy/shell.json ~/.config/omarchy/shell.json
+```

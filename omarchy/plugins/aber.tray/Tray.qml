@@ -10,9 +10,12 @@ import "TrayModel.js" as TrayModel
 
 BarWidget {
   id: root
-  moduleName: "omarchy.tray"
+  moduleName: "aber.tray"
 
-  property bool expanded: false
+  // Drawer depth: 0 closed, 1 the regular icons (single click), 2 also the
+  // always-hidden ones (double click).
+  property int drawerLevel: 0
+  property real lastChevronPress: 0
   property bool managePopupOpen: false
   property bool trayMenuOpen: false
   property var activeTrayItem: null
@@ -22,7 +25,16 @@ BarWidget {
   readonly property var pinnedIds: settings.pinned instanceof Array ? settings.pinned : []
   readonly property var hiddenIds: settings.hidden instanceof Array ? settings.hidden : []
   readonly property var pinnedItems: bucket("pinned")
-  readonly property var drawerItems: bucket("drawer")
+  // Level 1 shows the regular drawer icons; level 2, reached by double-
+  // clicking the chevron, appends the always-hidden ones.
+  readonly property var drawerItems: {
+    var items = bucket("drawer")
+    if (drawerLevel >= 2) {
+      var buried = bucket("alwaysHidden")
+      for (var i = 0; i < buried.length; i++) items.push(buried[i])
+    }
+    return items
+  }
   readonly property var allItems: bucket("all")
   readonly property int drawerCount: drawerItems.length
   readonly property int trayItemExtent: Style.bar.iconSlot
@@ -49,7 +61,7 @@ BarWidget {
   readonly property Item openPanelIndicatorItem: trayMenuOpen ? activeTrayAnchor : null
   // Match Waybar's group/tray-expander drawer transition-duration.
   readonly property int animationDuration: 600
-  property real revealProgress: expanded || holdOpen ? 1 : 0
+  property real revealProgress: drawerLevel > 0 || holdOpen ? 1 : 0
   readonly property real revealExtent: drawerExtent * revealProgress
   // The pinned icons sit against the tray's fixed edge with the chevron past
   // them. Opening, the drawer grows the tray between the two and pushes the
@@ -189,9 +201,12 @@ BarWidget {
     return item.tooltipTitle || item.title || item.id || ""
   }
 
+  // Three tiers: pinned icons stay on the bar; everything unlisted shows in
+  // the drawer on a single click; the `hidden` list only comes out on the
+  // double-clicked drawer (the manage popup's "hide" button).
   function classifyItem(item) {
     var iid = String(item.id || "")
-    if (hiddenIds.indexOf(iid) !== -1) return "hidden"
+    if (hiddenIds.indexOf(iid) !== -1) return "alwaysHidden"
     if (pinnedIds.indexOf(iid) !== -1) return "pinned"
     return "drawer"
   }
@@ -245,6 +260,72 @@ BarWidget {
       if (pi !== -1) p.splice(pi, 1)
     }
     persistTrayState(p, h)
+  }
+
+  // The chevron's left button: a press opens the drawer one level, a second
+  // press inside the double-click window escalates it to also reveal the
+  // always-hidden icons, and a press while open closes it again. The first
+  // press of a double-click already opened level 1, so the escalation just
+  // extends what is already animating out.
+  function chevronPressed(button) {
+    if (button !== Qt.LeftButton) return
+    var now = Date.now()
+    if (drawerLevel === 1 && now - lastChevronPress < 400) {
+      drawerLevel = 2
+      lastChevronPress = 0
+      return
+    }
+    lastChevronPress = now
+    drawerLevel = drawerLevel === 0 ? 1 : 0
+  }
+
+  // A tray-section widget's layout entry, looked up by id.
+  function trayEntry(id) {
+    var layout = bar && bar.layoutConfig
+    if (!layout || !Array.isArray(layout.tray)) return null
+    for (var i = 0; i < layout.tray.length; i++) {
+      if (TrayModel.entryId(layout.tray[i]) === id) return layout.tray[i]
+    }
+    return null
+  }
+
+  // The bar parents the section's widget slots under sectionHost (Loader >
+  // ModuleList > ModuleSlot). Each slot's entry may carry a tier: one marked
+  // "alwaysHidden" only shows on the double-clicked drawer; the rest show
+  // whenever the drawer opens. A widget that should always sit on the bar is
+  // not tiered here at all — it belongs in a real section, which
+  // `omarchy bar move <id> --section right` does.
+  function applyWidgetTiers() {
+    if (!sectionHost || !sectionHost.children) return
+    for (var i = 0; i < sectionHost.children.length; i++) {
+      var holder = sectionHost.children[i]
+      var lists = [holder]
+      if (holder && holder.item) lists.push(holder.item)
+      for (var l = 0; l < lists.length; l++) {
+        var kids = lists[l].children || []
+        for (var j = 0; j < kids.length; j++) {
+          var slot = kids[j]
+          if (!slot || !slot.moduleName) continue
+          var entry = trayEntry(slot.moduleName)
+          slot.visible = !(entry && entry.tier === "alwaysHidden" && drawerLevel < 2)
+        }
+      }
+    }
+  }
+
+  onDrawerLevelChanged: applyWidgetTiers()
+  onSectionHostChanged: applyWidgetTiers()
+
+  Connections {
+    target: sectionHost
+    // Slots come and go as the bar builds the section; reapply so a
+    // late-loaded widget never outlives its tier.
+    function onChildrenChanged() { Qt.callLater(root.applyWidgetTiers) }
+  }
+
+  Connections {
+    target: bar
+    function onLayoutConfigChanged() { Qt.callLater(root.applyWidgetTiers) }
   }
 
   visible: pinnedItems.length > 0 || hasDrawer
@@ -301,7 +382,7 @@ BarWidget {
           text: root.fixedAtStart ? "\uf054" : "\uf053"
           onPressed: function(button) {
             if (button === Qt.RightButton) root.managePopupOpen = !root.managePopupOpen
-            else if (button === Qt.LeftButton) root.expanded = !root.expanded
+            root.chevronPressed(button)
           }
         }
 
@@ -389,7 +470,7 @@ BarWidget {
           textRotation: 90
           onPressed: function(button) {
             if (button === Qt.RightButton) root.managePopupOpen = !root.managePopupOpen
-            else if (button === Qt.LeftButton) root.expanded = !root.expanded
+            root.chevronPressed(button)
           }
         }
 
@@ -472,7 +553,7 @@ BarWidget {
       }
 
       Text {
-        text: Commons.I18n.t("tray.help")
+        text: "图钉 = 常驻在栏上；其余图标在单击展开时显示；眼睛 = 始终隐藏，仅快速双击展开时显示"
         textFormat: Text.PlainText
         color: Qt.darker(root.foreground, 1.4)
         font.family: root.fontFamily
