@@ -3,7 +3,11 @@
     "background": "none",
     "layout": {
       "center": [],
-      "centerBegin": [],
+      "centerBegin": [
+        {
+          "id": "omarchy.agents"
+        }
+      ],
       "centerEnd": [],
       "left": [
         {
@@ -33,6 +37,9 @@
           "id": "omarchy.power"
         },
         {
+          "id": "omarchy.weather"
+        },
+        {
           "format": "ddd d MMM HH:mm",
           "formatAlt": "d MMMM 'W'ww yyyy",
           "id": "omarchy.clock",
@@ -45,38 +52,7 @@
       ],
       "tray": [
         {
-          "id": "omarchy.menu"
-        },
-        {
           "id": "omarchy.indicators"
-        },
-        {
-          "cities": [
-            {
-              "name": "Shanghai",
-              "zone": "Asia/Shanghai"
-            },
-            {
-              "name": "Los Angeles",
-              "zone": "America/Los_Angeles"
-            },
-            {
-              "name": "New York",
-              "zone": "America/New_York"
-            },
-            {
-              "name": "London",
-              "zone": "Europe/London"
-            },
-            {
-              "name": "Dubai",
-              "zone": "Asia/Dubai"
-            }
-          ],
-          "id": "omarchy.elsewhen"
-        },
-        {
-          "id": "omarchy.weather"
         },
         {
           "id": "omarchy.system-update"
@@ -85,13 +61,10 @@
           "id": "omarchy.keyboard-layout"
         },
         {
-          "id": "omarchy.agents"
+          "id": "superwhisper.panel"
         },
         {
           "id": "omarchy.monitor"
-        },
-        {
-          "id": "superwhisper.panel"
         }
       ]
     },

@@ -118,6 +118,28 @@ tiers twice over: app tray icons (SystemTray items) go through `classifyItem` / 
 To undo the always-hidden marker: `omarchy bar set <id> tier "" --json` (or remove the `tier`
 key by hand).
 
+### Setting a tier without dragging
+
+The bar's drag and drop speaks sections only: `tray` and `right` are sections, so dragging a widget
+out of the drawer into `right` pins it, and dragging it past the bar removes it. There is no drop
+target for a *tier*, and none can be added from here: the drag engine lives in
+`/usr/share/omarchy/shell/plugins/bar/Bar.qml`, which an update overwrites.
+
+So the tiers have a control of their own: **right-click the blank middle of the bar**. The panel
+lists every widget in the drawer or pinned on the bar, one row each, with three buttons —
+常驻 / 单击 / 双击 — and the row's current tier raised. The panel writes through the same
+`omarchy-bar move` and `omarchy-bar set <id> tier alwaysHidden` commands you would type, because a
+`bar-widget` plugin is not allowed to write the layout itself: `bar.shell.mutateShellConfig` only
+answers plugins whose kinds include `"bar"` (`shell.qml: pluginHasBarCapabilities`), so it returns
+false here.
+
+This is also the way back for a widget you can no longer grab. `Bar.qml` gates its drag pointer on
+`slot.widgetWidth > 0 && slot.widgetHeight > 0`, and Omarchy's widgets collapse to zero width when
+they have nothing to say — `omarchy.weather` until its forecast arrives, `omarchy.bluetooth` with
+no adapter present. Such a widget is invisible *and* ungrabbable on the bar, while still sitting in
+`shell.json`; the panel's 单击 / 双击 buttons put it back in the drawer without needing to grab it.
+(For a widget dragged clean off the bar, `omarchy bar put <id>` is the way back.)
+
 ### Why the drawer animates even with animations off
 
 This VM renders on the CPU, so Omarchy switches every animation off

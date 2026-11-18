@@ -85,6 +85,7 @@ BarWidget {
   Component.onCompleted: {
     drawerExtentSmooth = drawerExtent
     syncReveal()
+    refreshTierRows()
   }
   // The pinned icons sit against the tray's fixed edge, the drawer opening
   // between them and pushing them out of the way, while the pointer that
@@ -330,6 +331,114 @@ BarWidget {
     return null
   }
 
+  // ---- the tier list behind the manager popup ----
+  // The bar's own drag and drop only knows sections: dragging a widget out of
+  // the drawer lands it in `right`, which is why pinning works. There is no
+  // drop target for a *tier*, so a widget can leave the drawer but never be
+  // dragged into the always-hidden one. The popup's list is that missing
+  // control: one row per widget, three buttons, written straight into the
+  // layout through the same config API the bar itself drags with.
+  property var tierRows: []
+
+  // Structure, not content: this widget, the clock and the spacer.
+  readonly property var tierExcluded: ["aber.tray", "omarchy.clock", "omarchy.spacer"]
+
+  readonly property var tierNames: ({
+    "omarchy.menu": "应用菜单",
+    "omarchy.indicators": "指示点",
+    "omarchy.elsewhen": "世界时钟",
+    "omarchy.weather": "天气",
+    "omarchy.system-update": "系统更新",
+    "omarchy.keyboard-layout": "键盘布局",
+    "omarchy.agents": "AI agents",
+    "omarchy.monitor": "显示 / 亮度",
+    "superwhisper.panel": "语音听写",
+    "omarchy.network": "网络",
+    "omarchy.bluetooth": "蓝牙",
+    "omarchy.audio": "音量",
+    "omarchy.power": "电源"
+  })
+
+  // "right" (pinned on the bar), "tray" (single click), "hidden" (double
+  // click), or "" for a widget that is not in either section at all.
+  function tierOf(id) {
+    var layout = bar && bar.layoutConfig ? bar.layoutConfig : null
+    if (!layout) return ""
+    var right = Array.isArray(layout.right) ? layout.right : []
+    for (var i = 0; i < right.length; i++) {
+      if (TrayModel.entryId(right[i]) === id) return "right"
+    }
+    var tray = Array.isArray(layout.tray) ? layout.tray : []
+    for (var j = 0; j < tray.length; j++) {
+      var entry = tray[j]
+      if (TrayModel.entryId(entry) !== id) continue
+      return entry && entry.tier === "alwaysHidden" ? "hidden" : "tray"
+    }
+    return ""
+  }
+
+  function refreshTierRows() {
+    var layout = bar && bar.layoutConfig ? bar.layoutConfig : null
+    if (!layout) { tierRows = []; return }
+    var rows = []
+    var seen = {}
+    var groups = ["right", "tray"]
+    for (var g = 0; g < groups.length; g++) {
+      var list = Array.isArray(layout[groups[g]]) ? layout[groups[g]] : []
+      for (var i = 0; i < list.length; i++) {
+        var id = TrayModel.entryId(list[i])
+        if (!id || seen[id] === true || tierExcluded.indexOf(id) !== -1) continue
+        seen[id] = true
+        var name = tierNames[id]
+        rows.push({
+          id: id,
+          name: name ? name : String(id).replace(/^omarchy\./, ""),
+          tier: tierOf(id)
+        })
+      }
+    }
+    tierRows = rows
+  }
+
+  // Moves the widget and marks it. A bar-widget plugin has no
+  // `bar.shell.mutateShellConfig` (that capability belongs to plugins whose
+  // kinds include "bar"), and the layout is owned by the shell anyway, so this
+  // goes through the same `omarchy-bar` commands a person would type. The
+  // shell handles the two calls in order, and its own config write keeps file
+  // and memory in step.
+  function setTier(id, tier) {
+    var at = -1
+    var layout = bar && bar.layoutConfig ? bar.layoutConfig : null
+    var right = layout && Array.isArray(layout.right) ? layout.right : []
+    for (var i = 0; i < right.length; i++) {
+      if (TrayModel.entryId(right[i]) === "omarchy.clock") { at = i; break }
+    }
+
+    if (tier === "right") {
+      var toRight = ["omarchy-bar", "move", id, "--section", "right"]
+      if (at >= 0) toRight.push("--index", String(at))
+      Util.execArgv(toRight)
+      // Pinned widgets carry no tier; a stale one would hide the widget the
+      // day it went back to the drawer.
+      Util.execArgv(["omarchy-bar", "set", id, "tier", "null", "--json"])
+    } else {
+      Util.execArgv(["omarchy-bar", "move", id, "--section", "tray"])
+      Util.execArgv(tier === "hidden"
+        ? ["omarchy-bar", "set", id, "tier", "alwaysHidden"]
+        : ["omarchy-bar", "set", id, "tier", "null", "--json"])
+    }
+
+    // Both commands answer through the shell, so the rows are refreshed on the
+    // layout change; this only covers a call the shell drops.
+    tierRefresh.restart()
+  }
+
+  Timer {
+    id: tierRefresh
+    interval: 400
+    onTriggered: root.refreshTierRows()
+  }
+
   // The bar parents the section's widget slots under sectionHost (Loader >
   // ModuleList > ModuleSlot). Each slot's entry may carry a tier: one marked
   // "alwaysHidden" only shows on the double-clicked drawer; the rest show
@@ -372,8 +481,13 @@ BarWidget {
 
   Connections {
     target: bar
-    function onLayoutConfigChanged() { Qt.callLater(root.applyWidgetTiers) }
+    function onLayoutConfigChanged() {
+      Qt.callLater(root.applyWidgetTiers)
+      Qt.callLater(root.refreshTierRows)
+    }
   }
+
+  onManagePopupOpenChanged: if (managePopupOpen) refreshTierRows()
 
   // The drawer has no button of its own: the empty middle of the bar is the
   // toggle. `bar` is the plugin API object, not the bar item, so the strip is
@@ -646,13 +760,114 @@ BarWidget {
       }
 
       Text {
-        text: "点击菜单栏空白处展开：单击显示隐藏图标，快速双击再显始终隐藏图标，5 秒后自动收起。右键空白处打开本面板。图钉 = 常驻在栏上；眼睛 = 始终隐藏"
+        text: "点击菜单栏空白处展开：单击显示“单击”档，快速双击再加“双击”档，5 秒后自动收起。右键空白处打开本面板。"
         textFormat: Text.PlainText
         color: Qt.darker(root.foreground, 1.4)
         font.family: root.fontFamily
         font.pixelSize: Style.font.caption
         wrapMode: Text.WordWrap
         width: parent.width
+      }
+
+      // The widgets the drawer or the bar itself carries, each with its tier.
+      Repeater {
+        model: root.tierRows
+
+        delegate: Item {
+          id: tierRow
+          required property var modelData
+          width: manageColumn.width
+          implicitHeight: Style.space(28)
+
+          readonly property string widgetId: String(modelData.id || "")
+
+          Text {
+            textFormat: Text.PlainText
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.left: parent.left
+            anchors.right: tierButtons.left
+            anchors.rightMargin: Style.space(8)
+            text: tierRow.modelData.name
+            color: root.foreground
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+            elide: Text.ElideRight
+          }
+
+          Row {
+            id: tierButtons
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.right: parent.right
+            spacing: Style.space(4)
+
+            // 常驻 / 单击 / 双击: the tier the widget lives in is the raised one.
+            Button {
+              text: "常驻"
+              selected: tierRow.modelData.tier === "right"
+              foreground: selected ? root.foreground : Qt.darker(root.foreground, 1.5)
+              horizontalPadding: Style.space(8)
+              verticalPadding: Style.space(3)
+              fontSize: Style.font.caption
+              onClicked: root.setTier(tierRow.widgetId, "right")
+            }
+
+            Button {
+              text: "单击"
+              selected: tierRow.modelData.tier === "tray"
+              foreground: selected ? root.foreground : Qt.darker(root.foreground, 1.5)
+              horizontalPadding: Style.space(8)
+              verticalPadding: Style.space(3)
+              fontSize: Style.font.caption
+              onClicked: root.setTier(tierRow.widgetId, "tray")
+            }
+
+            Button {
+              text: "双击"
+              selected: tierRow.modelData.tier === "hidden"
+              foreground: selected ? root.foreground : Qt.darker(root.foreground, 1.5)
+              horizontalPadding: Style.space(8)
+              verticalPadding: Style.space(3)
+              fontSize: Style.font.caption
+              onClicked: root.setTier(tierRow.widgetId, "hidden")
+            }
+          }
+        }
+      }
+
+      // Anything the tier list does not cover — a widget that is on the bar but
+      // in no drawer section — still gets told about here.
+      Text {
+        visible: root.tierRows.length === 0
+        text: "栏上没有可归入托盘的部件"
+        textFormat: Text.PlainText
+        color: Qt.darker(root.foreground, 1.5)
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.bodySmall
+        font.italic: true
+      }
+
+      // The apps' own tray icons keep their own two buttons below.
+      Item {
+        width: manageColumn.width
+        implicitHeight: Style.space(11)
+
+        Rectangle {
+          anchors.left: parent.left
+          anchors.right: parent.right
+          anchors.verticalCenter: parent.verticalCenter
+          height: 1
+          color: Commons.Color.popups.border
+          opacity: 0.45
+        }
+      }
+
+      Text {
+        textFormat: Text.PlainText
+        text: "应用图标"
+        color: Qt.darker(root.foreground, 1.4)
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.caption
+        font.bold: true
       }
 
       Text {
