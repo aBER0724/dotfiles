@@ -769,7 +769,7 @@ BarWidget {
       }
 
       Text {
-        text: "点击菜单栏空白处展开：单击显示“单击”档，快速双击再加“双击”档，5 秒后自动收起。右键空白处打开本面板。"
+        text: "点一下菜单栏空白处显示「隐藏」档，快点两下再显示「始终隐藏」档，5 秒后自动收起。右键空白处打开本面板。"
         textFormat: Text.PlainText
         color: Qt.darker(root.foreground, 1.4)
         font.family: root.fontFamily
@@ -809,7 +809,7 @@ BarWidget {
             anchors.right: parent.right
             spacing: Style.space(4)
 
-            // 常驻 / 单击 / 双击: the tier the widget lives in is the raised one.
+            // 常驻 / 隐藏 / 始终隐藏: the tier the widget lives in is the raised one.
             Button {
               text: "常驻"
               selected: tierRow.modelData.tier === "right"
@@ -821,7 +821,7 @@ BarWidget {
             }
 
             Button {
-              text: "单击"
+              text: "隐藏"
               selected: tierRow.modelData.tier === "tray"
               foreground: selected ? root.foreground : Qt.darker(root.foreground, 1.5)
               horizontalPadding: Style.space(8)
@@ -831,7 +831,7 @@ BarWidget {
             }
 
             Button {
-              text: "双击"
+              text: "始终隐藏"
               selected: tierRow.modelData.tier === "hidden"
               foreground: selected ? root.foreground : Qt.darker(root.foreground, 1.5)
               horizontalPadding: Style.space(8)
