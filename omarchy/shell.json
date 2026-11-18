@@ -2,12 +2,12 @@
   "bar": {
     "background": "none",
     "layout": {
-      "center": [],
-      "centerBegin": [
+      "center": [
         {
-          "id": "omarchy.agents"
+          "id": "aber.indicators"
         }
       ],
+      "centerBegin": [],
       "centerEnd": [],
       "left": [
         {
@@ -40,6 +40,10 @@
           "id": "omarchy.weather"
         },
         {
+          "id": "omarchy.system-update",
+          "tier": null
+        },
+        {
           "format": "ddd d MMM HH:mm",
           "formatAlt": "d MMMM 'W'ww yyyy",
           "id": "omarchy.clock",
@@ -52,19 +56,16 @@
       ],
       "tray": [
         {
-          "id": "omarchy.indicators"
+          "id": "omarchy.monitor",
+          "tier": null
         },
         {
-          "id": "omarchy.system-update"
+          "id": "superwhisper.panel",
+          "tier": "alwaysHidden"
         },
         {
-          "id": "omarchy.keyboard-layout"
-        },
-        {
-          "id": "superwhisper.panel"
-        },
-        {
-          "id": "omarchy.monitor"
+          "id": "omarchy.keyboard-layout",
+          "tier": "alwaysHidden"
         }
       ]
     },

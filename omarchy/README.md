@@ -118,6 +118,29 @@ tiers twice over: app tray icons (SystemTray items) go through `classifyItem` / 
 To undo the always-hidden marker: `omarchy bar set <id> tier "" --json` (or remove the `tier`
 key by hand).
 
+## The indicators widget, forked to stop it flashing
+
+`~/.config/omarchy/plugins/aber.indicators/` is a clone of `omarchy.indicators` that removes one
+behaviour. Upstream shows only the indicators that are *active*, and reveals the inactive ones on
+hover — from a zone that reaches past the widget on the side they grow toward
+(`hiddenBlockZone`, `reach = inactiveLength`):
+
+1. the pointer enters the zone, `hoverRevealHeld` turns on
+2. the inactive icons appear, so the widget grows and the zone keeps only *half* its reach
+3. the pointer that opened them can fall outside that smaller zone, so they hide again
+4. the zone is full length again, and the pointer is inside it — so they come back
+
+That loop is the flicker: approaching the center of the bar made the mute and screen-recording
+icons appear and disappear. The clone drops `hoverRevealHeld` from the reveal condition, so on the
+bar only active indicators ever show (`alwaysShow` in the widget's own settings still shows all of
+them for good). In the tray's drawer the reveal stays, because the drawer already hides the widget
+until it opens.
+
+The clone also resolves the indicator components itself: upstream loads them with
+`Qt.resolvedUrl("../indicators/<Id>.qml")`, which inside `~/.config/omarchy/plugins/` points at a
+directory that does not exist there, so the fork reads them from
+`$OMARCHY_PATH/shell/plugins/bar/indicators/` and keeps working when the shell updates those files.
+
 ### Setting a tier without dragging
 
 The bar's drag and drop speaks sections only: `tray` and `right` are sections, so dragging a widget

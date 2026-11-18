@@ -27,6 +27,7 @@ LINK_TABLE=(
   "waybar|waybar|$HOME/.config/waybar"
   "omarchy-shell|omarchy/shell.json|$HOME/.config/omarchy/shell.json"
   "omarchy-tray|omarchy/plugins/aber.tray|$HOME/.config/omarchy/plugins/aber.tray"
+  "omarchy-indicators|omarchy/plugins/aber.indicators|$HOME/.config/omarchy/plugins/aber.indicators"
   "clavis|clavis/config|$HOME/.config/clavis"
   "nbshell-config|nbshell/config/config.json|$HOME/.config/nbshell/config.json"
   "nbshell-screensaver|nbshell/config/screensaver.txt|$HOME/.config/nbshell/screensaver.txt"
@@ -83,7 +84,7 @@ GROUP_TABLE=(
   "herdr|herdr herdr-lazygit-user"
   "fcitx|fcitx5-env fcitx5-conf"
   "nbshell|nbshell-config nbshell-screensaver"
-  "omarchy|omarchy-shell omarchy-tray"
+  "omarchy|omarchy-shell omarchy-tray omarchy-indicators"
   "wm|niri nbshell-config nbshell-screensaver fcitx5-env fcitx5-conf"
 )
 
