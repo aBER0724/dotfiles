@@ -517,11 +517,16 @@ BarWidget {
     if (!right || !right.parent) return null
     var strip = right.parent
     var left = null
+    var center = null
     for (var i = 0; i < strip.children.length; i++) {
       var child = strip.children[i]
-      if (child && child.region === "left") { left = child; break }
+      if (child && child.region === "left") left = child
+      // CenterSections is the only child carrying besideRight: it is the box
+      // the center sections are laid out in, beside the right one on a notched
+      // display.
+      else if (child && "besideRight" in child) center = child
     }
-    return { strip: strip, left: left, right: right }
+    return { strip: strip, left: left, right: right, center: center }
   }
 
   function installBlankClick() {
@@ -530,33 +535,61 @@ BarWidget {
     if (!found) return
     blankArea = blankClickComponent.createObject(found.strip, {
       leftMods: found.left,
-      rightMods: found.right
+      rightMods: found.right,
+      centerBox: found.center
     })
     if (!blankArea) console.warn("aber.tray: could not create the blank-click catcher")
   }
 
+  // One clickable stretch of empty bar. The catcher places two of them, on
+  // either side of the center box.
+  component BlankClickArea: MouseArea {
+    acceptedButtons: Qt.LeftButton | Qt.RightButton
+    hoverEnabled: false
+    onClicked: function(mouse) {
+      if (mouse.button === Qt.RightButton) {
+        root.managePopupOpen = !root.managePopupOpen
+        return
+      }
+      root.blankPressed(mouse.button)
+    }
+  }
+
   Component {
     id: blankClickComponent
-    MouseArea {
-      id: catcher
+    // An Item, not a MouseArea: a center widget lives in the middle of the
+    // bar, which is exactly where a single stretch would sit, and it has to
+    // keep its own presses. So the empty bar is covered in stretches that stop
+    // at the center box -- one on the left of it, one on the right, either of
+    // which may be empty.
+    Item {
+      id: catcherRoot
+      anchors.fill: parent
       property Item leftMods: null
       property Item rightMods: null
-      // The sections are laid out by hand, so their edges are known only after
-      // the first layout pass; bind to them rather than sampling them once.
+      property Item centerBox: null
+
       readonly property real leftEdge: leftMods ? leftMods.x + leftMods.width + Style.space(4) : 0
       readonly property real rightEdge: rightMods ? rightMods.x - Style.space(4) : 0
-      x: leftEdge
-      width: Math.max(0, rightEdge - leftEdge)
-      y: 0
-      height: parent ? parent.height : 0
-      visible: width > 0
-      acceptedButtons: Qt.LeftButton | Qt.RightButton
-      onClicked: function(mouse) {
-        if (mouse.button === Qt.RightButton) {
-          root.managePopupOpen = !root.managePopupOpen
-          return
-        }
-        root.blankPressed(mouse.button)
+      readonly property real boxLeft: centerBox ? centerBox.x : rightEdge
+      readonly property real boxRight: centerBox ? centerBox.x + centerBox.width : rightEdge
+
+      // The left stretch runs from the left section to the center box, but no
+      // further than the right section (an empty box can sit past it).
+      BlankClickArea {
+        x: catcherRoot.leftEdge
+        width: Math.max(0, Math.min(catcherRoot.boxLeft, catcherRoot.rightEdge) - x)
+        y: 0
+        height: parent ? parent.height : 0
+        visible: width > 0
+      }
+
+      BlankClickArea {
+        x: Math.max(catcherRoot.boxRight, catcherRoot.leftEdge)
+        width: Math.max(0, catcherRoot.rightEdge - x)
+        y: 0
+        height: parent ? parent.height : 0
+        visible: width > 0
       }
     }
   }

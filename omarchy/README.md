@@ -167,9 +167,16 @@ blur and shadows, the expensive parts on llvmpipe).
 walk. The trigger therefore finds the bar layout from the other direction: up from the widget
 (`root.parent` → `Loader` → `WidgetHost` → `ModuleSlot` → `RightModules`, the outermost ancestor
 carrying `region === "right"`) and then sideways to its sibling with `region === "left"`. The
-`MouseArea` spans `left.x + left.width` to `right.x`, so it follows the layout and the opening
-drawer automatically and never covers a widget. A right click there opens the tray manager popup,
-which is where the old chevron's right click went.
+the clickable stretches span `left.x + left.width` to `right.x`, so they follow the layout and the
+opening drawer automatically and never cover a widget. A right click there opens the tray manager
+popup, which is where the old chevron's right click went.
+
+The empty bar is covered by *two* stretches, not one, with a gap for the center box
+(`CenterSections`, the only strip child carrying `besideRight`). A `center`/`centerBegin`/
+`centerEnd` widget is laid out in the middle of the bar — exactly where a single stretch would sit
+— and one covering `omarchy.agents` there made that icon impossible to drag or click, because the
+press went to the invisible catcher instead of its slot. Either stretch may be empty: with nothing
+centered, the center box is a point past the right section and only the left stretch exists.
 
 ## Caveat: `shell.json` is written by Omarchy
 
