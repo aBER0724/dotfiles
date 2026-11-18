@@ -100,6 +100,10 @@ the bar goes through Omarchy: `omarchy bar ...`, `omarchy bar move <id> --sectio
 There is no expander button. The empty middle of the bar is the trigger, and how fast you click it
 decides how deep the drawer opens:
 
+The drawer reads **始终隐藏 | 隐藏 | 常驻** from the edge it opens away from: the always-hidden
+icons sit leftmost, the hidden ones next to them, and the pinned ones against the bar's own edge, so
+the three tiers are three blocks and never interleave. The panel lists them in the same order.
+
 | Tier | What | How to reach it |
 | --- | --- | --- |
 | 常驻 (pinned) | On the bar itself, no click needed | Move the widget out of `tray`: `omarchy bar move <id> --section right --index N`. App tray icons can also be pinned in the right-click manager popup. |
@@ -117,6 +121,13 @@ tiers twice over: app tray icons (SystemTray items) go through `classifyItem` / 
 
 To undo the always-hidden marker: `omarchy bar set <id> tier "" --json` (or remove the `tier`
 key by hand).
+
+Each tier is one contiguous block of the `tray` section, and the fork keeps it that way: setting a
+tier puts the widget at the front of the tray for 始终隐藏, or right after the last always-hidden one
+for 隐藏, and `normalizeTrayTiers()` puts the list back in that order after the bar's drag engine has
+dropped a widget somewhere else. The bar's own order is what the section lays its widgets out in, so
+without that a hidden widget could be dropped between two always-hidden ones and would appear
+between them in the double-clicked drawer.
 
 ## The indicators widget, forked to stop it flashing
 

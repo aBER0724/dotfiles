@@ -56,16 +56,16 @@
       ],
       "tray": [
         {
-          "id": "omarchy.monitor",
-          "tier": null
-        },
-        {
           "id": "superwhisper.panel",
           "tier": "alwaysHidden"
         },
         {
           "id": "omarchy.keyboard-layout",
           "tier": "alwaysHidden"
+        },
+        {
+          "id": "omarchy.monitor",
+          "tier": null
         }
       ]
     },

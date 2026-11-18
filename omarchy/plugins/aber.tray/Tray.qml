@@ -25,14 +25,19 @@ BarWidget {
   readonly property var pinnedIds: settings.pinned instanceof Array ? settings.pinned : []
   readonly property var hiddenIds: settings.hidden instanceof Array ? settings.hidden : []
   readonly property var pinnedItems: bucket("pinned")
-  // Level 1 shows the regular drawer icons; level 2, reached by double-
-  // clicking the blank bar, appends the always-hidden ones.
+  // The drawer reads 始终隐藏 | 隐藏 | 常驻 from its opening edge outward, so the
+  // always-hidden icons come first and the pinned ones the bar draws against
+  // its fixed edge come last. Level 1 shows only the hidden block; level 2,
+  // reached by double-clicking the blank bar, puts the always-hidden one in
+  // front of it.
   readonly property var drawerItems: {
-    var items = bucket("drawer")
+    var items = []
     if (drawerLevel >= 2) {
       var buried = bucket("alwaysHidden")
       for (var i = 0; i < buried.length; i++) items.push(buried[i])
     }
+    var shown = bucket("drawer")
+    for (var j = 0; j < shown.length; j++) items.push(shown[j])
     return items
   }
   readonly property var allItems: bucket("all")
@@ -95,6 +100,7 @@ BarWidget {
     drawerExtentSmooth = drawerExtent
     syncReveal()
     refreshTierRows()
+    normalizeTrayTiers()
   }
   // The pinned icons sit against the tray's fixed edge, the drawer opening
   // between them and pushing them out of the way, while the pointer that
@@ -391,12 +397,12 @@ BarWidget {
     if (!layout) { tierRows = []; return }
     var rows = []
     var seen = {}
-    var groups = ["right", "tray"]
-    for (var g = 0; g < groups.length; g++) {
-      var list = Array.isArray(layout[groups[g]]) ? layout[groups[g]] : []
+    function collect(list, onlyTier) {
+      if (!Array.isArray(list)) return
       for (var i = 0; i < list.length; i++) {
         var id = TrayModel.entryId(list[i])
         if (!id || seen[id] === true || tierExcluded.indexOf(id) !== -1) continue
+        if (onlyTier !== null && tierOf(id) !== onlyTier) continue
         seen[id] = true
         var name = tierNames[id]
         rows.push({
@@ -406,6 +412,10 @@ BarWidget {
         })
       }
     }
+    // The list reads in the same order as the tray: 始终隐藏 | 隐藏 | 常驻.
+    collect(layout.tray, "hidden")
+    collect(layout.tray, "tray")
+    collect(layout.right, "right")
     tierRows = rows
   }
 
@@ -431,7 +441,17 @@ BarWidget {
       // day it went back to the drawer.
       Util.execArgv(["omarchy-bar", "set", id, "tier", "null", "--json"])
     } else {
-      Util.execArgv(["omarchy-bar", "move", id, "--section", "tray"])
+      // The tray reads 始终隐藏 then the rest, so each tier stays one block: an
+      // always-hidden widget goes to the front, a hidden one right after the
+      // last of them. Otherwise the drawer would show a hidden icon wedged
+      // between two always-hidden ones.
+      var shownAt = 0
+      var trayList = layout && Array.isArray(layout.tray) ? layout.tray : []
+      for (var t = 0; t < trayList.length; t++) {
+        if (trayList[t] && trayList[t].tier === "alwaysHidden") shownAt++
+      }
+      var trayAt = tier === "hidden" ? 0 : shownAt
+      Util.execArgv(["omarchy-bar", "move", id, "--section", "tray", "--index", String(trayAt)])
       Util.execArgv(tier === "hidden"
         ? ["omarchy-bar", "set", id, "tier", "alwaysHidden"]
         : ["omarchy-bar", "set", id, "tier", "null", "--json"])
@@ -446,6 +466,50 @@ BarWidget {
     id: tierRefresh
     interval: 400
     onTriggered: root.refreshTierRows()
+  }
+
+  // The tray section's own order decides where the drawer puts a widget, and the
+  // bar's drag engine will happily drop one in the middle of another tier. Once
+  // a drag settles, put the trays back in order: every always-hidden widget
+  // first, keeping each block's own order. Only the CLI can write the layout
+  // (see setTier), so this walks the entries and moves the ones out of place;
+  // nothing is sent when the order is already right.
+  function normalizeTrayTiers() {
+    var layout = bar && bar.layoutConfig ? bar.layoutConfig : null
+    if (!layout || !Array.isArray(layout.tray)) return
+    var buried = [], shown = [], current = []
+    for (var i = 0; i < layout.tray.length; i++) {
+      var entry = layout.tray[i]
+      var id = TrayModel.entryId(entry)
+      if (!id) continue
+      current.push(id)
+      if (entry && entry.tier === "alwaysHidden") buried.push(id)
+      else shown.push(id)
+    }
+    if (buried.length === 0) return
+    var wanted = buried.concat(shown)
+    if (current.join("|") === wanted.join("|")) return
+    if (tierNormalizing) { tierNormalizeAgain = true; return }
+    tierNormalizing = true
+    for (var k = 0; k < wanted.length; k++) {
+      Util.execArgv(["omarchy-bar", "move", wanted[k], "--section", "tray", "--index", String(k)])
+    }
+    tierNormalizeTimer.restart()
+  }
+
+  property bool tierNormalizing: false
+  property bool tierNormalizeAgain: false
+
+  Timer {
+    id: tierNormalizeTimer
+    interval: 600
+    onTriggered: {
+      root.tierNormalizing = false
+      if (root.tierNormalizeAgain) {
+        root.tierNormalizeAgain = false
+        Qt.callLater(root.normalizeTrayTiers)
+      }
+    }
   }
 
   // The bar parents the section's widget slots under sectionHost (Loader >
@@ -493,6 +557,7 @@ BarWidget {
     function onLayoutConfigChanged() {
       Qt.callLater(root.applyWidgetTiers)
       Qt.callLater(root.refreshTierRows)
+      Qt.callLater(root.normalizeTrayTiers)
     }
   }
 
