@@ -18,10 +18,14 @@
           "id": "aber.tray"
         },
         {
-          "format": "dddd HH:mm",
-          "formatAlt": "d MMMM 'W'ww yyyy",
           "id": "omarchy.clock",
+          "format": "ddd d MMM HH:mm",
+          "formatAlt": "d MMMM 'W'ww yyyy",
           "verticalFormat": "HH\n—\nmm"
+        },
+        {
+          "id": "omarchy.spacer",
+          "size": 14
         }
       ],
       "tray": [
