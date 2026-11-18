@@ -58,10 +58,19 @@ BarWidget {
   // drawer instead of snapping it wider in a single frame.
   property real drawerExtentSmooth: 0
   onDrawerExtentChanged: drawerExtentSmooth = drawerExtent
-  // A widget being dragged along the bar opens the drawer, to show where it
-  // can go, and so does any panel open from the tray or the tray section.
+  // The bar reports a drag in progress for any widget on any bar, not only for
+  // one of the drawer's own.
   readonly property bool barDragging: !!bar && bar.traySectionDragActive === true
-  readonly property bool holdOpen: trayMenuOpen || managePopupOpen || barDragging || (!!bar && bar.traySectionPopoutOpen === true)
+  // A drag holds the drawer open only when it started with the drawer open,
+  // which is the one case that needs it: pulling a widget out of the drawer.
+  // A drag that starts on the bar itself must not open the drawer -- doing so
+  // shifts the whole right section out from under the pointer, so the widget
+  // being dragged jumps away and the drop lands somewhere else. `barDragging`
+  // is the bar's `traySectionDragActive`, which is true for *any* widget being
+  // dragged, not just one from the drawer.
+  readonly property bool holdOpen: trayMenuOpen || managePopupOpen
+    || (barDragging && drawerLevel > 0)
+    || (!!bar && bar.traySectionPopoutOpen === true)
   // The mark under the bar sits under the icon whose menu is open.
   readonly property Item openPanelIndicatorItem: trayMenuOpen ? activeTrayAnchor : null
   // The drawer's slide, in ms. Deliberately a fixed duration rather than
