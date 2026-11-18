@@ -12,12 +12,12 @@
       "left": [
         {
           "id": "omarchy.workspaces"
+        },
+        {
+          "id": "aber.tray"
         }
       ],
       "right": [
-        {
-          "id": "aber.tray"
-        },
         {
           "format": "dddd HH:mm",
           "formatAlt": "d MMMM 'W'ww yyyy",
