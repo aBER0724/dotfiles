@@ -2,11 +2,7 @@
   "bar": {
     "background": "none",
     "layout": {
-      "center": [
-        {
-          "id": "omarchy.active-window"
-        }
-      ],
+      "center": [],
       "centerBegin": [],
       "centerEnd": [],
       "left": [
@@ -14,10 +10,13 @@
           "id": "omarchy.workspaces"
         },
         {
-          "id": "aber.tray"
+          "id": "omarchy.active-window"
         }
       ],
       "right": [
+        {
+          "id": "aber.tray"
+        },
         {
           "format": "dddd HH:mm",
           "formatAlt": "d MMMM 'W'ww yyyy",

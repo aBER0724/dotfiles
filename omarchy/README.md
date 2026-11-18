@@ -12,20 +12,22 @@ only the bar is customized here; everything else stays Omarchy's own.
 ## Bar layout
 
 ```
-1 2 3 4 ⌄            omarchy [window title]             周四 01:10
-workspaces  tray      active window (file name)              clock
+1 2 3 4   m - dotfiles                                  ‹ 周三 09:20
+workspaces  active window (file name)          tray   clock
 ```
 
-- `left` — workspaces, then the tray chevron; the launcher moved into the tray drawer
-- `center` — `omarchy.active-window`
-- `right` — the clock only
+- `left` — workspaces, then the current window (the file name in an editor); the launcher moved
+  into the tray drawer
+- `center` — empty
+- `right` — the tray chevron, then the clock at the far right
 - `tray` (the drawer behind the chevron) — menu, indicators, elsewhen, weather, system update,
   keyboard layout, agents, bluetooth, network, audio, display, power, superwhisper
 
-The tray sits on the left because a display with a camera notch changes the bar: Omarchy raises a
-top bar to the notch height and draws the `center` box beside the right section instead of in the
-middle (`BarModel.centerBesideRight`). Anything meant to be reachable stays out of the way of the
-notch, so the drawer opens from the left, to the right of the workspaces.
+The window title sits on the left because of the camera notch: Omarchy raises a top bar to the notch
+height and, since the cutout covers the middle, draws the `center` box beside the right section
+instead of centering it (`BarModel.centerBesideRight`). A `center` widget is therefore not centered
+at all on this display, so the title lives right after the workspaces and `center` stays empty. The
+tray keeps the right section, where its drawer opens leftward over the empty middle of the bar.
 
 ## Customizing the tray widget
 
