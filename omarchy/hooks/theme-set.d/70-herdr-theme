@@ -1,0 +1,50 @@
+#!/bin/bash
+# Omarchy theme-set hook: keep herdr on the Omarchy palette.
+#
+# herdr styles its UI from the *host terminal's* ANSI palette when its theme is
+# `terminal`, which is what the managed block in dotfiles/herdr/config.toml asks
+# for. Omarchy only rewrites that palette inside kitty (the 50-kitty-reload hook
+# makes running terminals re-read it), so herdr has to be told to look again:
+# per herdr's docs a client re-queries the colours on SIGWINCH. Nothing is sent
+# when no client is attached — it reads the palette when it starts.
+#
+# A stale block is rewritten too: an Omarchy machine that pulled a commit
+# written on niri (a fixed palette plus [theme.custom]) would otherwise keep
+# those colours.
+#
+# $1 is the theme slug Omarchy has just set; nothing here needs it.
+set -u
+
+cfg="$HOME/.config/herdr/config.toml"
+[[ -f $cfg ]] || exit 0
+
+python3 - "$cfg" <<'PY'
+import pathlib
+import re
+import sys
+
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+
+block = """# BEGIN nbshell managed theme
+# `terminal` makes Herdr follow the host terminal's ANSI palette. Both desktops
+# already theme that palette — Omarchy rewrites kitty's colours on every switch,
+# nbshell's theme-sync writes its own — so a fixed palette here would always sit
+# one theme behind. Omarchy's theme-set hook rewrites this block and nudges a
+# running client; nbshell's theme-sync owns it on niri.
+[theme]
+name = "terminal"
+auto_switch = false
+# END nbshell managed theme"""
+
+pattern = re.compile(r"(?ms)^# BEGIN nbshell managed theme$.*?^# END nbshell managed theme$")
+if pattern.search(text):
+    updated = pattern.sub(lambda _: block, text, count=1)
+else:
+    updated = text.rstrip("\n") + "\n\n" + block + "\n"
+
+if updated != text:
+    path.write_text(updated)
+PY
+
+pkill -WINCH -x herdr 2>/dev/null || true

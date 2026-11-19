@@ -88,9 +88,14 @@ herdr 的 `plugins.json` 记录绝对安装路径(`/Users/aber/.config/herdr/plu
 
 `config.toml` 内含 `# BEGIN/END nbshell managed theme` 块(见 [nbshell theme-sync](../nbshell/README.md)):
 
-- `[theme] name + auto_switch = false` 固定基础主题(catppuccin / terminal / tokyo-night / dracula / nord / gruvbox / one-dark / solarized / kanagawa / rose-pine / vesper);无内置映射时回退到 `terminal`
-- `[theme.custom]` 用真实主题色覆盖(BG / accent / red / green / selection 等)
-- 每次 `Alt+T` 由 theme-hook.sh 重写该块,再 `herdr server reload-config`,运行中即时生效
+- `name = "terminal"`:让 herdr UI 跟随**宿主终端的 ANSI 调色板**。两套桌面本来就给终端上色
+  (Omarchy 每次换主题重写 `theme/kitty.conf`,nbshell 的 theme-sync 写自己的),所以写死调色板
+  永远落后一个主题;`terminal` 是唯一不需要复制的选项
+- `auto_switch = false`:不跟随终端上报的明暗切换,由桌面主题决定
+- 写入方:Omarchy 上由 `omarchy/hooks/theme-set.d/70-herdr-theme` 重写这块并对运行中的 client
+  发 `SIGWINCH`(herdr 收到后重新查询终端颜色);niri 上仍由 nbshell 的 theme-hook.sh 负责
+- 运行中的 client 若正带着旧配置,需要在 UI 里执行一次 `reload config`(或重开 client),
+  主题色本身靠 `SIGWINCH` 就够
 
 ## 鼠标模式泄漏(SGR)防护
 

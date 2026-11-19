@@ -1,18 +1,14 @@
 onboarding = false
 
 # BEGIN nbshell managed theme
+# `terminal` makes Herdr follow the host terminal's ANSI palette. Both desktops
+# already theme that palette — Omarchy rewrites kitty's colours on every switch,
+# nbshell's theme-sync writes its own — so a fixed palette here would always sit
+# one theme behind. Omarchy's theme-set hook rewrites this block and nudges a
+# running client; nbshell's theme-sync owns it on niri.
 [theme]
-name = "catppuccin"
+name = "terminal"
 auto_switch = false
-
-[theme.custom]
-sidebar_bg = "#181825"
-active_row_bg = "#313244"
-selection_bg = "#45475a"
-panel_bg = "#1e1e2e"
-accent = "#89b4fa"
-red = "#f38ba8"
-green = "#a6e3a1"
 # END nbshell managed theme
 
 [experimental]
