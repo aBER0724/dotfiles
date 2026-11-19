@@ -19,7 +19,8 @@
 #     (a clean checkout is kept at ~/.local/share/fcitx5/rime-config and an
 #     archive of HEAD is exported into the live rime dir, so build/ and user
 #     data never touch the checkout)
-#   - ~/.config/fcitx5/profile: patched so rime is registered and default IM
+#   - ~/.config/fcitx5/profile: patched to hold rime alone (Fcitx's native
+#     keyboard layouts are dropped) as the default and only engine
 set -euo pipefail
 
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
@@ -149,8 +150,11 @@ else
         fcitx_stop
     fi
 
-    # Register rime in the default group and make it the activated engine. The
-    # item block goes before [GroupOrder] so the file stays in fcitx's own shape.
+    # Rime is the only engine: register it in the default group, drop Fcitx's own
+    # keyboard layouts (the "native English" input method), and make rime the
+    # activated engine. Latin input comes from rime's ascii mode, so Super+I and
+    # Ctrl+Space no longer alternate between two engines. Item blocks go before
+    # [GroupOrder] so the file keeps fcitx's own shape.
     python3 - "$FCITX_CONFIG_DIR/profile" <<'PY'
 from pathlib import Path
 import re
@@ -161,16 +165,33 @@ text = path.read_text() if path.exists() else ""
 if not text.strip():
     text = (
         "[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=rime\n\n"
-        "[Groups/0/Items/0]\nName=keyboard-us\nLayout=\n\n"
         "[GroupOrder]\n0=Default\n"
     )
-if not re.search(r"(?m)^Name=rime$", text):
-    numbers = [int(value) for value in re.findall(r"(?m)^\[Groups/0/Items/(\d+)\]$", text)]
-    block = f"[Groups/0/Items/{max(numbers, default=-1) + 1}]\nName=rime\nLayout=\n\n"
-    if re.search(r"(?m)^\[GroupOrder\]$", text):
-        text = re.sub(r"(?m)^\[GroupOrder\]$", block + "[GroupOrder]", text, count=1)
-    else:
-        text = text.rstrip() + "\n\n" + block.rstrip() + "\n"
+
+
+def item_name(body):
+    match = re.search(r"(?m)^Name=(.*)$", body)
+    return match.group(1).strip() if match else ""
+
+
+items = [
+    body
+    for _, body in re.findall(r"(?ms)^\[Groups/0/Items/(\d+)\]\n(.*?)(?=^\[|\Z)", text)
+    if not item_name(body).startswith("keyboard-")
+]
+if not any(item_name(body) == "rime" for body in items):
+    items.append("Name=rime\nLayout=\n")
+
+text = re.sub(r"(?ms)^\[Groups/0/Items/\d+\]\n.*?(?=^\[|\Z)", "", text)
+text = re.sub(r"\n{3,}", "\n\n", text)
+block = "".join(
+    f"[Groups/0/Items/{number}]\n{body.rstrip()}\n\n"
+    for number, body in enumerate(items)
+)
+if re.search(r"(?m)^\[GroupOrder\]$", text):
+    text = re.sub(r"(?m)^\[GroupOrder\]$", block + "[GroupOrder]", text, count=1)
+else:
+    text = text.rstrip() + "\n\n" + block.rstrip() + "\n"
 if re.search(r"(?m)^DefaultIM=.*$", text):
     text = re.sub(r"(?m)^DefaultIM=.*$", "DefaultIM=rime", text, count=1)
 path.parent.mkdir(parents=True, exist_ok=True)
