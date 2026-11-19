@@ -1,0 +1,36 @@
+#!/bin/bash
+# Omarchy theme-set hook: give pi the Omarchy palette.
+#
+# pi's theme is chosen once, in dotfiles/pi-agent/settings.json, and that file is
+# the same on every machine: "theme": "nbshell". nbshell's theme-sync writes
+# ~/.pi/agent/themes/nbshell.json on the niri desktop, so on Omarchy the file
+# stayed at whatever nbshell last generated and pi never moved with the theme.
+# Omarchy's own omarchy-theme-set-pi writes themes/omarchy-system.json instead,
+# which nothing selects.
+#
+# So this hook writes Omarchy's generated palette into the file pi has selected.
+# pi hot-reloads the active user theme from <agent-dir>/themes/<name>.json, so a
+# running session recolours in place; `name` must stay "nbshell" to match the
+# filename and the settings value.
+#
+# $1 is the theme slug Omarchy has just set; nothing here needs it.
+set -u
+umask 022
+
+src="$HOME/.local/state/omarchy/current/theme/pi.json"
+dst="$HOME/.pi/agent/themes/nbshell.json"
+
+[[ -f $src ]] || exit 0
+
+mkdir -p "${dst%/*}"
+tmp=$(mktemp "$dst.XXXXXX") || exit 0
+trap 'rm -f "$tmp"' EXIT
+
+if command -v jq >/dev/null 2>&1; then
+  jq '.name = "nbshell"' "$src" >"$tmp" || exit 0
+else
+  cp "$src" "$tmp" || exit 0
+fi
+
+chmod 0644 "$tmp"
+mv "$tmp" "$dst"

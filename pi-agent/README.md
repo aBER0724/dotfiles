@@ -20,11 +20,19 @@ pi-agent/
 # 目录不存在时 `dotfiles link pi` 跳过并清掉旧断链)
 ```
 
-## 主题(随 nbshell 同步)
+## 主题(随桌面同步)
 
-`settings.json` 的 `theme: "nbshell"`,对应主题文件 `~/.pi/agent/themes/nbshell.json`(全局目录,55 tokens),
-由 [nbshell theme-sync](../nbshell/README.md) 按 `Alt+T` 生成。激活该主题后,编辑主题文件即热重载——
-所以切主题时 pi 运行中即时变色(无需重启)。
+`settings.json` 的 `theme: "nbshell"`,对应主题文件 `~/.pi/agent/themes/nbshell.json`(全局目录)。
+这个选择在所有设备上共用,文件由谁写则看桌面:
+
+- niri:[nbshell theme-sync](../nbshell/README.md) 按 `Alt+T` 生成;
+- Omarchy:`omarchy/hooks/theme-set.d/60-pi-theme` 在每次换主题时把
+  `~/.local/state/omarchy/current/theme/pi.json` 写进同一个文件(名字改回 `nbshell`,
+  与文件名/settings 保持一致)。Omarchy 自带的 `omarchy-theme-set-pi` 只写
+  `themes/omarchy-system.json`,没有任何设置选中它,所以 pi 不会跟着动。
+
+pi 对"当前用户主题"是按 `<agent-dir>/themes/<name>.json` 原地热重载的,所以切主题时
+运行中的 pi 会话会即时变色(无需重启)。
 
 ## 插件清单(packages,来自 settings.json)
 
@@ -112,9 +120,9 @@ pi 用 `packages` 数组记录**插件来源**(如 `npm:pi-subagents`),
 | `models-store.json` | provider 目录缓存,机器本地 |
 | `sessions/` `state/` `fff/` | 会话/状态,机器本地 |
 | `npm/` `git/` | 包安装缓存,自动重建 |
-macOS 不运行 nbshell，因此 `dotfiles install pi` 会把仓库内的 Tokyo Night
-兜底主题安装为 `~/.pi/agent/themes/nbshell.json`。Linux 上该文件仍由
-`nbshell/scripts/theme-sync.py` 根据系统主题动态生成。
+macOS 不运行 nbshell,因此 `dotfiles install pi` 会把仓库内的 Tokyo Night
+兜底主题安装为 `~/.pi/agent/themes/nbshell.json`。Linux 上该文件由桌面动态生成:
+niri 走 `nbshell/scripts/theme-sync.py`,Omarchy 走 `theme-set` 的 60-pi-theme 钩子。
 
 
 ## 新设备安装

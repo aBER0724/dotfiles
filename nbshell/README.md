@@ -70,7 +70,7 @@ nbshell next → 轮询 config.json 直到主题实际变化(最多 1.5s) → th
 | `~/.config/nbshell/palette.sh`(NB_* 变量) | nvim / herdr / 脚本共享源 |
 | `~/.config/nbshell/kitty.conf` | 通过 Kitty Unix socket 执行 `load-config`,**运行中即时生效** |
 | `~/.config/btop/themes/current.theme` | 发送 `SIGUSR2` 重载配置与主题,**运行中即时生效** |
-| `~/.pi/agent/themes/nbshell.json`(51+ tokens) | pi 激活 nbshell 主题后,编辑文件即热重载,**运行中即时生效** |
+| `~/.pi/agent/themes/nbshell.json`(51+ tokens) | pi 激活 nbshell 主题后,编辑文件即热重载,**运行中即时生效**(Omarchy 上同一个文件由 `omarchy/hooks/theme-set.d/60-pi-theme` 用 Omarchy 调色板覆盖) |
 | `~/.config/lazygit/config.yml`(`gui.theme`) | 重启 lazygit 生效 |
 | `~/.config/yazi/flavors/<theme>.yazi/` + `theme.toml` | 重启 yazi 生效 |
 | `niri/nbshell-colors.kdl`(焦点/边框配色) | config.kdl `include` 引用;niri 监听该文件,自动热重载,**运行中即时生效** |
