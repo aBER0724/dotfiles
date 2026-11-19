@@ -31,7 +31,17 @@ MAILCHECK=0
 }
 
 # Keep this close to the top. Anything requiring user input must run above it.
-if [[ -t 1 && -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+#
+# Decide once, here, whether this shell has a real terminal. It has to be decided
+# before powerlevel10k's instant prompt runs: the instant prompt deliberately
+# swaps stdout for its own capture file until the first prompt, so `[[ -t 1 ]]`
+# reads false for the rest of this file. Re-testing it down in the Prompt section
+# skipped the theme on every instant-prompt shell, leaving zsh's bare `%m%#`
+# prompt, which made new windows alternate between p10k and `omarchy%`.
+typeset -gi _pi_p10k_tty
+[[ -t 1 ]] && _pi_p10k_tty=1 || _pi_p10k_tty=0
+
+if (( _pi_p10k_tty )) && [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
@@ -100,11 +110,12 @@ unset _zsh_z
 
 # Prompt ----------------------------------------------------------------------
 
-# Only build the prompt when stdout is a terminal. Scripted interactive shells
-# (`zsh -i -c ...`, editors, CI) never render a prompt, and powerlevel10k's
-# gitstatus daemon fails to initialise there, printing
-# "[ERROR]: gitstatus failed to initialize." on every such invocation.
-if [[ -t 1 ]]; then
+# Only build the prompt when the shell really has a terminal (the flag decided at
+# the top of this file). Scripted interactive shells (`zsh -i -c ...`, editors,
+# CI) never render a prompt, and powerlevel10k's gitstatus daemon fails to
+# initialise there, printing "[ERROR]: gitstatus failed to initialize." on every
+# such invocation.
+if (( _pi_p10k_tty )); then
   for _p10k in \
     "$ZSH_CUSTOM/themes/powerlevel10k/powerlevel10k.zsh-theme" \
     "$HOME/powerlevel10k/powerlevel10k.zsh-theme" \
@@ -117,6 +128,7 @@ if [[ -t 1 ]]; then
   # Run `p10k configure` to regenerate this file.
   [[ -r "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
 fi
+unset _pi_p10k_tty
 
 # PATH and toolchains ---------------------------------------------------------
 
