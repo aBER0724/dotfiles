@@ -456,10 +456,20 @@ for arg in "$@"; do
   prev="$arg"
 done
 if [ -n "$out" ]; then cat "$SHEPRD_TEST_SCRIPT" > "$out"; else cat "$SHEPRD_TEST_SCRIPT"; fi'
+  stub_logger brew
   SHEPRD_TEST_SCRIPT="$CASE_ROOT/sheprd-install.sh" DOTFILES_UNAME=Linux run_cli deps sheprd
   assert_status 0 &&
     assert_contains "install sheprd from" &&
-    grep -F "sheprd-installer-ran" "$LOG" >/dev/null
+    grep -F "sheprd-installer-ran" "$LOG" >/dev/null &&
+    ! grep -F "sheprd-labs/tap/sheprd" "$LOG" >/dev/null
+}
+
+test_linux_ignores_macos_casks() {
+  new_case linux-macos-cask
+  stub_logger brew
+  DOTFILES_UNAME=Linux run_cli deps aerospace
+  assert_status 0 &&
+    ! grep -F "nikitabobko/tap/aerospace" "$LOG" >/dev/null
 }
 
 test_linux_skips_sheprd_when_present() {
@@ -706,6 +716,7 @@ run_test "Arch installs native packages before Homebrew" test_arch_installs_nati
 run_test "macOS installs the sheprd cask" test_macos_installs_sheprd_cask
 run_test "Linux installs sheprd upstream" test_linux_installs_sheprd_through_upstream_installer
 run_test "Linux skips an installed sheprd" test_linux_skips_sheprd_when_present
+run_test "Linux ignores macOS-only casks" test_linux_ignores_macos_casks
 run_test "Arch installs scratch through herdr" test_arch_installs_scratch_through_herdr
 run_test "macOS skips scratch source build" test_macos_skips_scratch_source_build
 run_test "gen-plugins keeps the github-linux kind" test_gen_plugins_keeps_github_linux_kind
