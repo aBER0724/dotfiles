@@ -29,6 +29,7 @@ LINK_TABLE=(
   "omarchy-shell|omarchy/shell.json|$HOME/.config/omarchy/shell.json"
   "omarchy-tray|omarchy/plugins/aber.tray|$HOME/.config/omarchy/plugins/aber.tray"
   "omarchy-indicators|omarchy/plugins/aber.indicators|$HOME/.config/omarchy/plugins/aber.indicators"
+  "omarchy-kitty-reload|omarchy/hooks/theme-set.d/50-kitty-reload|$HOME/.config/omarchy/hooks/theme-set.d/50-kitty-reload"
   "clavis|clavis/config|$HOME/.config/clavis"
   "nbshell-config|nbshell/config/config.json|$HOME/.config/nbshell/config.json"
   "nbshell-screensaver|nbshell/config/screensaver.txt|$HOME/.config/nbshell/screensaver.txt"
@@ -85,7 +86,7 @@ GROUP_TABLE=(
   "herdr|herdr herdr-lazygit-user"
   "fcitx|fcitx5-env fcitx5-conf"
   "nbshell|nbshell-config nbshell-screensaver"
-  "omarchy|omarchy-shell omarchy-tray omarchy-indicators"
+  "omarchy|omarchy-shell omarchy-tray omarchy-indicators omarchy-kitty-reload"
   "wm|niri nbshell-config nbshell-screensaver fcitx5-env fcitx5-conf"
 )
 

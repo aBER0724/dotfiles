@@ -12,9 +12,9 @@ Personal configuration files.
 | [clavis](/clavis) | Previous StatIndet/Clavis shell retained as a manual rollback |
 | [waybar](/waybar) | Legacy Waybar configuration retained as a second manual rollback |
 | [hypr](/hypr) | Hyprland (Omarchy) frosted-glass blur shared by every Omarchy machine — `require("hypr.blur")` after Omarchy's toggles, because the "Animations off" flag disables blur |
-| [omarchy](/omarchy) | Stock Omarchy bar on a Mac host — minimal layout (workspaces · active window · tray · clock), a click-to-open tray widget, and a spacer keeping the clock clear of the macOS privacy dot |
+| [omarchy](/omarchy) | Stock Omarchy bar on a Mac host — minimal layout (workspaces · active window · tray · clock), a click-to-open tray widget, and a spacer keeping the clock clear of the macOS privacy dot; a `theme-set` hook that reloads kitty so running terminals take the new palette |
 | [kaku](/kaku) | Terminal (WezTerm-based) |
-| [kitty](/kitty) | Kitty terminal — Kaku-inspired port (fonts, Kaku Dark, Cmd keymap) |
+| [kitty](/kitty) | Kitty terminal — Kaku-inspired port (fonts, Kaku Dark, Cmd keymap), palette follows Omarchy with a final `include` of `~/.local/state/omarchy/current/theme/kitty.conf` |
 | [nvim](/nvim) | Neovim (LazyVim) |
 | [lazygit](/lazygit) | lazygit — side-by-side (delta) diff by default, `|` cycles renderers |
 | [fastfetch](/fastfetch) | System info |

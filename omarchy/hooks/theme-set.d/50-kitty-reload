@@ -1,0 +1,13 @@
+#!/bin/bash
+# Omarchy theme-set hook: recolour already-open kitty windows.
+#
+# Kitty reads Omarchy's palette through the include of
+# ~/.local/state/omarchy/current/theme/kitty.conf in dotfiles/kitty/kitty.conf,
+# but only at startup; it rereads its config on SIGUSR1, the same signal
+# omarchy-display-text-size and omarchy-font-set use. Without this hook a theme
+# switch leaves every running terminal on the previous palette until reopened.
+#
+# $1 is the theme slug Omarchy has just set; nothing here needs it.
+set -u
+
+pkill -USR1 -x kitty 2>/dev/null || true
