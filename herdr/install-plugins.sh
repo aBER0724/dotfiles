@@ -10,7 +10,7 @@ PLUGINS="${HERDR_PLUGINS_FILE:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pw
 HOST_UNAME="${DOTFILES_UNAME:-$(uname -s)}"
 
 if ! command -v herdr >/dev/null 2>&1; then
-  echo "error: herdr not installed. Run: brew install herdr" >&2
+  echo "error: herdr not installed. Run: bash ~/dotfiles/bin/dotfiles deps herdr" >&2
   exit 1
 fi
 if [ ! -f "$PLUGINS" ]; then

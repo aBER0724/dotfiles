@@ -9,6 +9,11 @@ set -euo pipefail
 
 DOTFILES="${DOTFILES_DIR:-$HOME/dotfiles}"
 
+# mise installs user-local shims and binaries; put them on PATH so the rest of
+# this script (and spawned installers like herdr/install-plugins.sh) can see
+# mise-managed tools even before the login shell picks them up.
+export PATH="$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
+
 # Each entry: "<name>|<repo-relative-path>|<target>"
 # A target may start with `@app-support/` for per-OS application dirs;
 # see resolve_target below.
@@ -32,6 +37,7 @@ LINK_TABLE=(
   "omarchy-kitty-reload|omarchy/hooks/theme-set.d/50-kitty-reload|$HOME/.config/omarchy/hooks/theme-set.d/50-kitty-reload"
   "omarchy-pi-theme|omarchy/hooks/theme-set.d/60-pi-theme|$HOME/.config/omarchy/hooks/theme-set.d/60-pi-theme"
   "omarchy-herdr-theme|omarchy/hooks/theme-set.d/70-herdr-theme|$HOME/.config/omarchy/hooks/theme-set.d/70-herdr-theme"
+  "discord|discord/settings.json|$HOME/.config/discord/settings.json"
   "clavis|clavis/config|$HOME/.config/clavis"
   "nbshell-config|nbshell/config/config.json|$HOME/.config/nbshell/config.json"
   "nbshell-screensaver|nbshell/config/screensaver.txt|$HOME/.config/nbshell/screensaver.txt"
@@ -52,32 +58,52 @@ LINK_TABLE=(
   "kitty-resize-separator|kitty/resize_separator.py|$HOME/.config/kitty/resize_separator.py"
   "lazygit|lazygit/config.yml|@app-support/lazygit/config.yml"
   "clash-verge-script|clash-verge/verge-global-script.js|@app-support/io.github.clash-verge-rev.clash-verge-rev/profiles/Script.js"
+  "mise-config|@mise-profile|$HOME/.config/mise/config.toml"
 )
 
 # Runtime software used by managed configs.
-# Each entry: "<managed-name>|<command>|<brew-kind>|<brew-package>|<arch-package>".
-# Native distro mappings are intentionally limited to software with stable package
-# names; Linuxbrew handles the remaining cross-distro tools.
+# Each entry: "<managed-name>|<command>|<darwin>|<arch>|<debian>".
+# Each OS column holds a comma-separated preference list of "<backend>:<spec>"
+# candidates — any backend can chain into any other (mise → brew, pacman →
+# aur, ...). Each round consumes the head candidate, installs it through its
+# backend, then verifies: `command -v` for binaries, `brew list --cask` for
+# casks. Whatever is still missing advances to its next candidate; exhausted
+# entries land in `missing_manual`. Use "-" for "no mapping":
+#   mise:<tool>     install via mise (versions pinned in mise/<profile>.toml)
+#   formula:<pkg>   Homebrew formula (macOS only)
+#   cask:<pkg>      Homebrew cask (macOS only)
+#   pacman:<pkgs>   Arch packages (omarchy/niri profiles)
+#   aur:<pkgs>      Arch User Repository via yay/paru (auto-detected)
+#   apt:<pkgs>      Debian/Ubuntu packages (server profile)
 SOFTWARE_TABLE=(
-  "aerospace|aerospace|cask|nikitabobko/tap/aerospace|-"
-  "zshrc|zsh|formula|zsh|zsh"
-  "nvim|nvim|formula|neovim|neovim"
-  "niri|niri|-|-|niri"
-  "waybar|waybar|-|-|waybar"
-  "nbshell-config|qs|-|-|quickshell"
-  "fcitx5-conf|fcitx5|-|-|fcitx5-im fcitx5-rime fcitx5-configtool"
-  "kitty-main|kitty|cask|kitty|kitty"
-  "fastfetch|fastfetch|formula|fastfetch|fastfetch"
-  "pi-settings|pi|npm|@earendil-works/pi-coding-agent|-"
-  "pi|rtk|formula|rtk|-"
-  "herdr|herdr|formula|herdr|-"
-  "herdr|go|formula|go|go"
-  "herdr|tmux|formula|tmux|tmux"
-  "herdr|cargo|formula|rust|rust"
-  "herdr|yazi|formula|yazi|yazi"
-  "herdr|herdr-scratch|cask|macintacos/tap/herdr-scratch|-"
-  "sheprd|sheprd|cask|sheprd-labs/tap/sheprd|-"
-  "lazygit|lazygit|formula|lazygit|lazygit"
+  "aerospace|aerospace|cask:nikitabobko/tap/aerospace|-|-"
+  "zshrc|zsh|formula:zsh|pacman:zsh|apt:zsh"
+  "nvim|nvim|mise:neovim,formula:neovim|mise:neovim,pacman:neovim|mise:neovim,apt:neovim"
+  "niri|niri|-|pacman:niri|-"
+  "waybar|waybar|-|pacman:waybar|-"
+  "discord|discord|-|pacman:discord,aur:discord|-"
+  "nbshell-config|qs|-|pacman:quickshell|-"
+  "fcitx5-conf|fcitx5|-|pacman:fcitx5-im fcitx5-rime fcitx5-configtool|-"
+  "kitty-main|kitty|cask:kitty|pacman:kitty|-"
+  "fastfetch|fastfetch|mise:fastfetch,formula:fastfetch|mise:fastfetch,pacman:fastfetch|mise:fastfetch"
+  "pi-settings|node|mise:node,formula:node|mise:node,pacman:nodejs|mise:node,apt:nodejs"
+  "pi-settings|pi|mise:npm:@earendil-works/pi-coding-agent|mise:npm:@earendil-works/pi-coding-agent|mise:npm:@earendil-works/pi-coding-agent"
+  "pi|rtk|formula:rtk|-|-"
+  # herdr ships Linux-only release assets, so the ubi spec fails on macOS and
+  # falls through to the formula — the prefer-mise fallback chain in action.
+  "herdr|herdr|mise:ubi:herdrdev/herdr,formula:herdr|mise:ubi:herdrdev/herdr|mise:ubi:herdrdev/herdr"
+  "herdr|go|mise:go,formula:go|mise:go,pacman:go|mise:go,apt:golang-go"
+  "herdr|tmux|mise:tmux,formula:tmux|mise:tmux,pacman:tmux|mise:tmux,apt:tmux"
+  "herdr|cargo|mise:rust,formula:rust|mise:rust,pacman:rust|mise:rust,apt:rustc cargo"
+  "herdr|yazi|mise:yazi,formula:yazi|mise:yazi,pacman:yazi|mise:yazi"
+  "herdr|herdr-scratch|cask:macintacos/tap/herdr-scratch|-|-"
+  # macOS takes the tap cask here; Linux installs through the upstream
+  # installer in run_sheprd (no repository package exists for it).
+  "sheprd|sheprd|cask:sheprd-labs/tap/sheprd|-|-"
+  "lazygit|lazygit|mise:lazygit,formula:lazygit|mise:lazygit,pacman:lazygit|mise:lazygit"
+  # mole is a shell-script project — GitHub releases ship only helper Go
+  # binaries (analyze/status), no `mole` asset, so mise has nothing to grab.
+  "mole|mole|formula:mole|-|-"
 )
 
 # Group aliases: "<alias>|<space-separated names>". Passing the alias to
@@ -91,6 +117,7 @@ GROUP_TABLE=(
   "nbshell|nbshell-config nbshell-screensaver"
   "omarchy|omarchy-shell omarchy-tray omarchy-indicators omarchy-kitty-reload omarchy-pi-theme omarchy-herdr-theme"
   "wm|niri nbshell-config nbshell-screensaver fcitx5-env fcitx5-conf"
+  "mise|mise-config"
 )
 
 # Setup is split by operating system and, on Linux, by environment profile.
@@ -98,10 +125,10 @@ GROUP_TABLE=(
 # Arch profile targeting stock Omarchy (Hyprland/uwsm); `niri` is the custom
 # Niri + nbshell stack. Auto-detect picks omarchy on Arch, server on Debian.
 PRESET_TABLE=(
-  "macos|dotfiles-cli zsh nvim fastfetch pi herdr aerospace kitty lazygit sheprd"
-  "linux-server|dotfiles-cli zsh nvim fastfetch pi herdr lazygit"
-  "linux-omarchy|dotfiles-cli zsh nvim fastfetch pi herdr fcitx kitty lazygit omarchy hypr-blur sheprd"
-  "linux-niri|dotfiles-cli zsh nvim fastfetch pi herdr niri nbshell kitty fcitx lazygit sheprd"
+  "macos|dotfiles-cli mise zsh nvim fastfetch pi herdr aerospace kitty lazygit mole sheprd"
+  "linux-server|dotfiles-cli mise zsh nvim fastfetch pi herdr lazygit"
+  "linux-omarchy|dotfiles-cli mise zsh nvim fastfetch pi herdr fcitx kitty lazygit omarchy hypr-blur sheprd"
+  "linux-niri|dotfiles-cli mise zsh nvim fastfetch pi herdr niri nbshell kitty fcitx lazygit sheprd"
 )
 
 # Expand aliases in "$*" to concrete names (set -u + empty string is fine here).
@@ -166,6 +193,25 @@ detect_linux_profile() {
       return 1
       ;;
   esac
+}
+
+# Which mise toolchain file backs the `mise-config` link entry and `mise
+# install` runs. Override with DOTFILES_MISE_PROFILE for testing.
+mise_profile() {
+  if [ -n "${DOTFILES_MISE_PROFILE:-}" ]; then
+    printf '%s\n' "$DOTFILES_MISE_PROFILE"
+    return
+  fi
+  if [ "$(host_uname)" = "Darwin" ]; then
+    echo macos
+  elif [ "$(host_uname)" = "Linux" ]; then
+    case "$(linux_distro)" in
+      arch) echo linux-desktop ;;
+      *)    echo linux-server ;;
+    esac
+  else
+    echo macos
+  fi
 }
 
 detect_system() {
@@ -245,14 +291,10 @@ HOMEBREW_INSTALL_URL="${DOTFILES_HOMEBREW_INSTALL_URL:-https://raw.githubusercon
 # release, verifies it against the published SHA-256 and installs it with pacman.
 SHEPRD_INSTALL_URL="${DOTFILES_SHEPRD_INSTALL_URL:-https://sheprd.org/install.sh}"
 BOOTSTRAP_BASH="${DOTFILES_BASH_BIN:-/bin/bash}"
-MACOS_BASE_PACKAGES="git zsh node go"
-ARCH_BASE_PACKAGES="git curl file procps-ng zsh nodejs npm go base-devel"
-DEBIAN_BASE_PACKAGES="git curl file procps zsh golang-go build-essential tmux rustc cargo unzip xz-utils ca-certificates"
-HERDR_VERSION="${DOTFILES_HERDR_VERSION:-0.8.2}"
-YAZI_VERSION="${DOTFILES_YAZI_VERSION:-26.9.1}"
-FASTFETCH_VERSION="${DOTFILES_FASTFETCH_VERSION:-2.68.1}"
-NEOVIM_VERSION="${DOTFILES_NEOVIM_VERSION:-0.12.5}"
-NODE_VERSION="${DOTFILES_NODE_VERSION:-22.23.2}"
+MISE_INSTALL_URL="${DOTFILES_MISE_INSTALL_URL:-https://mise.run}"
+MACOS_BASE_PACKAGES="git"
+ARCH_BASE_PACKAGES="git curl file procps-ng base-devel"
+DEBIAN_BASE_PACKAGES="git curl file procps build-essential unzip xz-utils ca-certificates"
 select_entries() {
   # "$*" joins args with spaces; empty when no names given (all entries).
   # Plain-string iteration keeps this bash 3.2-safe (empty arrays + set -u
@@ -333,8 +375,9 @@ cmd_status() {
 resolve_source() {
   local src="$1"
   case "$src" in
-    "@home/"*) printf '%s\n' "$HOME/${src#@home/}" ;;
-    *)         printf '%s\n' "$DOTFILES/$src" ;;
+    "@home/"*)       printf '%s\n' "$HOME/${src#@home/}" ;;
+    "@mise-profile") printf '%s\n' "$DOTFILES/mise/$(mise_profile).toml" ;;
+    *)               printf '%s\n' "$DOTFILES/$src" ;;
   esac
 }
 
@@ -437,21 +480,44 @@ read_package_file() {
   sed -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$1" | tr '\n' ' '
 }
 
-arch_packages_for() {
-  local wanted="$1" entry owner command_name brew_kind brew_package arch_package packages="$ARCH_BASE_PACKAGES"
-  for entry in "${SOFTWARE_TABLE[@]}"; do
-    owner="${entry%%|*}"
-    software_selected "$owner" "$wanted" || continue
-    entry="${entry#*|}"; command_name="${entry%%|*}"
-    entry="${entry#*|}"; brew_kind="${entry%%|*}"
-    entry="${entry#*|}"; brew_package="${entry%%|*}"
-    arch_package="${entry#*|}"
-    [ "$arch_package" = "-" ] || packages="$packages $arch_package"
-  done
-  if software_selected nbshell-config "$wanted"; then
-    packages="$packages $(read_package_file "$DOTFILES/nbshell/packages.arch.txt")"
+# Link mise/<profile>.toml to ~/.config/mise/config.toml so plain
+# `mise install` (and interactive use) resolves the pinned toolset.
+# A conflicting existing config is moved aside like cmd_link does.
+link_mise_config() {
+  local src="$DOTFILES/mise/$(mise_profile).toml"
+  local target="$HOME/.config/mise/config.toml" backup_dir
+  [ -f "$src" ] || return 0
+  mkdir -p "$(dirname "$target")"
+  if [ -L "$target" ] && [ "$(readlink "$target" 2>/dev/null || true)" = "$src" ]; then
+    return 0
   fi
-  printf '%s\n' "$packages"
+  if [ -e "$target" ] || [ -L "$target" ]; then
+    backup_dir="${DOTFILES_BACKUP_DIR:-$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)}"
+    mkdir -p "$backup_dir"
+    mv "$target" "$backup_dir/"
+    echo "backup  mise-config ($target)"
+  fi
+  ln -sfn "$src" "$target"
+  echo "link    mise-config ($target)"
+}
+
+# mise is the user-level package manager for the CLI toolchain. The official
+# installer needs no sudo, so it works on every profile including
+# root-owned headless servers.
+ensure_mise() {
+  if ! command -v mise >/dev/null 2>&1; then
+    command -v curl >/dev/null 2>&1 || {
+      echo "dotfiles: curl is required to install mise" >&2
+      return 1
+    }
+    echo "install mise from $MISE_INSTALL_URL"
+    curl -fsSL "$MISE_INSTALL_URL" | sh
+    command -v mise >/dev/null 2>&1 || {
+      echo "dotfiles: mise bootstrap failed; check $MISE_INSTALL_URL" >&2
+      return 1
+    }
+  fi
+  link_mise_config
 }
 
 run_privileged() {
@@ -467,15 +533,12 @@ run_privileged() {
 }
 
 install_arch_setup_packages() {
-  local wanted="$1" packages
   command -v pacman >/dev/null 2>&1 || {
     echo "dotfiles: pacman is required for Arch desktop profiles (omarchy, niri)" >&2
     return 1
   }
-  packages="$(arch_packages_for "$wanted")"
-  run_privileged pacman -S --needed $packages
+  run_privileged pacman -S --needed $ARCH_BASE_PACKAGES
 }
-
 install_debian_setup_packages() {
   command -v apt-get >/dev/null 2>&1 || {
     echo "dotfiles: apt-get is required for the Linux server profile" >&2
@@ -485,210 +548,203 @@ install_debian_setup_packages() {
   run_privileged apt-get install -y $DEBIAN_BASE_PACKAGES
 }
 
-linux_arch() {
-  case "$(uname -m)" in
-    x86_64|amd64) echo x86_64 ;;
-    aarch64|arm64) echo aarch64 ;;
-    *)
-      echo "dotfiles: unsupported Linux architecture '$(uname -m)'" >&2
-      return 1
-      ;;
-  esac
-}
-
-install_linux_binary() {
-  local name="$1" url="$2" target="${3:-/usr/local/bin/$1}" tmp
-  command -v "$name" >/dev/null 2>&1 && return 0
-  tmp="$(mktemp "${TMPDIR:-/tmp}/dotfiles-$name.XXXXXX")"
-  echo "install $name from $url"
-  curl -fsSL "$url" -o "$tmp"
-  chmod 755 "$tmp"
-  run_privileged install -m 0755 "$tmp" "$target"
-  rm -f -- "$tmp"
-}
-
-install_debian_server_tools() {
-  if [ "${DOTFILES_SKIP_SERVER_TOOLS:-0}" = 1 ]; then
-    echo "skip    server tool installers (test mode)"
-    return 0
-  fi
-  local arch yazi_asset tmpdir
-  local nvim_asset node_arch
-  arch="$(linux_arch)"
-  command -v node >/dev/null 2>&1 || {
-    case "$arch" in
-      x86_64) node_arch=x64 ;;
-      aarch64) node_arch=arm64 ;;
-    esac
-    tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-node.XXXXXX")"
-    echo "install Node.js v$NODE_VERSION from nodejs.org"
-    curl -fsSL "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-$node_arch.tar.xz" -o "$tmpdir/node.tar.xz"
-    tar -xJf "$tmpdir/node.tar.xz" -C "$tmpdir"
-    run_privileged cp -R "$tmpdir/node-v$NODE_VERSION-linux-$node_arch/bin/." /usr/local/bin/
-    run_privileged cp -R "$tmpdir/node-v$NODE_VERSION-linux-$node_arch/include/." /usr/local/include/
-    run_privileged cp -R "$tmpdir/node-v$NODE_VERSION-linux-$node_arch/lib/." /usr/local/lib/
-    run_privileged cp -R "$tmpdir/node-v$NODE_VERSION-linux-$node_arch/share/." /usr/local/share/
-    rm -rf -- "$tmpdir"
-  }
-  if ! command -v nvim >/dev/null 2>&1 || ! nvim --clean --headless "+lua if vim.version.lt(vim.version(), vim.version.parse('$NEOVIM_VERSION')) then vim.cmd('cquit') end" +qa >/dev/null 2>&1; then
-    case "$arch" in
-      x86_64) nvim_asset="nvim-linux-x86_64" ;;
-      aarch64) nvim_asset="nvim-linux-arm64" ;;
-    esac
-    tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-neovim.XXXXXX")"
-    echo "install Neovim v$NEOVIM_VERSION from GitHub release"
-    curl -fsSL "https://github.com/neovim/neovim/releases/download/v$NEOVIM_VERSION/$nvim_asset.tar.gz" -o "$tmpdir/nvim.tar.gz"
-    tar -xzf "$tmpdir/nvim.tar.gz" -C "$tmpdir"
-    run_privileged cp -R "$tmpdir/$nvim_asset/." /usr/local/
-    rm -rf -- "$tmpdir"
-  fi
-  install_linux_binary herdr "https://github.com/herdrdev/herdr/releases/download/v$HERDR_VERSION/herdr-linux-$arch"
-  command -v yazi >/dev/null 2>&1 || {
-    case "$arch" in
-      x86_64) yazi_asset="yazi-x86_64-unknown-linux-gnu.zip" ;;
-      aarch64) yazi_asset="yazi-aarch64-unknown-linux-gnu.zip" ;;
-    esac
-    tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-yazi.XXXXXX")"
-    echo "install yazi from GitHub release v$YAZI_VERSION"
-    curl -fsSL "https://github.com/sxyazi/yazi/releases/download/v$YAZI_VERSION/$yazi_asset" -o "$tmpdir/yazi.zip"
-    unzip -q "$tmpdir/yazi.zip" -d "$tmpdir"
-    run_privileged install -m 0755 "$(find "$tmpdir" -type f -name yazi | head -n 1)" /usr/local/bin/yazi
-    if [ -n "$(find "$tmpdir" -type f -name ya | head -n 1)" ]; then
-      run_privileged install -m 0755 "$(find "$tmpdir" -type f -name ya | head -n 1)" /usr/local/bin/ya
-    fi
-    rm -rf -- "$tmpdir"
-  }
-  command -v fastfetch >/dev/null 2>&1 || {
-    case "$arch" in
-      x86_64) arch=amd64 ;;
-      aarch64) arch=aarch64 ;;
-    esac
-    tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-fastfetch.XXXXXX")"
-    echo "install fastfetch from GitHub release $FASTFETCH_VERSION"
-    curl -fsSL "https://github.com/fastfetch-cli/fastfetch/releases/download/$FASTFETCH_VERSION/fastfetch-linux-$arch.deb" -o "$tmpdir/fastfetch.deb"
-    run_privileged apt-get install -y "$tmpdir/fastfetch.deb"
-    rm -rf -- "$tmpdir"
-  }
-}
-install_debian_herdr_tools() {
-  # `install/deps herdr` is also a supported repair path on headless
-  # Debian/Ubuntu. Herdr and Yazi are official release binaries rather
-  # than Debian packages; the plugin inventory additionally needs builders.
-  [ "$(host_uname)" = Linux ] || return 0
-  [ "$(linux_distro)" = debian ] || return 0
-  if [ "${DOTFILES_SKIP_SERVER_TOOLS:-0}" = 1 ]; then
-    echo "skip    herdr server tools (test mode)"
-    return 0
-  fi
-  if command -v herdr >/dev/null 2>&1 && command -v go >/dev/null 2>&1 && command -v cargo >/dev/null 2>&1 && command -v yazi >/dev/null 2>&1 && command -v tmux >/dev/null 2>&1; then
-    return 0
-  fi
-  command -v apt-get >/dev/null 2>&1 || {
-    echo "dotfiles: apt-get is required to install herdr on Debian/Ubuntu" >&2
-    return 1
-  }
-  local arch yazi_asset tmpdir
-  echo "== install herdr server tools =="
-  run_privileged apt-get update
-  run_privileged apt-get install -y golang-go build-essential tmux rustc cargo unzip ca-certificates
-  arch="$(linux_arch)"
-  install_linux_binary herdr "https://github.com/herdrdev/herdr/releases/download/v$HERDR_VERSION/herdr-linux-$arch"
-  if ! command -v yazi >/dev/null 2>&1; then
-    case "$arch" in
-      x86_64) yazi_asset="yazi-x86_64-unknown-linux-gnu.zip" ;;
-      aarch64) yazi_asset="yazi-aarch64-unknown-linux-gnu.zip" ;;
-    esac
-    tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-yazi.XXXXXX")"
-    echo "install yazi from GitHub release v$YAZI_VERSION"
-    curl -fsSL "https://github.com/sxyazi/yazi/releases/download/v$YAZI_VERSION/$yazi_asset" -o "$tmpdir/yazi.zip"
-    unzip -q "$tmpdir/yazi.zip" -d "$tmpdir"
-    run_privileged install -m 0755 "$(find "$tmpdir" -type f -name yazi | head -n 1)" /usr/local/bin/yazi
-    if [ -n "$(find "$tmpdir" -type f -name ya | head -n 1)" ]; then
-      run_privileged install -m 0755 "$(find "$tmpdir" -type f -name ya | head -n 1)" /usr/local/bin/ya
-    fi
-    rm -rf -- "$tmpdir"
-  fi
-}
-
-run_selected_debian_runtime() {
-  local wanted="$1"
-  if [ "$(host_uname)" = Linux ] && [ "$(linux_distro)" = debian ] && software_selected herdr "$wanted"; then
-    install_debian_herdr_tools
-  fi
-}
+# (Server CLI tools — node, neovim, yazi, fastfetch, herdr, go, rust — are
+# now installed by mise per profile; see mise/*.toml and SOFTWARE_TABLE.)
 
 
 run_software_install() {
-  local wanted="$1" skip_arch="${2:-0}" skip_brew="${3:-0}" entry owner command_name brew_kind brew_package arch_package cask_on_linux
-  # Homebrew casks are macOS applications: Linuxbrew taps them and then refuses
-  # with "This cask requires macOS", which stops `dotfiles deps` even though the
-  # pacman column or a dedicated installer could have handled the tool.
-  local host
-  host="$(host_uname)"
-  local brew_formulae="" brew_casks="" npm_packages="" arch_packages=""
-  local missing_manual="" oldifs
+  local wanted="$1" entry owner command_name darwin_spec arch_spec debian_spec
+  local spec backend detail os_key candidates rest
+  local brew_formulae="" brew_casks="" mise_specs=""
+  local pacman_specs="" aur_specs="" apt_specs=""
+  local missing_manual="" pending="" oldifs round
+
+  case "$(host_uname)" in
+    Darwin) os_key=darwin ;;
+    Linux)
+      case "$(linux_distro)" in
+        arch)   os_key=arch ;;
+        debian) os_key=debian ;;
+        *)      os_key=unknown ;;
+      esac
+      ;;
+    *) os_key=unknown ;;
+  esac
+
+  # Seed the worklist: one "command|cand,cand,..." record per line.
   oldifs="$IFS"; IFS=$'\n'
   for entry in "${SOFTWARE_TABLE[@]}"; do
     IFS="$oldifs"
     owner="${entry%%|*}"
     software_selected "$owner" "$wanted" || continue
     entry="${entry#*|}"; command_name="${entry%%|*}"
-    entry="${entry#*|}"; brew_kind="${entry%%|*}"
-    entry="${entry#*|}"; brew_package="${entry%%|*}"
-    arch_package="${entry#*|}"
-    if [ "$skip_arch" = 1 ] && { [ "$arch_package" != "-" ] && [ "$brew_package" = "-" ] || [ "$brew_kind" = cask ]; }; then
-      continue
-    fi
-    # DOTFILES_MISSING_SOFTWARE names commands to treat as absent, so tests can
-    # exercise the install path on a machine that already ships them.
-    case " ${DOTFILES_MISSING_SOFTWARE:-} " in
-      *" $command_name "*) ;;
-      *)
-        command -v "$command_name" >/dev/null 2>&1 && continue
-        ;;
+    entry="${entry#*|}"; darwin_spec="${entry%%|*}"
+    entry="${entry#*|}"; arch_spec="${entry%%|*}"
+    debian_spec="${entry#*|}"
+    case "$os_key" in
+      darwin) spec="$darwin_spec" ;;
+      arch)   spec="$arch_spec" ;;
+      debian) spec="$debian_spec" ;;
+      *)      spec="-" ;;
     esac
-    cask_on_linux=0
-    if [ "$brew_kind" = cask ] && [ "$host" != Darwin ]; then cask_on_linux=1; fi
-    if [ "$brew_kind" = "npm" ]; then
-      if command -v npm >/dev/null 2>&1; then
-        npm_packages="$npm_packages $brew_package"
-      else
-        missing_manual="$missing_manual npm"
-      fi
-    elif [ "$cask_on_linux" = 0 ] && [ "$skip_brew" != 1 ] && command -v brew >/dev/null 2>&1 && [ "$brew_package" != "-" ]; then
-      case "$brew_kind" in
-        formula) brew_formulae="$brew_formulae $brew_package" ;;
-        cask) brew_casks="$brew_casks $brew_package" ;;
-      esac
-    elif [ "$skip_arch" != 1 ] && command -v pacman >/dev/null 2>&1 && [ "$arch_package" != "-" ]; then
-      arch_packages="$arch_packages $arch_package"
-    elif [ "$cask_on_linux" = 0 ]; then
-      missing_manual="$missing_manual $command_name"
-    fi
+    [ "$spec" = "-" ] && continue
+    command -v "$command_name" >/dev/null 2>&1 && continue
+    pending="$pending
+$command_name||$spec"
   done
   IFS="$oldifs"
 
   echo "== config software =="
-  if [ -n "$brew_formulae" ]; then
-    echo "install brew formulae:$brew_formulae"
-    brew install $brew_formulae
+  # Ordered-candidate engine. Each round consumes the head candidate of every
+  # pending record, batches it into a backend bucket, installs, then
+  # re-verifies with `command -v`. Whatever is still missing advances to its
+  # next candidate — mise → brew/pacman/aur/apt chains just fall out.
+  for round in 1 2 3 4 5 6; do
+    [ -z "$pending" ] && break
+    brew_formulae=""; brew_casks=""; mise_specs=""
+    pacman_specs=""; aur_specs=""; apt_specs=""
+    local u rec_cmd
+    oldifs="$IFS"; IFS=$'\n'
+    for u in $pending; do
+      IFS="$oldifs"
+      [ -z "$u" ] && continue
+      rec_cmd="${u%%|*}"
+      candidates="${u#*|}"
+      candidates="${candidates#*|}"
+      detail="${candidates%%,*}"
+      rest="${candidates#*,}"
+      [ "$rest" = "$candidates" ] && rest=""
+      backend="${detail%%:*}"
+      local spec_pkg="${detail#*:}"
+      case "$backend" in
+        mise)    mise_specs="$mise_specs $spec_pkg" ;;
+        formula) brew_formulae="$brew_formulae $spec_pkg" ;;
+        cask)    brew_casks="$brew_casks $spec_pkg" ;;
+        pacman)  pacman_specs="$pacman_specs $spec_pkg" ;;
+        aur)     aur_specs="$aur_specs $spec_pkg" ;;
+        apt)     apt_specs="$apt_specs $spec_pkg" ;;
+        *)       missing_manual="$missing_manual $rec_cmd" ;;
+      esac
+      # Rewrite the record: consumed=head, remainder is next round's list.
+      pending="${pending/$u/$rec_cmd|$detail|$rest}"
+    done
+    IFS="$oldifs"
+
+    # Run every backend that collected specs this round.
+    if [ -n "$mise_specs" ]; then
+      if ensure_mise; then
+        # Per-spec installs: a batch `mise install a b c` aborts on the first
+        # failure, which would rob good specs of the verify pass.
+        echo "install mise tools:$mise_specs"
+        for detail in $mise_specs; do
+          mise install "$detail" || \
+            echo "warn    mise could not install $detail — trying fallback"
+        done
+      else
+        echo "warn    mise unavailable — trying fallbacks"
+      fi
+    fi
+    if [ -n "$brew_formulae$brew_casks" ]; then
+      if command -v brew >/dev/null 2>&1; then
+        if [ -n "$brew_formulae" ]; then
+          echo "install brew formulae:$brew_formulae"
+          brew install $brew_formulae || \
+            echo "warn    brew formulae failed — trying fallbacks"
+        fi
+        if [ -n "$brew_casks" ]; then
+          echo "install brew casks:$brew_casks"
+          brew install --cask $brew_casks || \
+            echo "warn    brew casks failed — trying fallbacks"
+        fi
+      else
+        missing_manual="$missing_manual brew"
+      fi
+    fi
+    if [ -n "$pacman_specs" ]; then
+      if command -v pacman >/dev/null 2>&1; then
+        echo "install Arch packages:$pacman_specs"
+        run_privileged pacman -S --needed $pacman_specs || \
+          echo "warn    pacman failed — trying fallbacks"
+      else
+        missing_manual="$missing_manual pacman"
+      fi
+    fi
+    if [ -n "$aur_specs" ]; then
+      local aur_helper=""
+      if command -v yay >/dev/null 2>&1; then aur_helper=yay
+      elif command -v paru >/dev/null 2>&1; then aur_helper=paru
+      fi
+      if [ -n "$aur_helper" ]; then
+        echo "install AUR packages ($aur_helper):$aur_specs"
+        $aur_helper -S --needed $aur_specs || \
+          echo "warn    $aur_helper failed — trying fallbacks"
+      else
+        missing_manual="$missing_manual aur(yay -S$aur_specs)"
+      fi
+    fi
+    if [ -n "$apt_specs" ]; then
+      if command -v apt-get >/dev/null 2>&1; then
+        echo "install Debian packages:$apt_specs"
+        run_privileged apt-get update || true
+        run_privileged apt-get install -y $apt_specs || \
+          echo "warn    apt failed — trying fallbacks"
+      else
+        missing_manual="$missing_manual apt"
+      fi
+    fi
+
+    # Verify: drop satisfied records, advance the rest to their next
+    # candidate; exhausted records land in missing_manual.
+    local next_pending=""
+    oldifs="$IFS"; IFS=$'\n'
+    for u in $pending; do
+      IFS="$oldifs"
+      [ -z "$u" ] && continue
+      rec_cmd="${u%%|*}"
+      detail="${u#*|}"; detail="${detail%%|*}"
+      rest="${u#*|}";   rest="${rest#*|}"
+      # Binaries verify via PATH; a consumed cask (GUI app, never on PATH)
+      # verifies via `brew list --cask` on its basename.
+      local sat=0
+      if command -v "$rec_cmd" >/dev/null 2>&1; then
+        sat=1
+      elif [ "${detail%%:*}" = "cask" ]; then
+        if command -v brew >/dev/null 2>&1 && \
+           brew list --cask "${detail##*/}" >/dev/null 2>&1; then
+          sat=1
+        fi
+      fi
+      [ "$sat" = 1 ] && continue
+      if [ -n "$rest" ]; then
+        next_pending="$next_pending
+$u"
+      else
+        missing_manual="$missing_manual $rec_cmd"
+      fi
+    done
+    IFS="$oldifs"
+    pending="$next_pending"
+  done
+
+  # The linked profile TOML owns the full CLI layer (fzf, fd, claude code,
+  # ...), which has no SOFTWARE_TABLE entry — a bare `mise install` syncs
+  # everything it declares.
+  if software_selected mise-config "$wanted" && ensure_mise; then
+    echo "install mise profile tools (mise/$(mise_profile).toml)"
+    mise install || echo "warn    mise profile install incomplete"
   fi
-  if [ -n "$brew_casks" ]; then
-    echo "install brew casks:$brew_casks"
-    brew install --cask $brew_casks
-  fi
-  if [ -n "$npm_packages" ]; then
-    echo "install npm packages:$npm_packages"
-    npm install -g $npm_packages
-  fi
-  if [ -n "$arch_packages" ]; then
-    echo "install Arch packages:$arch_packages"
-    sudo pacman -S --needed $arch_packages
+  if software_selected nbshell-config "$wanted" && command -v pacman >/dev/null 2>&1; then
+    local nbshell_pkgs
+    nbshell_pkgs="$(read_package_file "$DOTFILES/nbshell/packages.arch.txt")"
+    if [ -n "$nbshell_pkgs" ]; then
+      echo "install nbshell Arch packages: $nbshell_pkgs"
+      run_privileged pacman -S --needed $nbshell_pkgs || \
+        echo "warn    nbshell packages failed — install manually"
+    fi
   fi
   if [ -n "$missing_manual" ]; then
     echo "manual  no supported package mapping for:$missing_manual"
-  fi
-  if [ -z "$brew_formulae$brew_casks$npm_packages$arch_packages$missing_manual" ]; then
+  elif [ -z "$pending" ]; then
     echo "ok      selected software already installed"
   fi
 }
@@ -696,9 +752,10 @@ run_software_install() {
 run_herdr_plugins() {
   echo "== herdr plugins =="
   if command -v herdr >/dev/null 2>&1; then
-    bash "$DOTFILES/herdr/install-plugins.sh"
+    bash "$DOTFILES/herdr/install-plugins.sh" || \
+      echo "warn    herdr plugin install failed — run: dotfiles deps herdr"
   else
-    echo "herdr not installed — skipped (brew install herdr)"
+    echo "herdr not installed — skipped (run: dotfiles deps herdr)"
   fi
 }
 
@@ -781,7 +838,6 @@ cmd_deps() {
   if [ -z "$wanted" ]; then
     wanted="$(for e in "${LINK_TABLE[@]}"; do printf '%s ' "${e%%|*}"; done)"
   fi
-  run_selected_debian_runtime "$wanted"
   run_software_install "$wanted"
   if software_selected zshrc "$wanted"; then run_zsh_deps; fi
   if software_selected herdr "$wanted"; then run_herdr_plugins; fi
@@ -797,7 +853,6 @@ cmd_install() {
 
   cmd_link
   echo
-  run_selected_debian_runtime "$wanted"
   run_software_install "$wanted"
   run_config_runtimes "$wanted"
   echo
@@ -894,39 +949,25 @@ cmd_setup() {
   echo "preset   $preset"
   printf 'entries %s\n' "$wanted"
 
+  # Native OS packages first (build toolchains like base-devel/build-essential),
+  # then Homebrew on macOS, then mise + per-OS config software.
   if [ "$preset" = linux-omarchy ] || [ "$preset" = linux-niri ]; then
     echo "== install native packages (pacman) =="
-    install_arch_setup_packages "$wanted"
+    install_arch_setup_packages
   elif [ "$preset" = linux-server ]; then
     echo "== install native packages (apt) =="
     install_debian_setup_packages
   fi
 
-  if [ "$preset" = linux-server ]; then
-    echo "== install server tools =="
-    install_debian_server_tools
-  else
+  if [ "$preset" = macos ]; then
     echo "== bootstrap package manager =="
     ensure_homebrew
-    if [ "$preset" = macos ]; then
-      echo "== install base packages =="
-      install_macos_base_packages
-    fi
+    echo "== install base packages =="
+    install_macos_base_packages
   fi
 
   echo "== install config software =="
-  case "$preset" in
-    linux-server)
-      run_software_install "$wanted" 1 1
-      ;;
-    linux-omarchy|linux-niri)
-      run_software_install "$wanted" 1
-      ;;
-    *)
-      run_software_install "$wanted"
-      ;;
-  esac
-
+  run_software_install "$wanted"
   echo "== link configs =="
   select_entries $wanted
   cmd_link

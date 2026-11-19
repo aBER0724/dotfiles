@@ -22,7 +22,9 @@ Personal configuration files.
 | [pi-agent](/pi-agent) | pi coding agent — syncs settings, models, and extensions; API keys stay per-device |
 | [herdr](/herdr) | Terminal workspace manager — syncs config.toml, plugin inventory, and the herdr-lazygit pane override (side-by-side diffs) |
 | [clash-verge](/clash-verge) | Clash Verge Rev — global extension script that rebuilds the FlClash proxy-group set (入口 / 17 地区 / 14 服务) from whatever nodes the subscription has |
-| [bin](/bin) | `dotfiles` CLI — one command to link/status/install all configs; `mate` drives pi/claude sub-agents from one shell |
+| [discord](/discord) | Discord settings (`SKIP_HOST_UPDATE`) — installed via pacman on Arch, AUR fallback |
+| [mise](/mise) | Per-OS mise toolchains — macos / linux-desktop / linux-server, linked as `~/.config/mise/config.toml` |
+| [bin](/bin) | `dotfiles` CLI — one command to link/status/install all configs (mise handles CLI tools); `mate` drives pi/claude sub-agents from one shell |
 
 ## Theme
 
@@ -77,9 +79,15 @@ dotfiles install wm
 
 - `linux omarchy`: the default Arch profile for stock Omarchy (Hyprland/uwsm) — Kitty, fcitx5+Rime input method, native pacman packages. Omarchy itself provides the desktop stack (waybar, hypridle, autostart); only its bar config is synced, see [omarchy/](omarchy/README.md).
 - `linux niri`: the custom Niri + nbshell desktop stack — everything in `omarchy` plus niri, nbshell, and `nbshell/packages.arch.txt`.
-- `server` (or `linux server`): a headless Ubuntu/Debian stack containing only the shared terminal tools (Zsh, Neovim, Fastfetch, pi, and herdr). It supports root-owned server environments, uses `apt-get` plus official Linux release binaries, and deliberately excludes Homebrew, Niri, nbshell, Kitty, input methods, and desktop services.
+- `server` (or `linux server`): a headless Ubuntu/Debian stack containing only the shared terminal tools (Zsh, Neovim, Fastfetch, pi, and herdr). It supports root-owned server environments and deliberately excludes Niri, nbshell, Kitty, input methods, and desktop services.
 - `linux auto` (or plain `setup auto`): selects `omarchy` on Arch derivatives and `server` on Ubuntu/Debian.
-macOS and the Omarchy profile bootstrap Homebrew when missing. The server profile avoids Homebrew so it can run directly under root and installs Herdr, Yazi, and Fastfetch from their official Linux releases. Existing conflicting files are backed up before linking. Starting services or GUI apps, changing the login shell, and creating the pi API key remain manual. The old `setup arch` command remains as a compatibility alias for `setup linux omarchy`.
+Software installs are split between the OS package manager and [mise](https://mise.run). Native packages (base-devel/build-essential toolchains, casks, input methods, terminals, compositors) go through Homebrew/pacman/apt; cross-platform CLI tools (neovim, fastfetch, node, go, rust, yazi, lazygit, pi, herdr on Linux) go through `mise`, bootstrapped via `https://mise.run` when missing. Which tools mise installs is controlled by a per-OS config linked at `~/.config/mise/config.toml` (the `mise-config` entry):
+
+- macOS → `mise/macos.toml`
+- Arch/Omarchy & Niri → `mise/linux-desktop.toml`
+- Ubuntu/Debian server → `mise/linux-server.toml`
+
+Only macOS bootstraps Homebrew; Linux never uses Homebrew — Arch uses pacman + mise, the server uses apt + mise, both root-friendly. Existing conflicting files are backed up before linking. Starting services or GUI apps, changing the login shell, and creating the pi API key remain manual. The old `setup arch` command remains as a compatibility alias for `setup linux omarchy`.
 The desktop profiles also install `sheprd`, herdr's desktop client: macOS takes the `sheprd-labs/tap/sheprd` cask, Linux runs the upstream installer (it resolves the latest release, verifies the published SHA-256 and installs it through the system package manager, so no AUR helper enters the bootstrap). Both are skipped when `sheprd` is already on `PATH`, the server profile leaves it out, and software-only names like this one work with `dotfiles deps sheprd` even though they own no linked config.
 ### Niri + nbshell
 
@@ -136,4 +144,4 @@ Config in `~/.config/herdr/`, synced from [herdr/](herdr/README.md).
 - **Not synced**: installed plugins, logs, session state
 - **Plugins**: installed by source in `plugins.txt`; on a new device one command installs them all:
 
-  `setup auto` 会安装 herdr 核心；macOS 通过 Homebrew cask 安装 `herdr-scratch`，Linux 则由 `herdr plugin install macintacos/herdr-scratch` 从源码构建。随后运行插件清单。Linux 不使用该 cask，因为 Homebrew cask 的 macOS quarantine hook 与 Linux `xattr` 不兼容。插件构建需要 Go；失败后可重跑 `bash ~/dotfiles/herdr/install-plugins.sh`。
+  `setup auto` 会安装 herdr 核心（macOS 走 Homebrew formula，Linux 走 mise 的 ubi backend 装 GitHub release 二进制）；macOS 另通过 cask 安装 `herdr-scratch`，Linux 则由 `herdr plugin install macintacos/herdr-scratch` 从源码构建。随后运行插件清单。插件构建需要的 go/cargo/yazi/tmux 都由 mise 或 OS 包管理器装好；失败后可重跑 `bash ~/dotfiles/herdr/install-plugins.sh`。

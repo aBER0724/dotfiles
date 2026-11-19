@@ -1,0 +1,16 @@
+# mise toolchain for `dotfiles setup linux server` (headless Ubuntu/Debian).
+# Replaces the old nodejs.org/neovim/yazi/fastfetch tarball installers in
+# bin/dotfiles — everything here installs user-locally, no sudo needed.
+# herdr is intentionally absent: SOFTWARE_TABLE installs it via
+# `mise:ubi:herdrdev/herdr` (note: ubi is disabled by default on newer mise —
+# enable it with `mise settings set ubi true` or it lands in missing_manual).
+[tools]
+neovim = "0.12.5"
+node = "22.23.2"
+go = "latest"
+rust = "latest"
+yazi = "26.9.1"
+fastfetch = "2.68.1"
+tmux = "latest"
+lazygit = "latest"
+"npm:@earendil-works/pi-coding-agent" = "latest"

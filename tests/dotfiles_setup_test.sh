@@ -33,10 +33,46 @@ stub_logger() {
   stub_command "$command_name" 'printf "%s %s\n" "$(basename "$0")" "$*" >> "$LOG"'
 }
 
+# No-network git clone: records the call, creates the destination (and a
+# marker oh-my-zsh.sh so install-deps.sh sees the clone as done).
+stub_git_clone() {
+  stub_command git 'printf "git %s\n" "$*" >> "$LOG"; dest=""; for arg in "$@"; do dest="$arg"; done; mkdir -p "$dest/.git"; case "$dest" in */.oh-my-zsh) printf "# stub\n" > "$dest/oh-my-zsh.sh" ;; esac'
+}
+
+# Fake mise: `mise install` drops executable stubs into $STUB_BIN/fake-bin so
+# `command -v` (used by the prefer-mise fallback check) sees them. The shim
+# dir only covers SOFTWARE_TABLE commands; profile-TOML tools are trusted.
+stub_mise_install() {
+  stub_command mise 'printf "mise %s\n" "$*" >> "$LOG"
+case "$1" in
+  install)
+    shift
+    mkdir -p "$STUB_BIN/fake-bin"
+    for spec in "$@"; do
+      name="${spec##*:}"
+      case "$name" in
+        neovim) name=nvim ;; rust) name=cargo ;; npm:*) name="${spec##*/}" ;;
+      esac
+      case "$name" in *@*) name="${name##*/}" ;; esac
+      printf "#!/bin/sh\nexit 0\n" > "$STUB_BIN/fake-bin/$name"
+      chmod +x "$STUB_BIN/fake-bin/$name"
+    done
+    # bare `mise install` (profile sync): cover every table command the
+    # profile owns so fallbacks do not fire
+    if [ $# -eq 0 ]; then
+      for name in nvim node pi herdr go tmux cargo yazi fastfetch lazygit; do
+        printf "#!/bin/sh\nexit 0\n" > "$STUB_BIN/fake-bin/$name"
+        chmod +x "$STUB_BIN/fake-bin/$name"
+      done
+    fi
+    ;;
+esac'
+}
+
 run_cli() {
   OUTPUT="$CASE_ROOT/output"
   STATUS=0
-  PATH="$STUB_BIN:/usr/bin:/bin" \
+  PATH="$STUB_BIN/fake-bin:$STUB_BIN:/usr/bin:/bin" \
     DOTFILES_DIR="$REPO" \
     bash "$REPO/bin/dotfiles" "$@" >"$OUTPUT" 2>&1 || STATUS=$?
 }
@@ -73,13 +109,17 @@ run_test() {
   shift
   if "$@"; then PASS=$((PASS + 1)); echo "ok - $name"
   else FAIL=$((FAIL + 1)); echo "not ok - $name"
+    echo "--- last output ($name) ---" >&2; tail -20 "$OUTPUT" >&2
+    echo "--- commands.log ($name) ---" >&2; cat "$LOG" >&2
   fi
 }
 
 test_auto_detects_macos() {
   new_case auto-macos
   stub_logger brew
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup auto
+  stub_mise_install
+  stub_git_clone
+  DOTFILES_UNAME=Darwin run_cli setup auto
   assert_status 0 && assert_contains "preset   macos"
 }
 
@@ -90,9 +130,9 @@ ID=arch
 NAME="Arch Linux"
 OS
   stub_logger pacman
-  stub_logger brew
+  stub_logger mise
   stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"'
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
   assert_status 0 && assert_contains "preset   linux-omarchy"
 }
 
@@ -103,14 +143,13 @@ ID_LIKE=debian
 NAME="Ubuntu"
 OS
   stub_logger apt-get
-  stub_logger brew
-  stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"; if [ "${STUB_SUDO_FAIL:-0}" = 1 ]; then exit 42; fi'
+  stub_mise_install
+  stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"; if [ "${STUB_SUDO_FAIL:-0}" = 1 ]; then exit 42; fi; "$@"'
 }
-
 test_auto_detects_ubuntu_server() {
   new_case auto-ubuntu
   debian_fixture
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup auto
   assert_status 0 &&
     assert_contains "profile  server" &&
     assert_contains "preset   linux-server"
@@ -120,48 +159,45 @@ test_server_shortcut_runs_as_root() {
   new_case server-root-shortcut
   debian_fixture
   stub_command id 'if [ "$1" = "-u" ]; then echo 0; else /usr/bin/id "$@"; fi'
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup server
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup server
   assert_status 0 &&
     assert_contains "preset   linux-server" &&
     grep -F "apt-get update" "$LOG" >/dev/null &&
     ! grep -F "sudo apt-get" "$LOG" >/dev/null &&
     ! grep -F "brew" "$LOG" >/dev/null
 }
-server_nvim_fixture() {
+test_server_installs_tools_via_mise() {
+  new_case server-mise-tools
   debian_fixture
-  stub_logger node
-  stub_logger herdr
-  stub_logger yazi
-  stub_logger fastfetch
-  stub_command uname 'if [ "$1" = "-m" ]; then echo x86_64; else /usr/bin/uname "$@"; fi'
-  stub_command id 'if [ "$1" = "-u" ]; then echo 0; else /usr/bin/id "$@"; fi'
-  stub_command tar 'printf "tar %s\n" "$*" >> "$LOG"; mkdir -p "$4/nvim-linux-x86_64"'
-  stub_command cp 'printf "cp %s\n" "$*" >> "$LOG"'
-  stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"; out=""; while [ "$#" -gt 0 ]; do if [ "$1" = "-o" ]; then shift; out="$1"; break; fi; shift; done; [ -z "$out" ] || : > "$out"'
-}
-
-test_server_upgrades_old_neovim() {
-  new_case server-old-neovim
-  server_nvim_fixture
-  stub_command nvim 'exit 1'
   DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
   assert_status 0 &&
-    assert_contains "install Neovim v0.12.5 from GitHub release" &&
-    grep -F "curl -fsSL https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86_64.tar.gz" "$LOG" >/dev/null &&
-    grep -F "cp -R" "$LOG" | grep -F "/usr/local/" >/dev/null
+    assert_contains "install mise profile tools (mise/linux-server.toml)" &&
+    grep -Fx "mise install" "$LOG" >/dev/null &&
+    ! grep -F "sudo apt-get install -y" "$LOG" | grep -F "tmux" >/dev/null &&
+    [ -L "$HOME/.config/mise/config.toml" ] &&
+    [ "$(readlink "$HOME/.config/mise/config.toml")" = "$REPO/mise/linux-server.toml" ]
 }
 
-test_server_keeps_current_neovim() {
-  new_case server-current-neovim
-  server_nvim_fixture
-  stub_command nvim 'exit 0'
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
+test_mise_bootstraps_when_missing() {
+  new_case mise-bootstrap
+  cat > "$CASE_ROOT/mise-stub" <<EOF
+#!/bin/sh
+printf "mise %s\\n" "\$*" >> "$LOG"
+EOF
+  chmod +x "$CASE_ROOT/mise-stub"
+  cat > "$STUB_BIN/curl" <<EOF
+#!/bin/sh
+printf "curl %s\\n" "\$*" >> "$LOG"
+printf 'cp %s/mise-stub %s/mise\nchmod +x %s/mise\n' "$CASE_ROOT" "$STUB_BIN" "$STUB_BIN"
+EOF
+  chmod +x "$STUB_BIN/curl"
+  DOTFILES_UNAME=Darwin run_cli deps mise
   assert_status 0 &&
-    assert_not_contains "install Neovim v0.12.5 from GitHub release" &&
-    ! grep -F "neovim/releases/download" "$LOG" >/dev/null
+    assert_contains "install mise from https://mise.run" &&
+    grep -F "curl -fsSL https://mise.run" "$LOG" >/dev/null &&
+    [ -L "$HOME/.config/mise/config.toml" ] &&
+    [ "$(readlink "$HOME/.config/mise/config.toml")" = "$REPO/mise/macos.toml" ]
 }
-
-
 test_root_rejected_for_omarchy() {
   new_case root-omarchy
   arch_fixture
@@ -173,20 +209,20 @@ test_root_rejected_for_omarchy() {
 test_server_installs_apt_packages() {
   new_case server-packages
   debian_fixture
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
   assert_status 0 &&
     grep -F "sudo apt-get update" "$LOG" >/dev/null &&
-    grep -F "sudo apt-get install -y" "$LOG" | grep -F "build-essential" | grep -F "golang-go" | grep -F "tmux" >/dev/null &&
+    grep -F "sudo apt-get install -y" "$LOG" | grep -F "build-essential" | grep -F "ca-certificates" >/dev/null &&
+    ! grep -F "sudo apt-get install -y" "$LOG" | grep -F "golang-go" >/dev/null &&
     ! grep -F "pacman" "$LOG" >/dev/null
 }
 
 test_server_excludes_desktop_stack() {
   new_case server-links
   debian_fixture
-  stub_logger npm
   stub_logger git
   stub_logger herdr
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux server
   assert_status 0 &&
     [ -L "$HOME/.config/nvim" ] &&
     [ -L "$HOME/.config/herdr/config.toml" ] &&
@@ -264,13 +300,17 @@ test_macos_bootstraps_homebrew() {
   stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"; printf "#!/bin/sh\nexit 0\n"'
   stub_command bootstrap-bash 'printf "bootstrap-bash %s\n" "$*" >> "$LOG"'
   stub_command brew 'printf "brew %s\n" "$*" >> "$LOG"'
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" run_cli setup macos
+  stub_mise_install
+  stub_git_clone
+  DOTFILES_UNAME=Darwin DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" run_cli setup macos
   assert_status 0 && grep -F "curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh" "$LOG" >/dev/null
 }
 
 test_macos_skips_homebrew_bootstrap() {
   new_case macos-existing-brew
   stub_logger brew
+  stub_mise_install
+  stub_git_clone
   stub_command curl 'echo unexpected-curl >> "$LOG"; exit 99'
   DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup macos
   assert_status 0 && ! grep -F "unexpected-curl" "$LOG" >/dev/null
@@ -282,14 +322,13 @@ ID=arch
 NAME="Arch Linux"
 OS
   stub_logger pacman
-  stub_logger brew
-  stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"; if [ "${STUB_SUDO_FAIL:-0}" = 1 ]; then exit 42; fi'
+  stub_mise_install
+  stub_command sudo 'printf "sudo %s\n" "$*" >> "$LOG"; if [ "${STUB_SUDO_FAIL:-0}" = 1 ]; then exit 42; fi; "$@"'
 }
-
 test_arch_alias_is_compatible() {
   new_case arch-alias
   arch_fixture
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup arch
   assert_status 0 &&
     assert_contains "deprecated: 'setup arch' is now 'setup linux omarchy'" &&
     assert_contains "preset   linux-omarchy"
@@ -298,7 +337,7 @@ test_arch_alias_is_compatible() {
 test_arch_installs_required_packages() {
   new_case arch-packages
   arch_fixture
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     grep -F "sudo pacman -S --needed" "$LOG" >/dev/null &&
     grep -F "base-devel" "$LOG" >/dev/null &&
@@ -312,21 +351,21 @@ test_arch_installs_required_packages() {
 test_arch_installs_herdr_plugin_build_deps() {
   new_case arch-herdr-build-deps
   arch_fixture
-  DOTFILES_MISSING_SOFTWARE="go cargo yazi tmux" \
-    DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
-    grep -F "sudo pacman -S --needed" "$LOG" | grep -F "rust" | grep -F "yazi" >/dev/null
+    assert_contains "install mise profile tools (mise/linux-desktop.toml)" &&
+    grep -Fx "mise install" "$LOG" >/dev/null
 }
 
 test_macos_installs_herdr_plugin_build_deps() {
   new_case macos-herdr-build-deps
   stub_logger brew
-  # An Omarchy host already ships go/cargo/yazi/tmux, and the software step
-  # skips whatever it finds on PATH; name them missing so the brew path runs.
-  DOTFILES_MISSING_SOFTWARE="go cargo yazi tmux" \
-    DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup macos
+  stub_mise_install
+  stub_git_clone
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup macos
   assert_status 0 &&
-    grep -F "brew install" "$LOG" | grep -F "rust" | grep -F "yazi" >/dev/null
+    assert_contains "install mise profile tools (mise/macos.toml)" &&
+    grep -Fx "mise install" "$LOG" >/dev/null
 }
 
 test_arch_package_failure_stops_before_links() {
@@ -340,10 +379,9 @@ test_arch_package_failure_stops_before_links() {
 test_arch_links_primary_stack_only() {
   new_case arch-links
   arch_fixture
-  stub_logger npm
   stub_logger git
   stub_logger herdr
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     [ -L "$HOME/.config/environment.d/fcitx.conf" ] &&
     grep -F "QT_IM_MODULE=fcitx" "$HOME/.config/environment.d/fcitx.conf" >/dev/null &&
@@ -359,10 +397,9 @@ test_arch_links_primary_stack_only() {
 test_niri_profile_links_custom_stack() {
   new_case niri-links
   arch_fixture
-  stub_logger npm
   stub_logger git
   stub_logger herdr
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux niri
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux niri
   assert_status 0 &&
     assert_contains "preset   linux-niri" &&
     [ -L "$HOME/.config/niri" ] &&
@@ -376,7 +413,7 @@ test_arch_prints_but_does_not_enable_services() {
   new_case arch-manual
   arch_fixture
   stub_command systemctl 'echo systemctl-executed >> "$LOG"; exit 99'
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_SKIP_SERVER_TOOLS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
     assert_contains "environment.d/fcitx.conf" &&
     ! grep -F "systemctl-executed" "$LOG" >/dev/null
@@ -385,6 +422,7 @@ test_arch_prints_but_does_not_enable_services() {
 test_macos_links_primary_stack_only() {
   new_case macos-links
   stub_logger brew
+  stub_mise_install
   DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup macos
   assert_status 0 &&
     [ -L "$HOME/.aerospace.toml" ] &&
@@ -397,6 +435,7 @@ test_macos_links_primary_stack_only() {
 test_existing_links_and_commands_are_skipped() {
   new_case idempotent
   stub_logger brew
+  stub_mise_install
   DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup macos
   assert_status 0 || return 1
   : > "$LOG"
@@ -404,30 +443,27 @@ test_existing_links_and_commands_are_skipped() {
   assert_status 0 && assert_contains "ok      aerospace" && [ -L "$HOME/.aerospace.toml" ]
 }
 
-test_arch_bootstraps_linuxbrew_without_scratch_cask() {
-  new_case arch-linuxbrew
+test_arch_uses_mise_without_homebrew() {
+  new_case arch-no-brew
   arch_fixture
-  stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"; printf "#!/bin/sh\nexit 0\n"'
-  stub_command bootstrap-bash 'printf "bootstrap-bash %s\n" "$*" >> "$LOG"'
-  stub_logger brew
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
+  stub_command curl 'echo unexpected-curl >> "$LOG"; exit 99'
+  stub_command brew 'echo unexpected-brew >> "$LOG"; exit 99'
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 &&
-    ! grep -F "python-xattr" "$LOG" >/dev/null &&
-    grep -F "curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh" "$LOG" >/dev/null &&
-    ! grep -F "brew install --cask" "$LOG" >/dev/null &&
-    ! grep -F "macintacos/tap/herdr-scratch" "$LOG" >/dev/null
+    ! grep -F "unexpected-brew" "$LOG" >/dev/null &&
+    ! grep -F "unexpected-curl" "$LOG" >/dev/null &&
+    ! grep -F "macintacos/tap/herdr-scratch" "$LOG" >/dev/null &&
+    assert_contains "install mise profile tools (mise/linux-desktop.toml)"
 }
 
-test_arch_installs_native_packages_before_homebrew() {
+test_arch_installs_native_packages_before_mise() {
   new_case arch-native-first
   arch_fixture
-  stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"; printf "#!/bin/sh\nexit 0\n"'
-  stub_command bootstrap-bash 'printf "bootstrap-bash %s\n" "$*" >> "$LOG"'
-  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_FORCE_NO_BREW=1 DOTFILES_BASH_BIN="$STUB_BIN/bootstrap-bash" DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux omarchy
   assert_status 0 || return 1
   pacman_line="$(grep -nF 'sudo pacman -S --needed' "$LOG" | head -n 1 | cut -d: -f1)"
-  bootstrap_line="$(grep -nF 'bootstrap-bash -c' "$LOG" | head -n 1 | cut -d: -f1)"
-  [ -n "$pacman_line" ] && [ -n "$bootstrap_line" ] && [ "$pacman_line" -lt "$bootstrap_line" ] &&
+  mise_line="$(grep -nF 'mise install' "$LOG" | head -n 1 | cut -d: -f1)"
+  [ -n "$pacman_line" ] && [ -n "$mise_line" ] && [ "$pacman_line" -lt "$mise_line" ] &&
     grep -F "sudo pacman -S --needed" "$LOG" | grep -F "file" | grep -F "procps-ng" >/dev/null
 }
 
@@ -511,6 +547,77 @@ test_arch_installs_scratch_through_herdr() {
   assert_status 0 &&
     grep -F "herdr plugin install macintacos/herdr-scratch -y" "$LOG" >/dev/null &&
     ! grep -F "herdr plugin link" "$LOG" >/dev/null
+}
+
+test_mise_failure_falls_back_to_native() {
+  new_case mise-fallback
+  stub_logger brew
+  # mise succeeds for everything EXCEPT ubi specs (herdr ships no macOS asset)
+  stub_command mise 'printf "mise %s\n" "$*" >> "$LOG"
+case " $* " in *ubi:*) exit 1 ;; esac
+case "$1" in
+  install)
+    shift
+    mkdir -p "$STUB_BIN/fake-bin"
+    for spec in "$@"; do
+      name="${spec##*:}"
+      case "$name" in neovim) name=nvim ;; rust) name=cargo ;; *@*) name="${name##*/}" ;; esac
+      printf "#!/bin/sh\nexit 0\n" > "$STUB_BIN/fake-bin/$name"
+      chmod +x "$STUB_BIN/fake-bin/$name"
+    done
+    ;;
+esac'
+  DOTFILES_UNAME=Darwin run_cli deps herdr
+  assert_status 0 &&
+    assert_contains "install mise tools:" &&
+    grep -F "brew install" "$LOG" | grep -F "herdr" >/dev/null &&
+    ! grep -F "brew install" "$LOG" | grep -F " tmux" >/dev/null &&
+    ! grep -F "brew install" "$LOG" | grep -F " yazi" >/dev/null
+}
+
+test_arch_uses_pacman_before_aur() {
+  new_case pacman-first
+  arch_fixture
+  # pacman "succeeds" by materializing the package binary, so verify passes
+  # and the AUR fallback never fires.
+  stub_command pacman 'echo "pacman $*" >> "$LOG"
+mkdir -p "$STUB_BIN/fake-bin"
+for pkg in "$@"; do
+  case "$pkg" in -* | --*) continue ;; esac
+  printf "#!/bin/sh\nexit 0\n" > "$STUB_BIN/fake-bin/$pkg"
+  chmod +x "$STUB_BIN/fake-bin/$pkg"
+done'
+  stub_logger yay
+  DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli deps discord
+  assert_status 0 &&
+    grep -F "pacman -S --needed" "$LOG" | grep -F "discord" >/dev/null &&
+    ! grep -F "yay -S" "$LOG" >/dev/null
+}
+
+test_pacman_failure_falls_back_to_aur() {
+  new_case aur-fallback
+  arch_fixture
+  stub_command pacman 'echo "pacman $*" >> "$LOG"; exit 1'
+  stub_command yay 'echo "yay $*" >> "$LOG"
+mkdir -p "$STUB_BIN/fake-bin"
+for pkg in "$@"; do
+  case "$pkg" in -* | --*) continue ;; esac
+  printf "#!/bin/sh\nexit 0\n" > "$STUB_BIN/fake-bin/$pkg"
+  chmod +x "$STUB_BIN/fake-bin/$pkg"
+done'
+  DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli deps discord
+  assert_status 0 &&
+    assert_contains "install AUR packages (yay): discord" &&
+    ! grep -F "manual" "$OUTPUT" >/dev/null
+}
+
+test_aur_without_helper_lands_in_manual() {
+  new_case aur-manual
+  arch_fixture
+  stub_command pacman 'echo "pacman $*" >> "$LOG"; exit 1'
+  DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli deps discord
+  assert_status 0 &&
+    assert_contains "aur(yay -S discord)"
 }
 
 test_macos_skips_scratch_source_build() {
@@ -598,7 +705,7 @@ test_nbshell_installer_removes_bongo_cat() {
 
 test_zsh_deps_install_oh_my_zsh() {
   new_case zsh-omz
-  stub_command git 'printf "git %s\n" "$*" >> "$LOG"; dest=""; for arg in "$@"; do dest="$arg"; done; mkdir -p "$dest/.git"; case "$dest" in */.oh-my-zsh) printf "# stub\n" > "$dest/oh-my-zsh.sh" ;; esac'
+  stub_git_clone
   OUTPUT="$CASE_ROOT/output"
   STATUS=0
   PATH="$STUB_BIN:/usr/bin:/bin" DOTFILES_DIR="$REPO" bash "$REPO/zsh/install-deps.sh" >"$OUTPUT" 2>&1 || STATUS=$?
@@ -626,7 +733,7 @@ test_existing_commands_smoke() {
   run_cli link fastfetch
   assert_status 0 && [ -L "$HOME/.config/fastfetch" ] || return 1
 
-  stub_logger brew
+  stub_mise_install
   run_cli deps fastfetch
   assert_status 0 || return 1
 
@@ -685,8 +792,8 @@ run_test "auto detects Arch" test_auto_detects_arch
 run_test "auto detects Ubuntu server" test_auto_detects_ubuntu_server
 run_test "server shortcut runs as root" test_server_shortcut_runs_as_root
 
-run_test "server upgrades old Neovim" test_server_upgrades_old_neovim
-run_test "server keeps current Neovim" test_server_keeps_current_neovim
+run_test "server installs tools via mise" test_server_installs_tools_via_mise
+run_test "mise bootstraps when missing" test_mise_bootstraps_when_missing
 run_test "root is rejected for Omarchy" test_root_rejected_for_omarchy
 run_test "server installs apt packages" test_server_installs_apt_packages
 run_test "server excludes desktop stack" test_server_excludes_desktop_stack
@@ -711,13 +818,17 @@ run_test "macOS links primary stack only" test_macos_links_primary_stack_only
 run_test "setup is idempotent" test_existing_links_and_commands_are_skipped
 run_test "Arch installs herdr plugin build deps" test_arch_installs_herdr_plugin_build_deps
 run_test "macOS installs herdr plugin build deps" test_macos_installs_herdr_plugin_build_deps
-run_test "Arch bootstraps Linuxbrew without scratch cask" test_arch_bootstraps_linuxbrew_without_scratch_cask
-run_test "Arch installs native packages before Homebrew" test_arch_installs_native_packages_before_homebrew
+run_test "Arch uses mise without Homebrew" test_arch_uses_mise_without_homebrew
+run_test "Arch installs native packages before mise" test_arch_installs_native_packages_before_mise
 run_test "macOS installs the sheprd cask" test_macos_installs_sheprd_cask
 run_test "Linux installs sheprd upstream" test_linux_installs_sheprd_through_upstream_installer
 run_test "Linux skips an installed sheprd" test_linux_skips_sheprd_when_present
 run_test "Linux ignores macOS-only casks" test_linux_ignores_macos_casks
 run_test "Arch installs scratch through herdr" test_arch_installs_scratch_through_herdr
+run_test "mise failure falls back to native" test_mise_failure_falls_back_to_native
+run_test "Arch uses pacman before AUR" test_arch_uses_pacman_before_aur
+run_test "pacman failure falls back to AUR" test_pacman_failure_falls_back_to_aur
+run_test "AUR without helper lands in manual" test_aur_without_helper_lands_in_manual
 run_test "macOS skips scratch source build" test_macos_skips_scratch_source_build
 run_test "gen-plugins keeps the github-linux kind" test_gen_plugins_keeps_github_linux_kind
 run_test "Plugin failure shows actual log" test_plugin_failure_shows_actual_log

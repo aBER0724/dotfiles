@@ -1,0 +1,50 @@
+# mise toolchain for `dotfiles setup macos`.
+# Pinned versions replace the DOTFILES_*_VERSION vars that used to live in
+# bin/dotfiles. GUI/system software stays in Homebrew (see SOFTWARE_TABLE).
+[tools]
+neovim = "0.12.5"
+node = "22.23.2"
+go = "latest"
+rust = "latest"
+yazi = "26.9.1"
+fastfetch = "2.68.1"
+tmux = "latest"
+lazygit = "latest"
+java = "temurin-21"   # replaces openjdk@21 + temurin/temurin@17 casks
+
+# CLI tools migrated from Homebrew leaves (aqua/ubi backends)
+fzf = "latest"
+fd = "latest"
+ripgrep = "latest"  # currently installed as a codex dependency — prune codex + rg from brew together
+jq = "latest"
+zoxide = "latest"     # also replaces autojump
+starship = "latest"
+delta = "latest"      # brew name: git-delta
+btop = "latest"
+gh = "latest"
+glab = "latest"
+uv = "latest"
+bun = "latest"
+yt-dlp = "latest"
+rclone = "latest"
+tree = "latest"
+typst = "latest"
+pandoc = "latest"
+fswatch = "latest"
+socat = "latest"
+bear = "latest"       # compiledb for LSP
+tree-sitter = "latest"
+"7zip" = "latest"     # brew name: sevenzip
+
+# AI CLIs — only pi + claude code are kept; codex/gemini-cli/ccr/happy dropped.
+"npm:@earendil-works/pi-coding-agent" = "latest"
+"npm:@anthropic-ai/claude-code" = "latest"
+
+# npm globals that stay (everything except the dropped AI CLIs:
+# codex, gemini-cli, claude-code-router, happy, cloudbase-cli)
+"npm:@cometix/ccline" = "latest"
+"npm:@gitee/gitee-cli" = "latest"
+"npm:happy-coder" = "latest"   # kept: separate package from dropped `happy` — say the word to remove it too
+"npm:wrangler" = "latest"
+"npm:pnpm" = "latest"
+"npm:yarn" = "latest"
