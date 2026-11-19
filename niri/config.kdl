@@ -167,3 +167,17 @@ window-rule {
     geometry-corner-radius 4
     clip-to-geometry true
 }
+
+// ── 背景模糊(毛玻璃)──────────────────────────────
+// kitty 以 background_opacity 0.85 绘制(dotfiles/kitty/kitty.conf),壁纸会透过终端,
+// 这条规则让 niri 把窗口后面的壁纸模糊掉,和 macOS(platform-macos.conf 里的
+// background_blur 50)、Omarchy(dotfiles/hypr/blur.lua)保持一致。
+// 需要 niri >= 26.04(background-effect 在该版本引入);老版本请先 `niri --version`,
+// 低于 26.04 就把下面这块删掉,否则这条规则会被判为未知字段。
+// 全局模糊参数可在 `blur {}` 段里调(不写就用默认值)。
+window-rule {
+    match app-id="^kitty$"
+    background-effect {
+        blur true
+    }
+}
