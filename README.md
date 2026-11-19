@@ -11,6 +11,7 @@ Personal configuration files.
 | [nbshell](/nbshell) | [nbshell](https://github.com/nerdislb/nbshell) Nerd Font/TUI Quickshell shell for niri; pinned user-local installer + synced config |
 | [clavis](/clavis) | Previous StatIndet/Clavis shell retained as a manual rollback |
 | [waybar](/waybar) | Legacy Waybar configuration retained as a second manual rollback |
+| [hypr](/hypr) | Hyprland (Omarchy) frosted-glass blur shared by every Omarchy machine — `require("hypr.blur")` after Omarchy's toggles, because the "Animations off" flag disables blur |
 | [omarchy](/omarchy) | Stock Omarchy bar on a Mac host — minimal layout (workspaces · active window · tray · clock), a click-to-open tray widget, and a spacer keeping the clock clear of the macOS privacy dot |
 | [kaku](/kaku) | Terminal (WezTerm-based) |
 | [kitty](/kitty) | Kitty terminal — Kaku-inspired port (fonts, Kaku Dark, Cmd keymap) |

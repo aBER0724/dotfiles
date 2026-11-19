@@ -24,6 +24,7 @@ LINK_TABLE=(
   "nvim|nvim|$HOME/.config/nvim"
   "kaku|kaku|$HOME/.config/kaku"
   "niri|niri|$HOME/.config/niri"
+  "hypr-blur|hypr/blur.lua|$HOME/.config/hypr/blur.lua"
   "waybar|waybar|$HOME/.config/waybar"
   "omarchy-shell|omarchy/shell.json|$HOME/.config/omarchy/shell.json"
   "omarchy-tray|omarchy/plugins/aber.tray|$HOME/.config/omarchy/plugins/aber.tray"
@@ -95,7 +96,7 @@ GROUP_TABLE=(
 PRESET_TABLE=(
   "macos|dotfiles-cli zsh nvim fastfetch pi herdr aerospace kitty lazygit"
   "linux-server|dotfiles-cli zsh nvim fastfetch pi herdr lazygit"
-  "linux-omarchy|dotfiles-cli zsh nvim fastfetch pi herdr fcitx kitty lazygit omarchy"
+  "linux-omarchy|dotfiles-cli zsh nvim fastfetch pi herdr fcitx kitty lazygit omarchy hypr-blur"
   "linux-niri|dotfiles-cli zsh nvim fastfetch pi herdr niri nbshell kitty fcitx lazygit"
 )
 
