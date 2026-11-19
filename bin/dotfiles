@@ -75,6 +75,7 @@ SOFTWARE_TABLE=(
   "herdr|cargo|formula|rust|rust"
   "herdr|yazi|formula|yazi|yazi"
   "herdr|herdr-scratch|cask|macintacos/tap/herdr-scratch|-"
+  "sheprd|sheprd|cask|sheprd-labs/tap/sheprd|-"
   "lazygit|lazygit|formula|lazygit|lazygit"
 )
 
@@ -96,10 +97,10 @@ GROUP_TABLE=(
 # Arch profile targeting stock Omarchy (Hyprland/uwsm); `niri` is the custom
 # Niri + nbshell stack. Auto-detect picks omarchy on Arch, server on Debian.
 PRESET_TABLE=(
-  "macos|dotfiles-cli zsh nvim fastfetch pi herdr aerospace kitty lazygit"
+  "macos|dotfiles-cli zsh nvim fastfetch pi herdr aerospace kitty lazygit sheprd"
   "linux-server|dotfiles-cli zsh nvim fastfetch pi herdr lazygit"
-  "linux-omarchy|dotfiles-cli zsh nvim fastfetch pi herdr fcitx kitty lazygit omarchy hypr-blur"
-  "linux-niri|dotfiles-cli zsh nvim fastfetch pi herdr niri nbshell kitty fcitx lazygit"
+  "linux-omarchy|dotfiles-cli zsh nvim fastfetch pi herdr fcitx kitty lazygit omarchy hypr-blur sheprd"
+  "linux-niri|dotfiles-cli zsh nvim fastfetch pi herdr niri nbshell kitty fcitx lazygit sheprd"
 )
 
 # Expand aliases in "$*" to concrete names (set -u + empty string is fine here).
@@ -239,6 +240,9 @@ preset_entries() {
 # Defaults used by the /login-free key setup (see README)
 PI_DEFAULT_PROVIDER="new-api"
 HOMEBREW_INSTALL_URL="${DOTFILES_HOMEBREW_INSTALL_URL:-https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh}"
+# sheprd ships no Linux repository package; its installer resolves the latest
+# release, verifies it against the published SHA-256 and installs it with pacman.
+SHEPRD_INSTALL_URL="${DOTFILES_SHEPRD_INSTALL_URL:-https://sheprd.org/install.sh}"
 BOOTSTRAP_BASH="${DOTFILES_BASH_BIN:-/bin/bash}"
 MACOS_BASE_PACKAGES="git zsh node go"
 ARCH_BASE_PACKAGES="git curl file procps-ng zsh nodejs npm go base-devel"
@@ -271,6 +275,13 @@ select_entries() {
     for entry in "${LINK_TABLE[@]}"; do
       [ "$w" = "${entry%%|*}" ] && { ok=1; break; }
     done
+    # A name can also come from SOFTWARE_TABLE alone: software that is installed
+    # but owns no synced config file, like sheprd.
+    if [ "$ok" = 0 ]; then
+      for entry in "${SOFTWARE_TABLE[@]}"; do
+        [ "$w" = "${entry%%|*}" ] && { ok=1; break; }
+      done
+    fi
     if [ "$ok" = 0 ]; then echo "dotfiles: unknown entry '$w' (see 'dotfiles list')" >&2; fi
   done
 }
@@ -682,6 +693,34 @@ run_herdr_plugins() {
     echo "herdr not installed — skipped (brew install herdr)"
   fi
 }
+
+install_sheprd_linux() {
+  local script
+  script="$(mktemp "${TMPDIR:-/tmp}/dotfiles-sheprd.XXXXXX")"
+  echo "install sheprd from $SHEPRD_INSTALL_URL"
+  if ! curl -fsSL "$SHEPRD_INSTALL_URL" -o "$script"; then
+    rm -f -- "$script"
+    echo "dotfiles: could not download $SHEPRD_INSTALL_URL" >&2
+    return 1
+  fi
+  if ! sh "$script"; then
+    rm -f -- "$script"
+    echo "dotfiles: sheprd install failed; rerun it from $SHEPRD_INSTALL_URL" >&2
+    return 1
+  fi
+  rm -f -- "$script"
+}
+
+run_sheprd() {
+  # macOS takes the tap cask from SOFTWARE_TABLE. No Linux repository packages
+  # sheprd, and asking for it through an AUR helper would add a helper to the
+  # bootstrap, so the upstream installer stays the single source of truth: it
+  # resolves the latest release, verifies the package against the published
+  # SHA-256 and installs it through pacman/apt/dnf/zypper with sudo.
+  [ "$(host_uname)" = Linux ] || return 0
+  command -v sheprd >/dev/null 2>&1 && return 0
+  install_sheprd_linux
+}
 setup_pi_theme() {
   local theme_dir="$HOME/.pi/agent/themes"
   local theme_file="$theme_dir/nbshell.json"
@@ -700,6 +739,7 @@ run_config_runtimes() {
     return 0
   fi
   if software_selected herdr "$wanted"; then run_herdr_plugins; fi
+  if software_selected sheprd "$wanted"; then run_sheprd; fi
   if software_selected zshrc "$wanted"; then run_zsh_deps; fi
   if software_selected clavis "$wanted"; then
     echo "== clavis (user-local, never sudo) =="
@@ -737,6 +777,7 @@ cmd_deps() {
   run_software_install "$wanted"
   if software_selected zshrc "$wanted"; then run_zsh_deps; fi
   if software_selected herdr "$wanted"; then run_herdr_plugins; fi
+  if software_selected sheprd "$wanted"; then run_sheprd; fi
   echo "Done."
 }
 

@@ -431,6 +431,59 @@ test_arch_installs_native_packages_before_homebrew() {
     grep -F "sudo pacman -S --needed" "$LOG" | grep -F "file" | grep -F "procps-ng" >/dev/null
 }
 
+test_macos_installs_sheprd_cask() {
+  new_case macos-sheprd
+  stub_logger brew
+  DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Darwin run_cli setup macos
+  assert_status 0 ||
+    return 1
+  grep -F "brew install --cask" "$LOG" | grep -F "sheprd-labs/tap/sheprd" >/dev/null
+}
+
+test_linux_installs_sheprd_through_upstream_installer() {
+  new_case linux-sheprd
+  cat > "$CASE_ROOT/sheprd-install.sh" <<'SH'
+#!/bin/sh
+printf 'sheprd-installer-ran\n' >> "$LOG"
+SH
+  # The installer is fetched with `curl -o <file>`, so the stub honours -o
+  # instead of writing the script to stdout.
+  stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"
+out=
+prev=
+for arg in "$@"; do
+  [ "$prev" = "-o" ] && out="$arg"
+  prev="$arg"
+done
+if [ -n "$out" ]; then cat "$SHEPRD_TEST_SCRIPT" > "$out"; else cat "$SHEPRD_TEST_SCRIPT"; fi'
+  SHEPRD_TEST_SCRIPT="$CASE_ROOT/sheprd-install.sh" DOTFILES_UNAME=Linux run_cli deps sheprd
+  assert_status 0 &&
+    assert_contains "install sheprd from" &&
+    grep -F "sheprd-installer-ran" "$LOG" >/dev/null
+}
+
+test_linux_skips_sheprd_when_present() {
+  new_case linux-sheprd-present
+  cat > "$CASE_ROOT/sheprd-install.sh" <<'SH'
+#!/bin/sh
+printf 'sheprd-installer-ran\n' >> "$LOG"
+SH
+  # The installer is fetched with `curl -o <file>`, so the stub honours -o
+  # instead of writing the script to stdout.
+  stub_command curl 'printf "curl %s\n" "$*" >> "$LOG"
+out=
+prev=
+for arg in "$@"; do
+  [ "$prev" = "-o" ] && out="$arg"
+  prev="$arg"
+done
+if [ -n "$out" ]; then cat "$SHEPRD_TEST_SCRIPT" > "$out"; else cat "$SHEPRD_TEST_SCRIPT"; fi'
+  stub_logger sheprd
+  SHEPRD_TEST_SCRIPT="$CASE_ROOT/sheprd-install.sh" DOTFILES_UNAME=Linux run_cli deps sheprd
+  assert_status 0 &&
+    ! grep -F "sheprd-installer-ran" "$LOG" >/dev/null
+}
+
 test_arch_installs_scratch_through_herdr() {
   new_case arch-scratch-plugin
   cp "$REPO/herdr/plugins.txt" "$CASE_ROOT/plugins.txt"
@@ -650,6 +703,9 @@ run_test "Arch installs herdr plugin build deps" test_arch_installs_herdr_plugin
 run_test "macOS installs herdr plugin build deps" test_macos_installs_herdr_plugin_build_deps
 run_test "Arch bootstraps Linuxbrew without scratch cask" test_arch_bootstraps_linuxbrew_without_scratch_cask
 run_test "Arch installs native packages before Homebrew" test_arch_installs_native_packages_before_homebrew
+run_test "macOS installs the sheprd cask" test_macos_installs_sheprd_cask
+run_test "Linux installs sheprd upstream" test_linux_installs_sheprd_through_upstream_installer
+run_test "Linux skips an installed sheprd" test_linux_skips_sheprd_when_present
 run_test "Arch installs scratch through herdr" test_arch_installs_scratch_through_herdr
 run_test "macOS skips scratch source build" test_macos_skips_scratch_source_build
 run_test "gen-plugins keeps the github-linux kind" test_gen_plugins_keeps_github_linux_kind

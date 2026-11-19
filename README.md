@@ -80,6 +80,7 @@ dotfiles install wm
 - `server` (or `linux server`): a headless Ubuntu/Debian stack containing only the shared terminal tools (Zsh, Neovim, Fastfetch, pi, and herdr). It supports root-owned server environments, uses `apt-get` plus official Linux release binaries, and deliberately excludes Homebrew, Niri, nbshell, Kitty, input methods, and desktop services.
 - `linux auto` (or plain `setup auto`): selects `omarchy` on Arch derivatives and `server` on Ubuntu/Debian.
 macOS and the Omarchy profile bootstrap Homebrew when missing. The server profile avoids Homebrew so it can run directly under root and installs Herdr, Yazi, and Fastfetch from their official Linux releases. Existing conflicting files are backed up before linking. Starting services or GUI apps, changing the login shell, and creating the pi API key remain manual. The old `setup arch` command remains as a compatibility alias for `setup linux omarchy`.
+The desktop profiles also install `sheprd`, herdr's desktop client: macOS takes the `sheprd-labs/tap/sheprd` cask, Linux runs the upstream installer (it resolves the latest release, verifies the published SHA-256 and installs it through the system package manager, so no AUR helper enters the bootstrap). Both are skipped when `sheprd` is already on `PATH`, the server profile leaves it out, and software-only names like this one work with `dotfiles deps sheprd` even though they own no linked config.
 ### Niri + nbshell
 
 The `wm` group uses nbshell as the active desktop shell. Its visual language is
