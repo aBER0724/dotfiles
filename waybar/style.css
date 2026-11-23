@@ -1,6 +1,6 @@
-/* waybar style — niri 版,配色由 omarchy 主题提供 */
-/* 切换主题(Alt+T)后,此文件引用的主题调色板自动变化 */
-@import url("../omarchy/current/theme/waybar.css");
+/* waybar style — niri 版,配色由 nbshell 主题生成 */
+/* Alt+T 换主题后,theme-sync.py 重写该文件并 SIGUSR2 让 waybar 重新读取 */
+@import url("../nbshell/waybar.css");
 
 /* 主题提供: @foreground @background @warning @caution @performance
    @audio @misc @date @work @window @process */
@@ -44,7 +44,7 @@
 #waybar.main #cpu,
 #waybar.main #memory.swap,
 #waybar.main #memory.ram,
-#waybar.main #pulseaudio,
+#waybar.main #custom-pulseaudio,
 #waybar.main #temperature,
 #waybar.main #tray,
 #waybar.main #window,
@@ -101,7 +101,7 @@
   color: @performance;
 }
 
-#waybar.main #pulseaudio {
+#waybar.main #custom-pulseaudio {
   color: @audio;
 }
 
@@ -153,7 +153,7 @@
   animation-timing-function: steps(15);
 }
 
-#waybar.main #pulseaudio.muted {
+#waybar.main #custom-pulseaudio.muted {
   color: @caution;
 }
 

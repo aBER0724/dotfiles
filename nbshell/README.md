@@ -4,6 +4,9 @@
 
 视觉语言偏终端:方形 1px 边框、Nerd Font 符号、紧凑文本表面、块状 meter 而非毛玻璃卡片。
 
+niri 上的**顶栏不归它画**:waybar 接管 bar(`nbshell bar hide` 只把 bar 窗口 unmap,
+launcher / 通知 / OSD / 锁屏 / 主题链照常),原因与分工见 [waybar/README.md](../waybar/README.md)。
+
 ## 目录结构
 
 ```
@@ -11,7 +14,7 @@ nbshell/
 ├── install.sh                  # 固定上游 revision 的用户级安装器(绝不 sudo)
 ├── config/config.json          # 运行时配置(链接到 ~/.config/nbshell/, skip-worktree 管理)
 ├── scripts/
-│   ├── theme-sync.py           # 主题同步生成器: palette.sh / Kitty / pi / lazygit / yazi
+│   ├── theme-sync.py           # 主题同步生成器: palette.sh / Kitty / pi / lazygit / yazi / waybar
 │   ├── theme-next-sync         # Alt+T 入口: nbshell next → 轮询 config.json → theme-sync.py
 │   ├── theme-hook.sh           # herdr / btop / fcitx5 / Kitty / GTK css / XDG portal / niri 同步
 │   └── chromium-controller.mjs # Chromium 启动器+DevTools pipe 控制器(运行中热重载主题)
@@ -68,6 +71,7 @@ nbshell next → 轮询 config.json 直到主题实际变化(最多 1.5s) → th
 | 产物 | 生效方式 |
 |------|----------|
 | `~/.config/nbshell/palette.sh`(NB_* 变量) | nvim / herdr / 脚本共享源 |
+| `~/.config/nbshell/waybar.css`(GTK 具名色) | waybar 的 `style.css` import + 两个 GTK 弹层解析;`SIGUSR2` 让 waybar 运行中重载 |
 | `~/.config/nbshell/kitty.conf` | 通过 Kitty Unix socket 执行 `load-config`,**运行中即时生效** |
 | `~/.config/btop/themes/current.theme` | 发送 `SIGUSR2` 重载配置与主题,**运行中即时生效** |
 | `~/.pi/agent/themes/nbshell.json`(51+ tokens) | pi 激活 nbshell 主题后,编辑文件即热重载,**运行中即时生效**(Omarchy 上同一个文件由 `omarchy/hooks/theme-set.d/60-pi-theme` 用 Omarchy 调色板覆盖) |
@@ -111,7 +115,8 @@ git update-index --skip-worktree nbshell/config/config.json
 
 ## 回滚
 
-换回 Clavis(或 Waybar):
+整体换回 Clavis 当 shell(顶栏不受影响 —— waybar 与 nbshell 并行运行,回滚它还看
+[waybar/README.md](../waybar/README.md)):
 
 ```bash
 systemctl --user disable --now nbshell.service

@@ -72,7 +72,10 @@ layout {
 // fcitx5 输入法环境变量由 ~/.config/environment.d/fcitx.conf 全局注入(本 niri 构建无 env 节点)
 
 // ── 开机自启 ──────────────────────────────────────
-spawn-at-startup "sh" "-c" "systemctl --user start nbshell.service"  // nbshell Nerd/TUI Quickshell 桌面 Shell
+// nbshell 仍是桌面服务(启动器 / 通知 / OSD / 锁屏 / 主题链),只把它的 bar 隐藏;
+// 顶栏由 waybar 画(见 waybar/README.md)。脚本会等 IPC 就绪再隐藏,不是死 sleep。
+spawn-at-startup "sh" "-c" "$HOME/dotfiles/niri/scripts/shell-without-bar.sh"  // nbshell 服务,隐藏其中的 bar
+spawn-at-startup "waybar"                                                       // 顶栏(niri 模块版)
 spawn-at-startup "fcitx5" "-d"
 spawn-at-startup "cc-switch"
 
@@ -145,9 +148,9 @@ binds {
     Alt+T        { spawn "bash" "-c" "$HOME/.config/nbshell/theme-next-sync"; }  // 切换主题并同步 nvim/Herdr
     Alt+Shift+T  { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell wallpaper pick"; }  // nbshell 壁纸选择器
     Alt+Ctrl+T   { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell dashboard"; }  // nbshell Dashboard
-    Alt+Escape   { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell power menu"; }  // nbshell 电源菜单
+    Alt+Escape   { spawn "bash" "-c" "/usr/bin/python3 $HOME/.config/waybar/scripts/power-menu.py"; }  // 电源菜单(waybar 那套 GTK 弹层,与 custom/power 同一个)
     Alt+N        { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell notify center"; }  // nbshell 通知中心
-    Alt+B        { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell bar toggle"; }  // 仅切换 nbshell 状态栏显示/隐藏
+    Alt+B        { spawn "bash" "-c" "pkill -SIGUSR1 -x waybar"; }  // 仅切换 waybar 顶栏显示/隐藏(nbshell 的 bar 常驻隐藏)
 
     // ── 媒体键 ────────────────────────────────────
     XF86AudioRaiseVolume { spawn "bash" "-c" "PATH=$HOME/.local/bin:$PATH nbshell audio up"; }

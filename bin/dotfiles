@@ -116,7 +116,7 @@ GROUP_TABLE=(
   "fcitx|fcitx5-env fcitx5-conf"
   "nbshell|nbshell-config nbshell-screensaver"
   "omarchy|omarchy-shell omarchy-tray omarchy-indicators omarchy-kitty-reload omarchy-pi-theme omarchy-herdr-theme"
-  "wm|niri nbshell-config nbshell-screensaver fcitx5-env fcitx5-conf"
+  "wm|niri waybar nbshell-config nbshell-screensaver fcitx5-env fcitx5-conf"
   "mise|mise-config"
 )
 
@@ -128,7 +128,7 @@ PRESET_TABLE=(
   "macos|dotfiles-cli mise zsh nvim fastfetch pi herdr aerospace kitty lazygit mole sheprd"
   "linux-server|dotfiles-cli mise zsh nvim fastfetch pi herdr lazygit"
   "linux-omarchy|dotfiles-cli mise zsh nvim fastfetch pi herdr fcitx kitty lazygit omarchy hypr-blur sheprd"
-  "linux-niri|dotfiles-cli mise zsh nvim fastfetch pi herdr niri nbshell kitty fcitx lazygit sheprd"
+  "linux-niri|dotfiles-cli mise zsh nvim fastfetch pi herdr niri waybar nbshell kitty fcitx lazygit sheprd"
 )
 
 # Expand aliases in "$*" to concrete names (set -u + empty string is fine here).
@@ -813,6 +813,10 @@ run_config_runtimes() {
   if software_selected nbshell-config "$wanted"; then
     echo "== nbshell (user-local, never sudo) =="
     bash "$DOTFILES/nbshell/install.sh"
+  fi
+  if software_selected waybar "$wanted"; then
+    echo "== waybar (user-local, never sudo) =="
+    bash "$DOTFILES/waybar/install.sh"
   fi
   if software_selected fcitx5-conf "$wanted"; then
     echo "== fcitx5 (user-local, never sudo) =="

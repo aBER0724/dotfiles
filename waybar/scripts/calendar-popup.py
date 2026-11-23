@@ -17,24 +17,33 @@ from gi.repository import Gdk, GLib, Gtk, GtkLayerShell
 
 RUNTIME = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
 PID_FILE = RUNTIME / "waybar-calendar-popup.pid"
-THEME_FILE = Path.home() / ".config/omarchy/current/theme/waybar.css"
+CONFIG_HOME = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+# Same palette file as waybar/style.css: nbshell's theme-sync.py writes it on
+# niri, Omarchy writes its own copy when the bar runs on an Omarchy host.
+THEME_FILES = (
+    CONFIG_HOME / "nbshell" / "waybar.css",
+    Path.home() / ".config/omarchy/current/theme/waybar.css",
+)
+# Last resort, kept in step with the Futurism theme.
 DEFAULTS = {
     "foreground": "#F0F8FF",
     "background": "#0A1428",
-    "warning": "#FF40A3",
-    "caution": "#BDBDBD",
-    "date": "#00BFFF",
+    "warning": "#FF8C42",
+    "caution": "#8A9BAD",
+    "date": "#FFD166",
 }
 
 
 def theme_colors() -> dict[str, str]:
     colors = DEFAULTS.copy()
-    try:
-        text = THEME_FILE.read_text()
+    for path in THEME_FILES:
+        try:
+            text = path.read_text()
+        except OSError:
+            continue
         for name, value in re.findall(r"@define-color\s+([\w-]+)\s+(#[0-9A-Fa-f]{6})\s*;", text):
             colors[name] = value
-    except OSError:
-        pass
+        break
     return colors
 
 

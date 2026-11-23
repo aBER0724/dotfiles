@@ -11,14 +11,16 @@ niri/
 ├── config.kdl              # 主配置(输入、输出、启动项、全部按键绑定)
 ├── nbshell-colors.kdl      # 焦点环/边框配色 —— nbshell 每次换主题重写,由 config.kdl include
 ├── clavis/cursor.kdl       # 鼠标指针主题 —— Clavis 托管,手动改动会被覆盖
-└── scripts/screenshot.sh   # 截图助手(region / full)
+└── scripts/
+    ├── screenshot.sh        # 截图助手(region / full)
+    └── shell-without-bar.sh # 起 nbshell 后只隐藏它的 bar,顶栏交给 waybar
 ```
 
 ## 配置要点
 
 - **输入**:`us` 布局 + `ctrl:nocaps`;触摸板轻点/自然滚动;鼠标 `focus-follows-mouse`
 - **显示器**:DP-2 外接屏固定 `2560x1440@100`;其余沿用默认
-- **启动项**:`nbshell.service`(桌面 Shell)、`fcitx5`(输入法)、`cc-switch`
+- **启动项**:`shell-without-bar.sh`(`nbshell.service` + 隐藏它的 bar)、`waybar`(顶栏)、`fcitx5`(输入法)、`cc-switch`
 - **校验**:`niri validate`(改完可先校验再切过去)
 
 ## 按键绑定(config.kdl `binds`)
@@ -47,14 +49,19 @@ niri/
 | `Alt+Shift+1..5` / `Alt+Shift+Q/W/E/R` | 窗口移到指定工作区 |
 | `Alt+Tab` | 上一个工作区(往返) |
 
-### 面板入口(经 nbshell)
+### 面板入口
 
 | 按键 | 动作 |
 |------|------|
 | `Alt+Space` | nbshell 启动器 |
-| `Alt+T` | 切换主题并同步下游(theme-next-sync: Kitty/nvim/herdr/pi/lazygit/yazi) |
-| `Alt+Shift+T` | 壁纸切换 |
-| `Alt+Escape` | 电源菜单 |
+| `Alt+T` | 切换主题并同步下游(theme-next-sync: Kitty/nvim/herdr/pi/lazygit/yazi/waybar) |
+| `Alt+Shift+T` | 壁纸切换(nbshell) |
+| `Alt+Ctrl+T` | nbshell dashboard |
+| `Alt+N` | nbshell 通知中心 |
+| `Alt+B` | 切换 waybar 顶栏显示/隐藏(`SIGUSR1`;nbshell 的 bar 常驻隐藏) |
+| `Alt+Escape` | 电源菜单(`waybar/scripts/power-menu.py`,与顶栏 `custom/power` 同一个) |
+
+顶栏由 waybar 提供,nbshell 只负责 bar 以外的桌面服务 —— 见 [waybar/README.md](../waybar/README.md)。
 
 ## 截图
 

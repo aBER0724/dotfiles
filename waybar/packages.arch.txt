@@ -1,0 +1,9 @@
+# Optional Arch packages used by the synchronized waybar setup.
+# waybar/install.sh only checks this list; it never invokes pacman or sudo.
+# `dotfiles deps waybar` installs waybar itself (SOFTWARE_TABLE in bin/dotfiles).
+waybar
+python-gobject
+gtk3
+gtk-layer-shell
+# Clock tooltip weather (custom/weather). AUR if the official repos have drifted.
+wttrbar

@@ -402,6 +402,7 @@ test_niri_profile_links_custom_stack() {
   DOTFILES_SKIP_RUNTIME_INSTALLERS=1 DOTFILES_UNAME=Linux DOTFILES_OS_RELEASE="$CASE_ROOT/os-release" run_cli setup linux niri
   assert_status 0 &&
     assert_contains "preset   linux-niri" &&
+    [ -L "$HOME/.config/waybar" ] &&
     [ -L "$HOME/.config/niri" ] &&
     [ -L "$HOME/.config/nbshell/config.json" ] &&
     [ -L "$HOME/.config/nbshell/screensaver.txt" ] &&
